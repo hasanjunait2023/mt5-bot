@@ -74,7 +74,7 @@ export function History() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <Table columns={columns} data={data.trades} keyFn={(t) => `${t.ticket ?? ''}-${t.open_time}`} emptyText="No trades found" />
+          <Table columns={columns} data={data.trades} keyFn={(t) => t.open_time} emptyText="No trades found" />
           {data.total > 50 && (
             <div className="flex justify-center gap-2 mt-3">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

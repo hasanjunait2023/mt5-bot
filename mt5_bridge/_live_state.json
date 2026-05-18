@@ -1,0 +1,121 @@
+{
+  "timestamp": "2026-05-18T06:59:03.098885+00:00",
+  "trader_running": true,
+  "mt5_connected": true,
+  "nvidia_api_alive": false,
+  "account": {
+    "login": 415733764,
+    "server": "Exness-MT5Trial14",
+    "balance": 95.0,
+    "equity": 95.0,
+    "margin": 0.0,
+    "free_margin": 95.0,
+    "daily_pnl": 0.0,
+    "daily_dd_pct": 0.0,
+    "total_dd_pct": 0.0,
+    "start_balance": 95.0
+  },
+  "positions": [],
+  "ea_positions": {
+    "MTF_EMA_Scalper": [],
+    "ScalpMaster_HFT": [],
+    "ScalpMaster_HFT_Aggressive": [],
+    "XAUUSD_Gold_Scalper": [],
+    "BTCUSD_Scalper": []
+  },
+  "daily_trades": {},
+  "last_signals": {
+    "CADJPY": {
+      "direction": null,
+      "bar_time": null
+    },
+    "EURJPY": {
+      "direction": null,
+      "bar_time": null
+    },
+    "USDJPY": {
+      "direction": null,
+      "bar_time": null
+    },
+    "GBPAUD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "BTCUSD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "AUDNZD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "USDCAD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "EURUSD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "AUDCHF": {
+      "direction": null,
+      "bar_time": null
+    },
+    "NZDUSD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "EURNZD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "NZDJPY": {
+      "direction": null,
+      "bar_time": null
+    },
+    "AUDCAD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "GBPJPY": {
+      "direction": null,
+      "bar_time": null
+    },
+    "AUDUSD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "AUDJPY": {
+      "direction": null,
+      "bar_time": null
+    },
+    "GBPUSD": {
+      "direction": null,
+      "bar_time": null
+    },
+    "XAUUSD": {
+      "direction": null,
+      "bar_time": null
+    }
+  },
+  "symbols": [
+    "CADJPY",
+    "EURJPY",
+    "USDJPY",
+    "GBPAUD",
+    "BTCUSD",
+    "AUDNZD",
+    "USDCAD",
+    "EURUSD",
+    "AUDCHF",
+    "NZDUSD",
+    "EURNZD",
+    "NZDJPY",
+    "AUDCAD",
+    "GBPJPY",
+    "AUDUSD",
+    "AUDJPY",
+    "GBPUSD",
+    "XAUUSD"
+  ]
+}

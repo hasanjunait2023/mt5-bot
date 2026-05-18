@@ -1,0 +1,130 @@
+
+MTF EMA Scalper - Pair Optimizer
+Target  : failing
+Period  : 3 months
+Date    : 2026-05-17 17:35
+
+
+────────────────────────────────────────────────────────────
+  FAILING PAIRS — 5 pairs x 7 profiles
+────────────────────────────────────────────────────────────
+
+  FAIL  [GBPUSD] Testing 7 profiles...
+    [default                  ]  PF=0.97  WR=33.3%  T=15
+    [wide_rsi                 ]  PF=0.97  WR=33.3%  T=15
+    [london_only              ]  PF=3.94  WR=66.7%  T=6
+    [wider_sl                 ]  PF=1.21  WR=38.5%  T=13
+    [rr_1_5                   ]  PF=1.14  WR=43.8%  T=16
+    [combined_fix             ]  PF=1.73  WR=54.5%  T=11
+    [strict_candle            ]  PF=0.78  WR=28.6%  T=14
+
+  FAIL  [USDCHF] Testing 7 profiles...
+    [default                  ]  PF=1.23  WR=38.5%  T=13
+    [wide_rsi                 ]  PF=0.69  WR=26.3%  T=19
+    [london_only              ]  PF=0.00  WR=0.0%  T=3
+    [wider_sl                 ]  PF=1.39  WR=41.7%  T=12
+    [rr_1_5                   ]  PF=1.10  WR=42.9%  T=14
+    [combined_fix             ]  PF=0.73  WR=33.3%  T=9
+    [strict_candle            ]  PF=1.11  WR=36.4%  T=11
+
+  FAIL  [EURAUD] Testing 7 profiles...
+    [default                  ]  PF=0.55  WR=22.2%  T=9
+    [wide_rsi                 ]  PF=1.11  WR=36.4%  T=11
+    [london_only              ]  PF=1.30  WR=40.0%  T=5
+    [wider_sl                 ]  PF=0.55  WR=22.2%  T=9
+    [rr_1_5                   ]  PF=0.73  WR=33.3%  T=9
+    [combined_fix             ]  PF=1.46  WR=50.0%  T=8
+    [strict_candle            ]  PF=0.55  WR=22.2%  T=9
+
+  FAIL  [CADCHF] Testing 7 profiles...
+    [default                  ]  PF=0.56  WR=23.1%  T=13
+    [wide_rsi                 ]  PF=0.75  WR=27.8%  T=18
+    [london_only              ]  PF=0.00  WR=0.0%  T=5
+    [wider_sl                 ]  PF=1.65  WR=45.5%  T=11
+    [rr_1_5                   ]  PF=0.81  WR=35.7%  T=14
+    [combined_fix             ]  PF=1.91  WR=57.1%  T=7
+    [strict_candle            ]  PF=0.56  WR=23.1%  T=13
+
+  FAIL  [EURCHF] Testing 7 profiles...
+    [default                  ]  PF=0.20  WR=9.1%  T=11
+    [wide_rsi                 ]  PF=0.17  WR=7.7%  T=13
+    [london_only              ]  PF=0.40  WR=16.7%  T=6
+    [wider_sl                 ]  PF=0.22  WR=10.0%  T=10
+    [rr_1_5                   ]  PF=0.60  WR=28.6%  T=14
+    [combined_fix             ]  PF=1.44  WR=50.0%  T=6
+    [strict_candle            ]  PF=0.22  WR=10.0%  T=10
+
+================================================================================
+  FAILING PAIRS OPTIMIZATION — 3-MONTH OPTIMIZATION RESULTS
+================================================================================
+  Symbol      Old PF  New PF   Delta    WR%  Trades     Net$  Profile
+  ---------------------------------------------------------------------------
+  GBPUSD        0.97    3.94   +2.97  66.7%       6 +1235.31  london_only ***
+  CADCHF        0.56    1.91   +1.35  57.1%       7  +593.17  combined_fix ***
+  EURAUD        0.55    1.46   +0.91  50.0%       8  +381.31  combined_fix ++
+  EURCHF        0.20    1.44   +1.24  50.0%       6  +284.64  combined_fix ++
+  USDCHF        0.65    1.39   +0.74  41.7%      12  +562.04  wider_sl ++
+
+  --- All profiles tested ---
+
+  CADCHF:
+    combined_fix               PF= 1.91  WR=57.1%  T=  7  Net$ +593.17
+    wider_sl                   PF= 1.65  WR=45.5%  T= 11  Net$ +777.59
+    rr_1_5                     PF= 0.81  WR=35.7%  T= 14  Net$ -334.63
+    wide_rsi                   PF= 0.75  WR=27.8%  T= 18  Net$ -643.73
+    default                    PF= 0.56  WR=23.1%  T= 13  Net$ -809.09
+    strict_candle              PF= 0.56  WR=23.1%  T= 13  Net$ -809.09
+    london_only                PF= 0.00  WR= 0.0%  T=  5  Net$ -960.81
+
+  EURAUD:
+    combined_fix               PF= 1.46  WR=50.0%  T=  8  Net$ +381.31
+    london_only                PF= 1.30  WR=40.0%  T=  5  Net$ +179.91
+    wide_rsi                   PF= 1.11  WR=36.4%  T= 11  Net$ +155.80
+    rr_1_5                     PF= 0.73  WR=33.3%  T=  9  Net$ -320.19
+    default                    PF= 0.55  WR=22.2%  T=  9  Net$ -610.39
+    wider_sl                   PF= 0.55  WR=22.2%  T=  9  Net$ -610.39
+    strict_candle              PF= 0.55  WR=22.2%  T=  9  Net$ -610.39
+
+  EURCHF:
+    combined_fix               PF= 1.44  WR=50.0%  T=  6  Net$ +284.64
+    rr_1_5                     PF= 0.60  WR=28.6%  T= 14  Net$ -803.82
+    london_only                PF= 0.40  WR=16.7%  T=  6  Net$ -599.24
+    wider_sl                   PF= 0.22  WR=10.0%  T= 10  Net$-1329.06
+    strict_candle              PF= 0.22  WR=10.0%  T= 10  Net$-1329.06
+    default                    PF= 0.20  WR= 9.1%  T= 11  Net$-1502.48
+    wide_rsi                   PF= 0.17  WR= 7.7%  T= 13  Net$-1838.99
+
+  GBPUSD:
+    london_only                PF= 3.94  WR=66.7%  T=  6  Net$+1235.31
+    combined_fix               PF= 1.73  WR=54.5%  T= 11  Net$ +793.26
+    wider_sl                   PF= 1.21  WR=38.5%  T= 13  Net$ +350.80
+    rr_1_5                     PF= 1.14  WR=43.8%  T= 16  Net$ +254.00
+    default                    PF= 0.97  WR=33.3%  T= 15  Net$  -59.10
+    wide_rsi                   PF= 0.97  WR=33.3%  T= 15  Net$  -59.10
+    strict_candle              PF= 0.78  WR=28.6%  T= 14  Net$ -441.44
+
+  USDCHF:
+    wider_sl                   PF= 1.39  WR=41.7%  T= 12  Net$ +562.04
+    default                    PF= 1.23  WR=38.5%  T= 13  Net$ +350.80
+    strict_candle              PF= 1.11  WR=36.4%  T= 11  Net$ +155.81
+    rr_1_5                     PF= 1.10  WR=42.9%  T= 14  Net$ +158.52
+    combined_fix               PF= 0.73  WR=33.3%  T=  9  Net$ -320.18
+    wide_rsi                   PF= 0.69  WR=26.3%  T= 19  Net$ -830.84
+    london_only                PF= 0.00  WR= 0.0%  T=  3  Net$ -588.09
+
+================================================================================
+  RECOMMENDATIONS
+================================================================================
+
+  TRADEABLE (PF >= 1.5) — Add to live trader:
+    GBPUSD      PF 3.94  WR 66.7%  Profile: london_only
+    CADCHF      PF 1.91  WR 57.1%  Profile: combined_fix
+
+  MARGINAL (1.0 <= PF < 1.5) — Optional with caution:
+    EURAUD      PF 1.46  WR 50.0%  Profile: combined_fix
+    EURCHF      PF 1.44  WR 50.0%  Profile: combined_fix
+    USDCHF      PF 1.39  WR 41.7%  Profile: wider_sl
+
+Results saved to mt5_bridge/_fail_optimize.json
+
+Optimization complete.

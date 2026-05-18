@@ -1,0 +1,16 @@
+{
+  "account_balance": 95.0,
+  "max_risk_per_trade": 0.01,
+  "rr_ratio": 2.0,
+  "compound_on_equity": true,
+  "symbols": ["CADJPY", "EURJPY", "USDJPY", "EURUSD", "XAUUSD", "GBPUSD"],
+  "research_interval_hours": 6,
+  "optimization_interval_hours": 12,
+  "health_check_interval_minutes": 30,
+  "log_level": "INFO",
+  "enable_live_trading": true,
+  "demo_account": true,
+  "max_daily_trades": 6,
+  "max_daily_loss_pct": 0.03,
+  "max_drawdown_pct": 0.20
+}

@@ -1,0 +1,16 @@
+{
+  "XAUUSD": {
+    "symbol": "XAUUSD",
+    "days": 101,
+    "trades": 15,
+    "spd": 0.15,
+    "wr": 40.0,
+    "pf": 1.3,
+    "net": 549.1,
+    "mdd": 4.1,
+    "final": 10549.1,
+    "best_day": 574.47,
+    "worst_day": -407.52,
+    "profile": "gold_v2_ema21"
+  }
+}

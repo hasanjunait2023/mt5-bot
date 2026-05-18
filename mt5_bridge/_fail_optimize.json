@@ -1,0 +1,72 @@
+{
+  "GBPUSD": {
+    "symbol": "GBPUSD",
+    "days": 95,
+    "trades": 6,
+    "spd": 0.06,
+    "wr": 66.7,
+    "pf": 3.94,
+    "net": 1235.31,
+    "mdd": 2.0,
+    "final": 11235.31,
+    "best_day": 611.19,
+    "worst_day": 192.0,
+    "profile": "london_only"
+  },
+  "USDCHF": {
+    "symbol": "USDCHF",
+    "days": 95,
+    "trades": 12,
+    "spd": 0.13,
+    "wr": 41.7,
+    "pf": 1.39,
+    "net": 562.04,
+    "mdd": 9.6,
+    "final": 10562.04,
+    "best_day": 1000.81,
+    "worst_day": -215.55,
+    "profile": "wider_sl"
+  },
+  "EURAUD": {
+    "symbol": "EURAUD",
+    "days": 95,
+    "trades": 8,
+    "spd": 0.08,
+    "wr": 50.0,
+    "pf": 1.46,
+    "net": 381.31,
+    "mdd": 5.9,
+    "final": 10381.31,
+    "best_day": 608.99,
+    "worst_day": -420.12,
+    "profile": "combined_fix"
+  },
+  "CADCHF": {
+    "symbol": "CADCHF",
+    "days": 95,
+    "trades": 7,
+    "spd": 0.07,
+    "wr": 57.1,
+    "pf": 1.91,
+    "net": 593.17,
+    "mdd": 4.0,
+    "final": 10593.17,
+    "best_day": 608.99,
+    "worst_day": -216.19,
+    "profile": "combined_fix"
+  },
+  "EURCHF": {
+    "symbol": "EURCHF",
+    "days": 95,
+    "trades": 6,
+    "spd": 0.06,
+    "wr": 50.0,
+    "pf": 1.44,
+    "net": 284.64,
+    "mdd": 5.9,
+    "final": 10284.64,
+    "best_day": 608.99,
+    "worst_day": -214.18,
+    "profile": "combined_fix"
+  }
+}

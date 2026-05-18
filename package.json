@@ -1,0 +1,25 @@
+{
+  "name": "mt5-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "supabase:init": "npx supabase init",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop",
+    "supabase:db-push": "npx supabase db push",
+    "migrate:hosted": "bash ./scripts/run_migrations_env.sh",
+    "migrate:hosted:ps1": "powershell -ExecutionPolicy Bypass -File .\\scripts\\run_migrations_env.ps1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "supabase": "^2.98.2"
+  }
+}

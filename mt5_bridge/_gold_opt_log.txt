@@ -1,0 +1,50 @@
+
+MTF EMA Scalper - Pair Optimizer
+Target  : gold
+Period  : 3 months
+Date    : 2026-05-17 17:33
+
+
+────────────────────────────────────────────────────────────
+  GOLD (XAUUSD) — 8 parameter profiles
+────────────────────────────────────────────────────────────
+
+  GOLD [XAUUSD] Testing 8 profiles...
+    [default_params           ]  PF=0.49  WR=20.0%  T=10
+    [gold_sessions            ]  PF=0.49  WR=20.0%  T=10
+    [gold_wide_rsi            ]  PF=1.17  WR=37.5%  T=16
+    [gold_v1_sessions_rsi     ]  PF=1.17  WR=37.5%  T=16
+    [gold_v2_ema21            ]  PF=1.30  WR=40.0%  T=15
+    [gold_v3_no_rsi           ]  PF=1.17  WR=37.5%  T=16
+    [gold_v4_rr15             ]  PF=1.28  WR=46.7%  T=15
+    [gold_v5_tight_sl         ]  PF=0.83  WR=30.0%  T=20
+
+================================================================================
+  GOLD OPTIMIZATION — 3-MONTH OPTIMIZATION RESULTS
+================================================================================
+  Symbol      Old PF  New PF   Delta    WR%  Trades     Net$  Profile
+  ---------------------------------------------------------------------------
+  XAUUSD        0.49    1.30   +0.81  40.0%      15  +549.10  gold_v2_ema21 ++
+
+  --- All profiles tested ---
+
+  XAUUSD:
+    gold_v2_ema21              PF= 1.30  WR=40.0%  T= 15  Net$ +549.10
+    gold_v4_rr15               PF= 1.28  WR=46.7%  T= 15  Net$ +462.85
+    gold_wide_rsi              PF= 1.17  WR=37.5%  T= 16  Net$ +338.08
+    gold_v1_sessions_rsi       PF= 1.17  WR=37.5%  T= 16  Net$ +338.08
+    gold_v3_no_rsi             PF= 1.17  WR=37.5%  T= 16  Net$ +338.08
+    gold_v5_tight_sl           PF= 0.83  WR=30.0%  T= 20  Net$ -464.62
+    default_params             PF= 0.49  WR=20.0%  T= 10  Net$ -798.43
+    gold_sessions              PF= 0.49  WR=20.0%  T= 10  Net$ -798.43
+
+================================================================================
+  RECOMMENDATIONS
+================================================================================
+
+  MARGINAL (1.0 <= PF < 1.5) — Optional with caution:
+    XAUUSD      PF 1.30  WR 40.0%  Profile: gold_v2_ema21
+
+Results saved to mt5_bridge/_gold_optimize.json
+
+Optimization complete.

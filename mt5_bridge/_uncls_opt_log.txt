@@ -1,0 +1,199 @@
+
+MTF EMA Scalper - Pair Optimizer
+Target  : unclassified
+Period  : 3 months
+Date    : 2026-05-17 17:35
+
+
+────────────────────────────────────────────────────────────
+  UNCLASSIFIED — 14 pairs x 3 profiles
+  Pairs: AUDUSD, EURGBP, GBPJPY, GBPCHF, GBPNZD, GBPCAD, EURCAD, EURNZD, AUDJPY, AUDCAD, NZDJPY, NZDCHF, NZDCAD, CHFJPY
+────────────────────────────────────────────────────────────
+
+  UNCLS [AUDUSD] Testing 3 profiles...
+    [default                  ]  PF=1.38  WR=41.2%  T=17
+    [wide_rsi                 ]  PF=1.59  WR=44.4%  T=18
+    [london_only              ]  PF=1.56  WR=44.4%  T=9
+
+  UNCLS [EURGBP] Testing 3 profiles...
+    [default                  ]  PF=1.11  WR=36.4%  T=11
+    [wide_rsi                 ]  PF=1.08  WR=35.7%  T=14
+    [london_only              ]  PF=0.65  WR=25.0%  T=4
+
+  UNCLS [GBPJPY] Testing 3 profiles...
+    [default                  ]  PF=1.24  WR=38.9%  T=18
+    [wide_rsi                 ]  PF=1.14  WR=36.8%  T=19
+    [london_only              ]  PF=1.61  WR=45.5%  T=11
+
+  UNCLS [GBPCHF] Testing 3 profiles...
+    [default                  ]  PF=1.17  WR=37.5%  T=8
+    [wide_rsi                 ]  PF=0.97  WR=33.3%  T=9
+    [london_only              ]  PF=6.12  WR=75.0%  T=4
+
+  UNCLS [GBPNZD] Testing 3 profiles...
+    [default                  ]  PF=1.21  WR=38.5%  T=13
+    [wide_rsi                 ]  PF=1.17  WR=37.5%  T=16
+    [london_only              ]  PF=0.77  WR=28.6%  T=7
+
+  UNCLS [GBPCAD] Testing 3 profiles...
+    [default                  ]  PF=1.29  WR=40.0%  T=5
+    [wide_rsi                 ]  PF=0.97  WR=33.3%  T=6
+    [london_only              ]  PF=1.92  WR=50.0%  T=2
+
+  UNCLS [EURCAD] Testing 3 profiles...
+    [default                  ]  PF=1.54  WR=44.4%  T=9
+    [wide_rsi                 ]  PF=1.29  WR=40.0%  T=10
+    [london_only              ]  PF=7.26  WR=80.0%  T=5
+
+  UNCLS [EURNZD] Testing 3 profiles...
+    [default                  ]  PF=1.37  WR=41.2%  T=17
+    [wide_rsi                 ]  PF=1.37  WR=41.2%  T=17
+    [london_only              ]  PF=2.28  WR=53.8%  T=13
+
+  UNCLS [AUDJPY] Testing 3 profiles...
+    [default                  ]  PF=1.51  WR=44.0%  T=25
+    [wide_rsi                 ]  PF=1.54  WR=44.4%  T=27
+    [london_only              ]  PF=1.40  WR=42.1%  T=19
+
+  UNCLS [AUDCAD] Testing 3 profiles...
+    [default                  ]  PF=1.68  WR=46.2%  T=26
+    [wide_rsi                 ]  PF=1.67  WR=45.8%  T=24
+    [london_only              ]  PF=1.95  WR=50.0%  T=12
+
+  UNCLS [NZDJPY] Testing 3 profiles...
+    [default                  ]  PF=1.70  WR=46.7%  T=15
+    [wide_rsi                 ]  PF=2.20  WR=52.9%  T=17
+    [london_only              ]  PF=1.38  WR=41.7%  T=12
+
+  UNCLS [NZDCHF] Testing 3 profiles...
+    [default                  ]  PF=1.05  WR=35.0%  T=20
+    [wide_rsi                 ]  PF=1.05  WR=35.0%  T=20
+    [london_only              ]  PF=0.97  WR=33.3%  T=12
+
+  UNCLS [NZDCAD] Testing 3 profiles...
+    [default                  ]  PF=1.23  WR=38.9%  T=18
+    [wide_rsi                 ]  PF=1.04  WR=35.0%  T=20
+    [london_only              ]  PF=1.08  WR=35.7%  T=14
+
+  UNCLS [CHFJPY] Testing 3 profiles...
+    [default                  ]  PF=1.11  WR=36.4%  T=22
+    [wide_rsi                 ]  PF=0.97  WR=33.3%  T=24
+    [london_only              ]  PF=0.78  WR=28.6%  T=14
+
+================================================================================
+  UNCLASSIFIED PAIRS — 3-MONTH OPTIMIZATION RESULTS
+================================================================================
+  Symbol      Old PF  New PF   Delta    WR%  Trades     Net$  Profile
+  ---------------------------------------------------------------------------
+  EURCAD         NEW    7.26          80.0%       5 +1464.60  london_only ***
+  GBPCHF         NEW    6.12          75.0%       4 +1023.65  london_only ***
+  EURNZD         NEW    2.28          53.8%      13 +1657.02  london_only ***
+  NZDJPY         NEW    2.20          52.9%      17 +2108.94  wide_rsi ***
+  AUDCAD         NEW    1.95          50.0%      12 +1208.69  london_only ***
+  GBPJPY         NEW    1.61          45.5%      11  +777.58  london_only ***
+  AUDUSD         NEW    1.59          44.4%      18 +1182.17  wide_rsi ++
+  AUDJPY         NEW    1.54          44.4%      27 +1824.64  wide_rsi ++
+  GBPCAD         NEW    1.29          40.0%       5  +179.91  default ++
+  NZDCAD         NEW    1.23          38.9%      18  +537.01  default ++
+  GBPNZD         NEW    1.21          38.5%      13  +350.77  default ++
+  EURGBP         NEW    1.11          36.4%      11  +155.81  default ++
+  CHFJPY         NEW    1.11          36.4%      22  +314.03  default ++
+  NZDCHF         NEW    1.05          35.0%      20  +119.73  default ++
+
+  --- All profiles tested ---
+
+  AUDCAD:
+    london_only                PF= 1.95  WR=50.0%  T= 12  Net$+1208.69
+    default                    PF= 1.68  WR=46.2%  T= 26  Net$+2065.95
+    wide_rsi                   PF= 1.67  WR=45.8%  T= 24  Net$+1838.65
+
+  AUDJPY:
+    wide_rsi                   PF= 1.54  WR=44.4%  T= 27  Net$+1824.64
+    default                    PF= 1.51  WR=44.0%  T= 25  Net$+1601.89
+    london_only                PF= 1.40  WR=42.1%  T= 19  Net$ +958.50
+
+  AUDUSD:
+    wide_rsi                   PF= 1.59  WR=44.4%  T= 18  Net$+1182.17
+    london_only                PF= 1.56  WR=44.4%  T=  9  Net$ +574.58
+    default                    PF= 1.38  WR=41.2%  T= 17  Net$ +752.08
+
+  CHFJPY:
+    default                    PF= 1.11  WR=36.4%  T= 22  Net$ +314.03
+    wide_rsi                   PF= 0.97  WR=33.3%  T= 24  Net$  -94.41
+    london_only                PF= 0.78  WR=28.6%  T= 14  Net$ -441.45
+
+  EURCAD:
+    london_only                PF= 7.26  WR=80.0%  T=  5  Net$+1464.60
+    default                    PF= 1.54  WR=44.4%  T=  9  Net$ +574.56
+    wide_rsi                   PF= 1.29  WR=40.0%  T= 10  Net$ +363.07
+
+  EURGBP:
+    default                    PF= 1.11  WR=36.4%  T= 11  Net$ +155.81
+    wide_rsi                   PF= 1.08  WR=35.7%  T= 14  Net$ +143.77
+    london_only                PF= 0.65  WR=25.0%  T=  4  Net$ -211.61
+
+  EURNZD:
+    london_only                PF= 2.28  WR=53.8%  T= 13  Net$+1657.02
+    default                    PF= 1.37  WR=41.2%  T= 17  Net$ +752.05
+    wide_rsi                   PF= 1.37  WR=41.2%  T= 17  Net$ +752.05
+
+  GBPCAD:
+    london_only                PF= 1.92  WR=50.0%  T=  2  Net$ +191.99
+    default                    PF= 1.29  WR=40.0%  T=  5  Net$ +179.91
+    wide_rsi                   PF= 0.97  WR=33.3%  T=  6  Net$  -23.69
+
+  GBPCHF:
+    london_only                PF= 6.12  WR=75.0%  T=  4  Net$+1023.65
+    default                    PF= 1.17  WR=37.5%  T=  8  Net$ +167.85
+    wide_rsi                   PF= 0.97  WR=33.3%  T=  9  Net$  -35.51
+
+  GBPJPY:
+    london_only                PF= 1.61  WR=45.5%  T= 11  Net$ +777.58
+    default                    PF= 1.24  WR=38.9%  T= 18  Net$ +537.00
+    wide_rsi                   PF= 1.14  WR=36.8%  T= 19  Net$ +326.26
+
+  GBPNZD:
+    default                    PF= 1.21  WR=38.5%  T= 13  Net$ +350.77
+    wide_rsi                   PF= 1.17  WR=37.5%  T= 16  Net$ +338.50
+    london_only                PF= 0.77  WR=28.6%  T=  7  Net$ -223.22
+
+  NZDCAD:
+    default                    PF= 1.23  WR=38.9%  T= 18  Net$ +537.01
+    london_only                PF= 1.08  WR=35.7%  T= 14  Net$ +143.76
+    wide_rsi                   PF= 1.04  WR=35.0%  T= 20  Net$ +119.73
+
+  NZDCHF:
+    default                    PF= 1.05  WR=35.0%  T= 20  Net$ +119.73
+    wide_rsi                   PF= 1.05  WR=35.0%  T= 20  Net$ +119.73
+    london_only                PF= 0.97  WR=33.3%  T= 12  Net$  -47.32
+
+  NZDJPY:
+    wide_rsi                   PF= 2.20  WR=52.9%  T= 17  Net$+2108.94
+    default                    PF= 1.70  WR=46.7%  T= 15  Net$+1195.41
+    london_only                PF= 1.38  WR=41.7%  T= 12  Net$ +562.03
+
+================================================================================
+  RECOMMENDATIONS
+================================================================================
+
+  TRADEABLE (PF >= 1.5) — Add to live trader:
+    EURCAD      PF 7.26  WR 80.0%  Profile: london_only
+    GBPCHF      PF 6.12  WR 75.0%  Profile: london_only
+    EURNZD      PF 2.28  WR 53.8%  Profile: london_only
+    NZDJPY      PF 2.20  WR 52.9%  Profile: wide_rsi
+    AUDCAD      PF 1.95  WR 50.0%  Profile: london_only
+    GBPJPY      PF 1.61  WR 45.5%  Profile: london_only
+    AUDUSD      PF 1.59  WR 44.4%  Profile: wide_rsi
+    AUDJPY      PF 1.54  WR 44.4%  Profile: wide_rsi
+
+  MARGINAL (1.0 <= PF < 1.5) — Optional with caution:
+    GBPCAD      PF 1.29  WR 40.0%  Profile: default
+    NZDCAD      PF 1.23  WR 38.9%  Profile: default
+    GBPNZD      PF 1.21  WR 38.5%  Profile: default
+    EURGBP      PF 1.11  WR 36.4%  Profile: default
+    CHFJPY      PF 1.11  WR 36.4%  Profile: default
+    NZDCHF      PF 1.05  WR 35.0%  Profile: default
+
+Results saved to mt5_bridge/_uncls_optimize.json
+
+Optimization complete.

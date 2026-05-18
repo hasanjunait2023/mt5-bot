@@ -33,5 +33,5 @@ jobs:
             cd ../..
 
             echo "==> Restarting services..."
-            systemctl --no-block restart mt5-dashboard mt5-agents mt5-telegram
+            systemctl --no-block restart mt5-dashboard mt5-telegram
             echo "==> Deploy complete!"

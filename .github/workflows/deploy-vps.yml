@@ -24,8 +24,7 @@ jobs:
             git pull origin master
 
             echo "==> Installing Python dependencies..."
-            pip install -r requirements.txt --quiet
-            pip install -r dashboard/backend/requirements.txt --quiet
+            /opt/mt5-venv/bin/pip install -r requirements-server.txt --quiet
 
             echo "==> Building frontend..."
             cd dashboard/frontend

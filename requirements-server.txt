@@ -1,0 +1,26 @@
+# Server/Linux requirements (excludes Windows-only packages like MetaTrader5)
+# Use this on VPS/Linux deployments
+
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+schedule>=1.2.0
+
+# Dashboard backend
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+websockets>=12.0
+python-multipart>=0.0.9
+
+# Config & Database
+python-dotenv>=1.0.0
+supabase>=2.0.0
+
+# AI Agent
+anthropic>=0.25.0
+
+# Utilities
+requests>=2.31.0
+
+# Telegram Bot
+python-telegram-bot>=21.0

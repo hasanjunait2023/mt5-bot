@@ -25,10 +25,14 @@ build/
 # Supabase
 .supabase/
 
-# Logs & Database
+# Logs
 logs/
 *.log
-db/
+
+# Database files (but keep migrations)
+db/*.db
+db/*.sqlite
+db/*.sqlite3
 *.db
 *.sqlite
 *.sqlite3
@@ -44,3 +48,10 @@ desktop.ini
 
 # MT5 compiled files
 *.ex5
+
+# Embedded repos (not submodules)
+design.md/
+mt5_bridge/tradingview-mcp/
+
+# Claude Code local settings
+.claude/settings.local.json

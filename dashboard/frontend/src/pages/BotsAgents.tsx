@@ -114,7 +114,7 @@ export function BotsAgents() {
           status={em.daily_records > 0 ? 'running' : 'offline'}
           items={[
             ['Daily records', em.daily_records.toString()],
-            ['Last day P&L', em.last_day ? (em.last_day as Record<string, number>).net_pnl_pct?.toFixed(2) + '%' ?? '—' : '—'],
+            ['Last day P&L', em.last_day ? ((em.last_day as Record<string, number>).net_pnl_pct?.toFixed(2) ?? '—') + '%' : '—'],
           ]}
         />
       </div>

@@ -36,7 +36,7 @@ jobs:
 
             # Dashboard backend (port 8001 — 8000 is used by Coolify/Docker)
             if systemctl is-active --quiet mt5-dashboard; then
-              sudo systemctl restart mt5-dashboard
+              systemctl restart mt5-dashboard
             else
               pkill -f "uvicorn main:app" || true
               nohup /opt/mt5-venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001 > /dev/null 2>&1 &
@@ -44,7 +44,7 @@ jobs:
 
             # Trading agents
             if systemctl is-active --quiet mt5-agents; then
-              sudo systemctl restart mt5-agents
+              systemctl restart mt5-agents
             else
               pkill -f "main_trading_system.py" || true
               nohup python trading_agents/main_trading_system.py > /dev/null 2>&1 &
@@ -52,7 +52,7 @@ jobs:
 
             # Telegram bot
             if systemctl is-active --quiet mt5-telegram; then
-              sudo systemctl restart mt5-telegram
+              systemctl restart mt5-telegram
             else
               pkill -f "telegram_bot.py" || true
               nohup python telegram_bot.py > /dev/null 2>&1 &

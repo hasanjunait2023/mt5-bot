@@ -1,0 +1,62 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            set -e
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+
+            echo "==> Pulling latest code..."
+            git pull origin master
+
+            echo "==> Installing Python dependencies..."
+            pip install -r requirements.txt --quiet
+            pip install -r dashboard/backend/requirements.txt --quiet
+
+            echo "==> Building frontend..."
+            cd dashboard/frontend
+            npm ci --silent
+            npm run build
+            cd ../..
+
+            echo "==> Restarting services..."
+
+            # Dashboard backend
+            if systemctl is-active --quiet mt5-dashboard; then
+              sudo systemctl restart mt5-dashboard
+            else
+              pkill -f "dashboard/backend/main.py" || true
+              nohup python dashboard/backend/main.py > /dev/null 2>&1 &
+            fi
+
+            # Trading agents
+            if systemctl is-active --quiet mt5-agents; then
+              sudo systemctl restart mt5-agents
+            else
+              pkill -f "main_trading_system.py" || true
+              nohup python trading_agents/main_trading_system.py > /dev/null 2>&1 &
+            fi
+
+            # Telegram bot
+            if systemctl is-active --quiet mt5-telegram; then
+              sudo systemctl restart mt5-telegram
+            else
+              pkill -f "telegram_bot.py" || true
+              nohup python telegram_bot.py > /dev/null 2>&1 &
+            fi
+
+            echo "==> Deploy complete!"

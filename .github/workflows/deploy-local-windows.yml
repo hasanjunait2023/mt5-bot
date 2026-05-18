@@ -1,0 +1,36 @@
+name: Deploy to Local Windows (MT5 Bridge)
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy-local:
+    runs-on: [self-hosted, Windows, mt5]
+    steps:
+      - name: Pull latest code
+        run: git pull origin master
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt --quiet
+          pip install -r mt5_bridge/requirements.txt --quiet
+
+      - name: Restart MT5 bridge
+        shell: pwsh
+        run: |
+          Write-Host "==> Stopping existing MT5 bridge..."
+          Get-Process python -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -match "mtf_live_trader|mt5_bridge" } |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+
+          Start-Sleep -Seconds 2
+
+          Write-Host "==> Starting MT5 bridge..."
+          Start-Process -FilePath "python" `
+            -ArgumentList "mt5_bridge/mtf_live_trader.py" `
+            -WorkingDirectory $env:GITHUB_WORKSPACE `
+            -WindowStyle Hidden
+
+          Write-Host "==> MT5 bridge restarted."

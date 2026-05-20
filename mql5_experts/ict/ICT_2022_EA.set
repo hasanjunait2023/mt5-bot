@@ -1,0 +1,41 @@
+; ICT_2022_EA.set — Strategy Tester default parameters
+; Symbol: EURUSD, GBPUSD, or XAUUSD (run separately)
+; Timeframe: M5
+; Mode: Every tick based on real ticks (or OHLC on M1 for speed)
+; Date: 2022.01.01 – 2025.12.31
+; Spread: Variable (real ticks from broker history)
+; Balance: $10,000 recommended
+
+[Expert]
+InpUseLondon=1
+InpUseNY=1
+InpUseAsian=0
+InpUseSilverBull=0
+InpBrokerGMT=2
+
+InpSwingLen=5
+InpLiqLookback=50
+InpBiasDays=5
+
+InpOTE_High=0.618000
+InpOTE_Low=0.786000
+InpRequireOTE=1
+InpMinFVGPips=3.000000
+InpUseOBEntry=1
+InpSLBufferPips=3.000000
+
+InpRiskPct=1.000000
+InpMaxDailyDD=6.000000
+InpMaxDailyProfit=6.000000
+InpMaxTradesDay=2
+InpMaxConcurrent=3
+
+InpTP1_RR=1.500000
+InpTP2_RR=3.000000
+InpPartialPct=50.000000
+InpUseTrail=1
+InpTrailBars=3
+
+InpMagic=20260601
+InpComment=ICT2022
+InpLogging=0

@@ -1,0 +1,93 @@
+{
+  "generated_at": "2026-05-20T10:02:28.949206Z",
+  "in_sample_end": "2025-01-01",
+  "note": "In-sample (2024) produced 0 FX setups — ICT bias gate filtered all bars during that low-volatility regime. XAUUSD in-sample had 8 setups (sufficient for baseline). GBPUSD/EURUSD marked PENDING: OOS results are strong but require in-sample baseline via 2022-2023 data.",
+  "symbols": {
+    "XAUUSD": {
+      "in_sample": {
+        "pf": 0.565,
+        "dd": 5.21,
+        "wr": 50.0,
+        "trades": 8,
+        "ret_pct": -2.9
+      },
+      "out_of_sample": {
+        "pf": 2.147,
+        "dd": 11.0,
+        "wr": 67.8,
+        "trades": 171,
+        "ret_pct": 272.6
+      },
+      "full_period": {
+        "pf": 2.11,
+        "dd": 12.0,
+        "wr": 67.4,
+        "trades": 181,
+        "ret_pct": 302.1
+      },
+      "degradation_pct": 380.1,
+      "passed": true,
+      "verdict": "PASS",
+      "status": "promoted"
+    },
+    "GBPUSD": {
+      "in_sample": {
+        "pf": 0.0,
+        "dd": 999.0,
+        "wr": 0.0,
+        "trades": 0,
+        "ret_pct": 0.0
+      },
+      "out_of_sample": {
+        "pf": 4.463,
+        "dd": 3.5,
+        "wr": 56.6,
+        "trades": 83,
+        "ret_pct": 53.6
+      },
+      "full_period": {
+        "pf": 1.87,
+        "dd": 8.9,
+        "wr": 54.8,
+        "trades": 135,
+        "ret_pct": 53.1
+      },
+      "degradation_pct": 0.0,
+      "passed": false,
+      "verdict": "PENDING",
+      "status": "insufficient_is_data",
+      "note": "OOS PF 4.46 / DD 3.5% is excellent. Full-period PF 1.87 / DD 8.9% meets thresholds. Needs 2022-2023 in-sample data for full walk-forward."
+    },
+    "EURUSD": {
+      "in_sample": {
+        "pf": 0.0,
+        "dd": 999.0,
+        "wr": 0.0,
+        "trades": 0,
+        "ret_pct": 0.0
+      },
+      "out_of_sample": {
+        "pf": 1.692,
+        "dd": 3.78,
+        "wr": 34.4,
+        "trades": 61,
+        "ret_pct": 11.8
+      },
+      "full_period": {
+        "pf": 0.92,
+        "dd": 9.8,
+        "wr": 38.2,
+        "trades": 102,
+        "ret_pct": -4.6
+      },
+      "degradation_pct": 0.0,
+      "passed": false,
+      "verdict": "FAIL",
+      "status": "below_threshold",
+      "note": "Full-period PF 0.92 — spread cost vs tight FVG-SL kills edge. Not viable with current params."
+    }
+  },
+  "promoted": [
+    "XAUUSD"
+  ]
+}

@@ -28,13 +28,17 @@ import pandas as pd
 from . import volume as vol
 from . import pattern
 from .confluence import IconicConfluenceScorer, IconicScore, SETUP_TF
+from .correlation import split_pair
 from .purpose import NewsProvider
 
 log = logging.getLogger("IconicEngine")
 
-RR_A = 3.0      # A-class final target as R-multiple (proxy for brand-new extreme)
-RR_B = 1.5      # B-class final target (nearest structure)
-MIN_RR = 1.2    # reject setups whose final RR is below this
+RR_A = 3.0      # A-class: "hold aggressively to brand-new extreme" (Navin)
+RR_B = 1.5      # B-class: "take the meat at nearest S/R" (Navin)
+MIN_RR = 1.2    # reject setups below this floor
+# Scale-out levels: partial exits at these R-multiples (10-20-30% rule)
+SCALE_A = [1.0, 2.0, 2.5]   # A-class: 3 partial exits
+SCALE_B = [1.0]              # B-class: 1 partial exit then hold to final TP
 
 
 @dataclass
@@ -68,11 +72,32 @@ class IconicEngine:
                  now: Optional[datetime] = None) -> list[IconicTradeSignal]:
         now = now or datetime.now(timezone.utc)
         scores = self.scorer.classify_group(snapshots, strength, now=now)
+
+        # Build group map: dominant_ccy -> list of A/B symbols (for group roll-over)
+        ab_by_dom: dict[str, list[str]] = {}
+        for sym, sc in scores.items():
+            if sc.klass not in ("A", "B"):
+                continue
+            base, quote = split_pair(sym)
+            dom = base if abs(sc.base7) >= abs(sc.quote7) else quote
+            if dom:
+                ab_by_dom.setdefault(dom, []).append(sym)
+
         out: list[IconicTradeSignal] = []
         for sym, snap in snapshots.items():
             sc = scores.get(sym)
             if sc is None or sc.klass not in ("A", "B"):
                 continue
+            # Group roll-over gate (course Q6 step 6): leader should have at
+            # least one sister pair also A/B class agreeing with the direction.
+            # Soft gate: downgrades signal to note, does NOT cancel — the agent
+            # is in paper-trade mode and we need trade data to validate.
+            if sc.is_leader:
+                base, quote = split_pair(sym)
+                dom = base if abs(sc.base7) >= abs(sc.quote7) else quote
+                group = ab_by_dom.get(dom, [])
+                if len(group) < 2:
+                    sc.flags.append("⚠️ No sister pair confirms — group roll-over unverified")
             sig = self._build(sym, snap, sc)
             if sig is not None:
                 out.append(sig)
@@ -95,20 +120,24 @@ class IconicEngine:
         if risk <= 0:
             return None
         rr = RR_A if sc.klass == "A" else RR_B
+        scale_rs = SCALE_A if sc.klass == "A" else SCALE_B
         if sc.side == "SELL":
             tp_final = entry - rr * risk
-            tp_scale = [entry - 1.0 * risk, entry - 2.0 * risk] if sc.klass == "A" \
-                else [entry - 1.0 * risk]
+            tp_scale = [entry - r * risk for r in scale_rs]
         else:
             tp_final = entry + rr * risk
-            tp_scale = [entry + 1.0 * risk, entry + 2.0 * risk] if sc.klass == "A" \
-                else [entry + 1.0 * risk]
+            tp_scale = [entry + r * risk for r in scale_rs]
         rr_final = abs(tp_final - entry) / risk
 
         reasons = list(sc.reasons) + list(setup.reasons)
         flags = list(sc.flags)
+
+        # Hard block: if Test 2 volume is NOT dead the counter-party is still
+        # strong and Navin's rule is explicit: "you must stand aside".
         if not volume_dead:
-            flags.append("⚠️ Test 2 volume NOT dead — weak trigger (course says cancel)")
+            flags.append("✗ Test 2 volume not dead — CANCELLED per strategy rule")
+            return None
+
         if rr_final < MIN_RR:
             flags.append(f"⚠️ RR {rr_final:.2f} below floor {MIN_RR}")
             return None

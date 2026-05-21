@@ -65,10 +65,14 @@ def correlation_tier(side: str, symbol: str, strength: dict) -> tuple[str, float
     """Return ('strong'|'neutral'|'contradicts', directional_value).
 
     directional = +diff for BUY, -diff for SELL (higher = group backs the trade).
+    Course (Q5/Q6): A-class needs +5/-5 on the dominant currency individually,
+    not just a large pair spread. Both: pair directional >= DIR_STRONG AND the
+    dominant currency absolute value >= STRONG_ABS.
     """
     ps = pair_strength(symbol, strength)
     directional = ps.diff if side == "BUY" else -ps.diff
-    if directional >= DIR_STRONG:
+    dom_abs = max(abs(ps.base7), abs(ps.quote7))
+    if directional >= DIR_STRONG and dom_abs >= STRONG_ABS:
         tier = "strong"
     elif directional >= DIR_NEUTRAL:
         tier = "neutral"

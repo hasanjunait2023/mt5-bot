@@ -17,6 +17,7 @@ import { Jtcc } from './pages/Jtcc'
 import { Signals } from './pages/Signals'
 import { Desk } from './pages/Desk'
 import { Iconic } from './pages/Iconic'
+import { Journal } from './pages/Journal'
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="signals"   element={<Signals />} />
             <Route path="desk"      element={<Desk />} />
             <Route path="iconic"    element={<Iconic />} />
+            <Route path="journal"   element={<Journal />} />
           </Route>
         </Routes>
       </TradingProvider>

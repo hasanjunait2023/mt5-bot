@@ -1,13 +1,19 @@
 """Purpose gate — Urban Forex "you need a reason" rule.
 
-A high-volume move only travels if it has a Purpose: a major session OPEN, or a
-scheduled medium/high-impact (orange/red) news event on a G7 currency. No
-purpose → the move drifts and dies → don't trade (it stays C-class).
+Per Navin (Urban Forex, Iconic 2022):
+  STRONG purpose = Orange or Red G7 news event within ±60 min.
+  WEAK   purpose = Within 90 min of a major session open (London/NY/Frankfurt)
+                   OR inside the London↔NY overlap window.
+  NO purpose     = Anywhere else during the session with no news → C-class.
+                   Being "in the London session" alone is NOT purpose.
 
-Sessions reuse the DST-aware alpha_desk.sessions module. News is pluggable: a
-JSON calendar file (configs/news_calendar.json) feeds the default provider; wire
-a live ForexFactory/FXStreet fetcher into NewsProvider later without touching
-callers.
+Why the distinction matters for class:
+  A-class: requires STRONG purpose (real news driving the move).
+  B-class: WEAK purpose is sufficient if the other filters agree.
+  C-class: no purpose of either kind → stand aside.
+
+PurposeResult now exposes .strong (news-driven) and .weak (session-open/overlap)
+so confluence.py can enforce the A-class stricter gate.
 """
 
 from __future__ import annotations
@@ -33,10 +39,11 @@ IMPACT_OK = ("high", "red", "medium", "orange")   # course: orange + red only
 
 @dataclass
 class PurposeResult:
-    ok: bool
-    sources: list[str]          # human-readable purpose reasons
-    session_ok: bool
-    news_ok: bool
+    ok: bool      # True if strong OR weak purpose (any gate fires)
+    strong: bool  # True only for Orange/Red G7 news (A-class requires this)
+    sources: list[str]
+    session_ok: bool   # weak: near session open or in overlap
+    news_ok: bool      # strong: orange/red G7 news within window
 
 
 class NewsProvider:
@@ -99,41 +106,64 @@ class PurposeGate:
         now = now or datetime.now(timezone.utc)
         sources: list[str] = []
 
-        session_ok, sess_label = self._session_purpose(now)
-        if session_ok:
-            sources.append(sess_label)
-
+        # STRONG purpose: Orange/Red G7 news
         base, quote = split_pair(symbol)
         ccys = {c for c in (base, quote) if c in G7}
         events = self.news.active(ccys, now) if ccys else []
         news_ok = bool(events)
         for e in events:
-            sources.append(f"📰 {e['currency']} {e['impact']} ({e['title'] or 'news'})")
+            impact_label = "🔴" if e["impact"] in ("high", "red") else "🟠"
+            sources.append(f"{impact_label} {e['currency']} {e['impact']} ({e['title'] or 'news'})")
 
-        return PurposeResult(ok=session_ok or news_ok, sources=sources,
+        # WEAK purpose: near session open or in London↔NY overlap
+        # NOT "being in the session" — that is too broad and not Navin's rule.
+        session_ok, sess_label = self._session_purpose(now)
+        if session_ok and not news_ok:
+            sources.append(f"{sess_label} (weak — session open/overlap)")
+        elif session_ok:
+            sources.append(sess_label)
+
+        ok     = news_ok or session_ok
+        strong = news_ok   # A-class gate requires this
+        return PurposeResult(ok=ok, strong=strong, sources=sources,
                              session_ok=session_ok, news_ok=news_ok)
 
     @staticmethod
     def _session_purpose(now: datetime) -> tuple[bool, str]:
-        """True near a major session open (London/NY/Frankfurt) or in overlap."""
-        try:
-            from ..alpha_desk.sessions import (is_overlap, current_session,
-                                               next_centre_open)
-        except Exception:
+        """True near London/NY open window or inside London-NY overlap.
+
+        Open times (UTC, DST heuristic months 3-10 = summer):
+          London: 07:00 summer / 08:00 winter
+          New York: 13:00 summer / 14:00 winter
+        London-NY overlap (~13:00-17:00 UTC) treated as weak purpose even
+        without a session-open event — high institutional participation window.
+
+        Being anywhere else "in the session" is NOT purpose per Navin.
+        """
+        # No session opens on weekends
+        if now.weekday() >= 5:
             return False, ""
-        if is_overlap(now):
-            return True, "🟢 London↔NY overlap"
-        sess = current_session(now)
-        # "near an open" = within SESSION_OPEN_WINDOW_MIN after a major centre opened
-        for key, label in (("london", "🌅 London open"),
-                           ("ny", "🗽 New York open")):
-            # next_centre_open returns the NEXT open; previous open = next - 1 day,
-            # so check minutes since the most recent open by walking back.
-            nxt = next_centre_open(key, now)
-            prev = nxt - timedelta(days=1)
-            mins_since = (now - prev).total_seconds() / 60
+
+        # London-NY overlap: use sessions helper; fall back to hour check
+        try:
+            from ..alpha_desk.sessions import is_overlap
+            in_overlap = is_overlap(now)
+        except Exception:
+            in_overlap = 13 <= now.hour < 17
+
+        if in_overlap:
+            return True, "London-NY overlap"
+
+        # DST heuristic: months 3-10 inclusive = clocks forward
+        is_summer = 3 <= now.month <= 10
+        london_open_h = 7 if is_summer else 8
+        ny_open_h     = 13 if is_summer else 14
+
+        now_min = now.hour * 60 + now.minute
+        for open_h, label in ((london_open_h, "London open"),
+                              (ny_open_h,     "New York open")):
+            mins_since = now_min - open_h * 60
             if 0 <= mins_since <= SESSION_OPEN_WINDOW_MIN:
-                return True, label
-        if sess in ("london", "ny"):
-            return True, f"🕒 {sess.upper()} session"
+                return True, f"{label} +{mins_since:.0f}min"
+
         return False, ""

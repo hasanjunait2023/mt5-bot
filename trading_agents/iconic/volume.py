@@ -22,12 +22,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 import pandas as pd
 
-VOL_MA_PERIOD   = 20      # course-specified moving-average length
-POP_FACTOR      = 1.30    # pop window mean must be >= this * MA
-CLIMAX_FACTOR   = 3.00    # if max bar > this * MA → climax (cashing out), reject
-CHALLENGE_FACTOR = 0.80   # pullback "challenges" the pop if its max >= this * pop max
-DEAD_FACTOR     = 0.70    # dead/low volume if bar <= this * MA
-VOL_COL         = "tick_volume"
+VOL_MA_PERIOD    = 20      # course-specified moving-average length (confirmed by Navin)
+POP_FACTOR       = 1.30   # pop window mean >= this * MA ("clearly above MA")
+CLIMAX_FACTOR    = 3.00   # max bar > this * MA → climax spike (Big Boys cashing out → reversal)
+CHALLENGE_FACTOR = 0.60   # pullback "challenges" if its max >= this * pop_max
+                          # Navin says ~"half" the pop; 0.60 gives a small buffer
+DEAD_FACTOR      = 1.00   # dead volume = bar BELOW the 20-MA (Navin: "falls below the MA
+                          # and looks visually unimportant"). NOT a strict 0.7x haircut.
+VOL_COL          = "tick_volume"
 
 
 @dataclass

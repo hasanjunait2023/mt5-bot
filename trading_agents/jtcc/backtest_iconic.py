@@ -6,8 +6,9 @@ Go/no-go gate: PF >= 1.3 and >= 10 trades per symbol.
 Run:
   python -m trading_agents.jtcc.backtest_iconic
   python -m trading_agents.jtcc.backtest_iconic --symbols EURUSD GBPUSD
-  python -m trading_agents.jtcc.backtest_iconic --no-volume   # ablation: volume always present
-  python -m trading_agents.jtcc.backtest_iconic --limit 2000  # faster / fewer years
+  python -m trading_agents.jtcc.backtest_iconic --no-volume      # ablation: pattern-only
+  python -m trading_agents.jtcc.backtest_iconic --walkforward    # IS(3000) vs OOS(2000)
+  python -m trading_agents.jtcc.backtest_iconic --limit 2000     # faster / fewer years
 """
 
 from __future__ import annotations
@@ -50,6 +51,10 @@ MAX_HOLD_BARS      = 120  # force-close after 5 calendar days (safety net)
 GO_MIN_PF          = 1.3
 GO_MIN_TRADES      = 10
 
+# Walk-forward split (bars from the end of the full dataset)
+WF_OOS_BARS = 2000   # out-of-sample window
+WF_IS_BARS  = 3000   # in-sample window
+
 
 # ── MT5 bridge ────────────────────────────────────────────────────────────────
 def _fetch_bars(symbol: str, tf: str, limit: int = 5000) -> Optional[dict]:
@@ -72,8 +77,12 @@ def _to_df(bars: dict) -> Optional[pd.DataFrame]:
     for col in ("open", "high", "low", "close"):
         if col not in df.columns:
             return None
+    # Bridge returns "volume" column; engine expects "tick_volume"
     if "tick_volume" not in df.columns:
-        df["tick_volume"] = 0.0
+        if "volume" in df.columns:
+            df["tick_volume"] = df["volume"]
+        else:
+            df["tick_volume"] = 0.0
     if "time" in df.columns:
         df["time"] = pd.to_numeric(df["time"])
     # EMA-200 for alignment
@@ -113,6 +122,42 @@ def _slice_m15(m15_full: pd.DataFrame, t_h1) -> Optional[pd.DataFrame]:
     return m15_full.iloc[:idx + 1]
 
 
+# ── pattern-only ablation helper ─────────────────────────────────────────────
+def _pattern_only_signals(symbol: str, snap: dict, spread: float) -> list:
+    """Bypass confluence gate — fire on valid Set1/2 pattern alone.
+    Returns minimal signal-like objects compatible with the pending-fill logic."""
+    from trading_agents.iconic.pattern import detect_setup
+    from trading_agents.iconic.engine import IconicTradeSignal, RR_B, MIN_RR
+    align = snap.get("align", "none")
+    if align == "none":
+        return []
+    side = "SELL" if align == "bear" else "BUY"
+    h1 = snap["tfs"].get("H1")
+    if h1 is None or len(h1) < 50:
+        return []
+    setup = detect_setup(h1, side, symbol=symbol)
+    if not setup.valid or setup.entry is None or setup.stop is None:
+        return []
+    entry, stop = float(setup.entry), float(setup.stop)
+    risk = abs(entry - stop)
+    if risk <= 0:
+        return []
+    if side == "SELL":
+        tp_final = entry - RR_B * risk
+    else:
+        tp_final = entry + RR_B * risk
+    rr_final = abs(tp_final - entry) / risk
+    if rr_final < MIN_RR:
+        return []
+    return [IconicTradeSignal(
+        symbol=symbol, side=side, klass="B", type=setup.type or "type1",
+        entry=round(entry, 6), stop=round(stop, 6),
+        tp_final=round(tp_final, 6), tp_scale=[], risk=round(risk, 6),
+        rr_final=round(rr_final, 2), score=50.0, is_leader=False,
+        volume_dead=False, reasons=["[ablation] pattern-only"],
+    )]
+
+
 # ── currency strength (mirrors SignalEngine._currency_strength) ───────────────
 _SPECIAL_PAIRS = {"XAUUSD": ("XAU", "USD"), "XAGUSD": ("XAG", "USD"),
                   "BTCUSD": ("BTC", "USD")}
@@ -139,9 +184,10 @@ def _currency_strength(align_map: dict[str, str]) -> dict[str, float]:
     return {ccy: round((sum(v) / len(v) + 1) * 5, 1) for ccy, v in raw.items() if v}
 
 
-# ── single-symbol walk-forward ────────────────────────────────────────────────
+# ── single-symbol backtest over a bar range ───────────────────────────────────
 def backtest_one(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFrame,
-                 all_h1: dict[str, pd.DataFrame], no_volume: bool) -> dict:
+                 all_h1: dict[str, pd.DataFrame], no_volume: bool,
+                 start_i: Optional[int] = None, end_i: Optional[int] = None) -> dict:
     from trading_agents.iconic.engine import IconicEngine
     engine = IconicEngine()
 
@@ -157,12 +203,18 @@ def backtest_one(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFrame,
         s: df["time"].tolist() for s, df in all_h1.items() if s != symbol and "time" in df.columns
     }
 
-    start_i = max(250, n - 3000)
+    if start_i is None:
+        start_i = max(250, n - 3000)
+    if end_i is None:
+        end_i = n - 1
+    start_i = max(start_i, 250)   # need warmup
+    end_i   = min(end_i, n - 1)
+
     trades: list[dict] = []
     position: Optional[dict] = None
     pending:  Optional[dict] = None
 
-    for i in range(start_i, n - 1):
+    for i in range(start_i, end_i):
         t = times[i]
         nh, nl = highs[i], lows[i]
 
@@ -219,12 +271,6 @@ def backtest_one(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFrame,
             if m15_slice is None or len(m15_slice) < 50:
                 continue
 
-            # Volume ablation: force every bar to look like a pop
-            if no_volume:
-                h1_slice = h1_slice.copy()
-                avg = float(h1_slice["tick_volume"].mean()) or 100.0
-                h1_slice["tick_volume"] = avg * 2.0
-
             align = _align_h1(h1_slice)
             snap = {"align": align, "tfs": {"H1": h1_slice, "M15": m15_slice}}
 
@@ -239,7 +285,13 @@ def backtest_one(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFrame,
 
             try:
                 now_dt = datetime.fromtimestamp(float(t), tz=timezone.utc)
-                sigs = engine.evaluate({symbol: snap}, strength, now=now_dt)
+                if no_volume:
+                    # Ablation: pattern-only mode — bypass confluence gate entirely.
+                    # Tests whether Set1/2 pattern has standalone edge without the
+                    # volume+correlation+purpose filter.
+                    sigs = _pattern_only_signals(symbol, snap, spread)
+                else:
+                    sigs = engine.evaluate({symbol: snap}, strength, now=now_dt)
             except Exception as e:
                 log.debug("evaluate error %s bar %d: %s", symbol, i, e)
                 continue
@@ -247,7 +299,58 @@ def backtest_one(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFrame,
             if sigs:
                 pending = {"signal": sigs[0], "signal_bar": i}
 
-    return _summarize(symbol, trades, n - start_i)
+    return _summarize(symbol, trades, end_i - start_i)
+
+
+# ── walk-forward: IS (in-sample) then OOS (out-of-sample) ────────────────────
+def backtest_walkforward(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFrame,
+                         all_h1: dict[str, pd.DataFrame], no_volume: bool) -> dict:
+    """Split full dataset: IS = first WF_IS_BARS bars, OOS = last WF_OOS_BARS bars.
+    Parameters are fixed by the confluence engine (no optimisation), so the split
+    purely tests temporal stability of the signal."""
+    n = len(h1_full)
+    total_test = WF_IS_BARS + WF_OOS_BARS
+    if n < total_test + 250:
+        return {"symbol": symbol, "trades": 0, "bars_tested": n,
+                "verdict": "INSUFFICIENT_DATA", "wf_mode": True}
+
+    # IS window: bars [warmup .. n - WF_OOS_BARS - 1]
+    is_end   = n - WF_OOS_BARS
+    is_start = max(250, is_end - WF_IS_BARS)
+    # OOS window: bars [is_end .. n - 1]
+    oos_start = is_end
+    oos_end   = n - 1
+
+    is_result  = backtest_one(symbol, h1_full, m15_full, all_h1, no_volume,
+                              start_i=is_start, end_i=is_end)
+    oos_result = backtest_one(symbol, h1_full, m15_full, all_h1, no_volume,
+                              start_i=oos_start, end_i=oos_end)
+
+    is_result["phase"]  = "IS"
+    oos_result["phase"] = "OOS"
+
+    # Combined verdict: OOS must also pass (avoids IS overfit passing gate)
+    is_ok  = is_result.get("profit_factor", 0) >= GO_MIN_PF and is_result.get("trades", 0) >= GO_MIN_TRADES
+    oos_ok = oos_result.get("profit_factor", 0) >= GO_MIN_PF and oos_result.get("trades", 0) >= GO_MIN_TRADES
+    if is_ok and oos_ok:
+        combined_verdict = "GO"
+    elif is_ok and not oos_ok:
+        combined_verdict = "OVERFIT"   # IS passed but OOS didn't — classic overfit
+    elif oos_ok and not is_ok:
+        combined_verdict = "OOS_ONLY"  # unusual — better on fresh data
+    else:
+        is_v = is_result.get("verdict", "?")
+        oos_v = oos_result.get("verdict", "?")
+        combined_verdict = f"NO_GO (IS:{is_v}/OOS:{oos_v})"
+
+    return {
+        "symbol":           symbol,
+        "wf_mode":          True,
+        "is":               is_result,
+        "oos":              oos_result,
+        "combined_verdict": combined_verdict,
+        "bars_tested":      (is_end - is_start) + (oos_end - oos_start),
+    }
 
 
 # ── summary ───────────────────────────────────────────────────────────────────
@@ -297,6 +400,113 @@ def _summarize(symbol: str, trades: list[dict], bars_tested: int) -> dict:
     }
 
 
+# ── output helpers ───────────────────────────────────────────────────────────
+def _row_str(r: dict) -> str:
+    tr = r.get("trades", 0)
+    if tr == 0:
+        return (f"{r['symbol']:<10s} {'0':>7s} {'-':>6s} {'-':>6s} "
+                f"{'-':>12s} {'-':>6s} {'-':>6s} {'-':>6s} "
+                f"{'-':>8s} {r.get('verdict','?'):>12s}")
+    return (f"{r['symbol']:<10s} {tr:>7d} {r['win_rate_pct']:>6.1f} "
+            f"{r['profit_factor']:>6.2f} "
+            f"{r['max_drawdown']:>12.6f} "
+            f"{r['class_A_trades']:>6d} {r['class_B_trades']:>6d} "
+            f"{r['tp_rate_pct']:>5.1f}% "
+            f"{r['avg_hold_bars']:>8.1f} "
+            f"{r.get('verdict','?'):>12s}")
+
+
+def _print_standard(h1_data, m15_data, report, label, args) -> None:
+    print()
+    print(f"Iconic Trader Phase 3 [{label}]")
+    W = 105
+    print("=" * W)
+    print(f"{'Symbol':<10s} {'Trades':>7s} {'WR%':>6s} {'PF':>6s} "
+          f"{'MaxDD':>12s} {'A-cls':>6s} {'B-cls':>6s} {'TP%':>6s} "
+          f"{'AvgHold':>8s} {'Verdict':>12s}")
+    print("-" * W)
+
+    for sym in sorted(h1_data):
+        t0 = _time.time()
+        result = backtest_one(sym, h1_data[sym], m15_data[sym], h1_data, args.no_volume)
+        result["runtime_s"] = round(_time.time() - t0, 1)
+        report["results"].append(result)
+        print(_row_str(result))
+
+    print()
+    print("=" * W)
+    go    = [r["symbol"] for r in report["results"] if r.get("verdict") == "GO"]
+    nogo  = [r["symbol"] for r in report["results"] if r.get("verdict") == "NO_GO"]
+    marg  = [r["symbol"] for r in report["results"] if r.get("verdict") == "MARGINAL"]
+    insuf = [r["symbol"] for r in report["results"]
+             if r.get("verdict") in ("INSUFFICIENT", "NO_TRADES")]
+    if go:
+        print(f"GO       ({len(go):2d}): {go}")
+    if marg:
+        print(f"MARGINAL ({len(marg):2d}): {marg}  <- tune thresholds")
+    if nogo:
+        print(f"NO_GO    ({len(nogo):2d}): {nogo}")
+    if insuf:
+        print(f"INSUF    ({len(insuf):2d}): {insuf}  <- too few signals")
+    if go:
+        print(f"\n-> Proceed to agent for: {go}")
+    else:
+        print("\n-> Volume edge NOT confirmed. Re-run with --no-volume for pattern-only edge.")
+
+
+def _print_walkforward(h1_data, m15_data, report, label, args) -> None:
+    print()
+    print(f"Iconic Trader Phase 3 [{label}]")
+    W = 115
+    print("=" * W)
+    print(f"{'Symbol':<10s}  {'Phase':<5s} {'Trades':>7s} {'WR%':>6s} {'PF':>6s} "
+          f"{'MaxDD':>12s} {'TP%':>6s} {'AvgHold':>8s} {'Verdict':>12s}")
+    print("-" * W)
+
+    for sym in sorted(h1_data):
+        t0 = _time.time()
+        wf = backtest_walkforward(sym, h1_data[sym], m15_data[sym], h1_data, args.no_volume)
+        wf["runtime_s"] = round(_time.time() - t0, 1)
+        report["results"].append(wf)
+
+        cv = wf.get("combined_verdict", "?")
+        for phase_key in ("is", "oos"):
+            r = wf.get(phase_key, {})
+            if not r:
+                continue
+            ph  = r.get("phase", phase_key.upper())
+            tr  = r.get("trades", 0)
+            if tr == 0:
+                print(f"{sym:<10s}  {ph:<5s} {'0':>7s} {'-':>6s} {'-':>6s} "
+                      f"{'-':>12s} {'-':>6s} {'-':>8s} {r.get('verdict','?'):>12s}")
+            else:
+                print(f"{sym:<10s}  {ph:<5s} {tr:>7d} {r['win_rate_pct']:>6.1f} "
+                      f"{r['profit_factor']:>6.2f} "
+                      f"{r['max_drawdown']:>12.6f} "
+                      f"{r['tp_rate_pct']:>5.1f}% "
+                      f"{r['avg_hold_bars']:>8.1f} "
+                      f"{r.get('verdict','?'):>12s}")
+        print(f"{'':10s}  {'>>':5s} {'Combined':>7s} {'':6s} {'':6s} {'':12s} {'':6s} "
+              f"{'':8s} {cv:>12s}")
+        print()
+
+    print("=" * W)
+    go      = [r["symbol"] for r in report["results"] if r.get("combined_verdict") == "GO"]
+    overfit = [r["symbol"] for r in report["results"] if r.get("combined_verdict") == "OVERFIT"]
+    nogo    = [r["symbol"] for r in report["results"]
+               if "NO_GO" in str(r.get("combined_verdict", ""))]
+    if go:
+        print(f"GO       ({len(go):2d}): {go}  <- IS AND OOS both passed")
+    if overfit:
+        print(f"OVERFIT  ({len(overfit):2d}): {overfit}  <- IS passed but OOS failed -- do NOT go live")
+    if nogo:
+        print(f"NO_GO    ({len(nogo):2d}): {nogo}")
+    if go:
+        print(f"\n-> Walk-forward validated. Build agent for: {go}")
+    else:
+        print("\n-> Walk-forward failed. Strategy needs tuning before agent build.")
+
+
 # ── main ──────────────────────────────────────────────────────────────────────
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -306,9 +516,16 @@ def main() -> None:
                         help="Max H1 bars per symbol (default 5000 ≈ ~3 years)")
     parser.add_argument("--no-volume", action="store_true",
                         help="Ablation: bypass volume gate (always assume pop present)")
+    parser.add_argument("--walkforward", action="store_true",
+                        help=f"Walk-forward: IS={WF_IS_BARS} bars + OOS={WF_OOS_BARS} bars split")
     args = parser.parse_args()
 
-    label = "NO-VOLUME ABLATION" if args.no_volume else "FULL (with volume gate)"
+    if args.walkforward:
+        label = f"WALK-FORWARD (IS={WF_IS_BARS}/OOS={WF_OOS_BARS})"
+        if args.no_volume:
+            label += " + NO-VOLUME"
+    else:
+        label = "NO-VOLUME ABLATION" if args.no_volume else "FULL (with volume gate)"
     log.info("Iconic Trader Phase 3 backtest [%s] — %d symbols, limit=%d",
              label, len(args.symbols), args.limit)
 
@@ -317,8 +534,8 @@ def main() -> None:
     m15_data: dict[str, pd.DataFrame] = {}
     for sym in args.symbols:
         log.info("Fetching %s...", sym)
-        h1_raw  = _fetch_bars(sym, "H1",  args.limit)
-        m15_raw = _fetch_bars(sym, "M15", args.limit * 4)
+        h1_raw  = _fetch_bars(sym, "H1",  min(args.limit, 5000))
+        m15_raw = _fetch_bars(sym, "M15", min(args.limit * 4, 5000))
         h1_df   = _to_df(h1_raw)  if h1_raw  else None
         m15_df  = _to_df(m15_raw) if m15_raw else None
         if h1_df is not None and len(h1_df) >= 250:
@@ -341,58 +558,10 @@ def main() -> None:
         "results":      [],
     }
 
-    print()
-    print(f"Iconic Trader Phase 3 [{label}]")
-    print("=" * 105)
-    print(f"{'Symbol':<10s} {'Trades':>7s} {'WR%':>6s} {'PF':>6s} "
-          f"{'MaxDD':>12s} {'A-cls':>6s} {'B-cls':>6s} {'TP%':>6s} "
-          f"{'AvgHold':>8s} {'Verdict':>12s}")
-    print("-" * 105)
-
-    for sym in sorted(h1_data):
-        t0 = _time.time()
-        result = backtest_one(sym, h1_data[sym], m15_data[sym], h1_data, args.no_volume)
-        result["runtime_s"] = round(_time.time() - t0, 1)
-        report["results"].append(result)
-
-        tr = result.get("trades", 0)
-        if tr == 0:
-            print(f"{sym:<10s} {'0':>7s} {'-':>6s} {'-':>6s} "
-                  f"{'-':>12s} {'-':>6s} {'-':>6s} {'-':>6s} "
-                  f"{'-':>8s} {result.get('verdict','?'):>12s}")
-        else:
-            print(f"{sym:<10s} {tr:>7d} {result['win_rate_pct']:>6.1f} "
-                  f"{result['profit_factor']:>6.2f} "
-                  f"{result['max_drawdown']:>12.6f} "
-                  f"{result['class_A_trades']:>6d} {result['class_B_trades']:>6d} "
-                  f"{result['tp_rate_pct']:>5.1f}% "
-                  f"{result['avg_hold_bars']:>8.1f} "
-                  f"{result['verdict']:>12s}")
-
-    # Final verdict summary
-    print()
-    print("=" * 105)
-    go    = [r["symbol"] for r in report["results"] if r["verdict"] == "GO"]
-    nogo  = [r["symbol"] for r in report["results"] if r["verdict"] == "NO_GO"]
-    marg  = [r["symbol"] for r in report["results"] if r["verdict"] == "MARGINAL"]
-    insuf = [r["symbol"] for r in report["results"]
-             if r["verdict"] in ("INSUFFICIENT", "NO_TRADES")]
-
-    if go:
-        print(f"GO       ({len(go):2d}): {go}")
-    if marg:
-        print(f"MARGINAL ({len(marg):2d}): {marg}  ← tune thresholds before EA")
-    if nogo:
-        print(f"NO_GO    ({len(nogo):2d}): {nogo}")
-    if insuf:
-        print(f"INSUF    ({len(insuf):2d}): {insuf}  ← too few signals, check filters")
-
-    if go:
-        print(f"\n→ Proceed to Phase 4 EA for: {go}")
-        print(f"  Tune thresholds for MARGINAL before including them.")
+    if args.walkforward:
+        _print_walkforward(h1_data, m15_data, report, label, args)
     else:
-        print("\n→ Volume edge NOT confirmed. Tune POP_FACTOR/DEAD_FACTOR before EA.")
-        print("  Re-run with --no-volume to check if pattern layer has standalone edge.")
+        _print_standard(h1_data, m15_data, report, label, args)
 
     REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
     REPORT_FILE.write_text(json.dumps(report, indent=2), encoding="utf-8")

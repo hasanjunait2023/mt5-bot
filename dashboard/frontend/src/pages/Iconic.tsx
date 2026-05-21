@@ -42,6 +42,21 @@ interface IconicState {
   scores_all: Record<string, IconicScore>
 }
 
+interface IconicAgentState {
+  mode: string
+  live_mode: boolean
+  paper_trades: number
+  paper_pf: number
+  paper_pending: string[]
+  paper_closed: number
+  paper_wins: number
+  paper_win_rate: number
+  equity: number
+  daily_loss_pct: number
+  trades_today: Record<string, number>
+  updated_at: string | null
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const KLASS_BADGE: Record<string, string> = {
   A: 'text-amber-300 bg-amber-500/15 ring-amber-500/30',
@@ -68,6 +83,109 @@ function fmtTime(ts: string): string {
       hour: '2-digit', minute: '2-digit', second: '2-digit',
     })
   } catch { return ts }
+}
+
+// ── AgentPanel ───────────────────────────────────────────────────────────────
+function AgentPanel({ agent }: { agent: IconicAgentState | null }) {
+  const PAPER_MIN_TRADES = 20
+  const PAPER_MIN_PF     = 1.3
+
+  if (!agent || agent.mode === 'NOT_RUNNING') {
+    return (
+      <div className="p-4 rounded-lg ring-1 ring-border bg-white/[0.02] text-center">
+        <p className="text-text-tertiary text-sm">
+          Agent not running — start <code className="font-mono text-[11px] text-text-secondary">START_ICONIC_AGENT.bat</code>
+        </p>
+      </div>
+    )
+  }
+
+  const isLive = agent.live_mode
+  const progress = Math.min(100, (agent.paper_trades / PAPER_MIN_TRADES) * 100)
+  const pfProgress = Math.min(100, (agent.paper_pf / PAPER_MIN_PF) * 100)
+  const modeColor = isLive
+    ? 'text-emerald-400 bg-emerald-500/10 ring-emerald-500/30'
+    : 'text-amber-400 bg-amber-500/10 ring-amber-500/30'
+
+  return (
+    <div className="space-y-3">
+      {/* Mode banner */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className={`text-[11px] font-bold px-2 py-1 rounded ring-1 uppercase tracking-wider ${modeColor}`}>
+            {isLive ? '● LIVE' : '◎ PAPER'}
+          </span>
+          <span className="text-[11px] text-text-tertiary">{agent.mode}</span>
+        </div>
+        <div className="flex items-center gap-4 text-[11px] font-mono">
+          <span className="text-text-secondary">
+            Equity <span className="text-text-primary">${agent.equity.toLocaleString()}</span>
+          </span>
+          <span className={agent.daily_loss_pct > 4 ? 'text-red-400' : 'text-text-secondary'}>
+            Daily DD <span className="font-semibold">{agent.daily_loss_pct.toFixed(1)}%</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Paper promotion progress (only in paper mode) */}
+      {!isLive && (
+        <div className="p-3 rounded-lg bg-white/[0.02] ring-1 ring-border space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">
+            Paper → Live promotion gate
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="flex justify-between mb-1 text-[11px]">
+                <span className="text-text-secondary">Trades</span>
+                <span className="font-mono text-text-primary">
+                  {agent.paper_trades} / {PAPER_MIN_TRADES}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/[0.06]">
+                <div
+                  className="h-full rounded-full bg-sky-400 transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between mb-1 text-[11px]">
+                <span className="text-text-secondary">Profit Factor</span>
+                <span className={`font-mono ${agent.paper_pf >= PAPER_MIN_PF ? 'text-emerald-400' : 'text-text-primary'}`}>
+                  {agent.paper_pf.toFixed(2)} / {PAPER_MIN_PF}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/[0.06]">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${agent.paper_pf >= PAPER_MIN_PF ? 'bg-emerald-400' : 'bg-amber-400'}`}
+                  style={{ width: `${pfProgress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-4 text-[11px] font-mono text-text-tertiary pt-0.5">
+            <span>WR {agent.paper_win_rate.toFixed(1)}%</span>
+            <span>{agent.paper_wins}W / {agent.paper_closed - agent.paper_wins}L</span>
+            {agent.paper_pending.length > 0 && (
+              <span className="text-sky-400/80">Pending: {agent.paper_pending.join(', ')}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Today's trades */}
+      {Object.keys(agent.trades_today).length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(agent.trades_today).map(([sym, n]) => (
+            <span key={sym}
+              className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/[0.04] ring-1 ring-border text-text-secondary">
+              {sym} ×{n}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ── ScoreRow ──────────────────────────────────────────────────────────────────
@@ -173,20 +291,23 @@ function SignalCard({ sig }: { sig: IconicSignal }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function Iconic() {
-  const [state, setState]     = useState<IconicState | null>(null)
-  const [history, setHistory] = useState<IconicSignal[]>([])
+  const [state, setState]       = useState<IconicState | null>(null)
+  const [history, setHistory]   = useState<IconicSignal[]>([])
+  const [agent, setAgent]       = useState<IconicAgentState | null>(null)
 
   useEffect(() => {
     let dead = false
     const load = async () => {
       try {
-        const [r1, r2] = await Promise.all([
+        const [r1, r2, r3] = await Promise.all([
           apiFetch('/iconic/state').then(r => r.ok ? r.json() : null),
           apiFetch('/iconic/signals?limit=30').then(r => r.ok ? r.json() : null),
+          apiFetch('/iconic/agent').then(r => r.ok ? r.json() : null),
         ])
         if (dead) return
         if (r1) setState(r1 as IconicState)
         if (r2) setHistory((r2 as { signals: IconicSignal[] }).signals || [])
+        if (r3) setAgent(r3 as IconicAgentState)
       } catch { /* ignore */ }
     }
     load()
@@ -253,6 +374,11 @@ export function Iconic() {
           </div>
         ))}
       </div>
+
+      {/* Agent status panel */}
+      <Panel i={-1} title="Live Agent">
+        <AgentPanel agent={agent} />
+      </Panel>
 
       {/* Main grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">

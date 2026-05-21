@@ -272,6 +272,25 @@ class JTCC:
 
         if result.get("success") or result.get("ticket"):
             log_trade_open(result, decision)
+            try:
+                from trading_agents.trade_journal import open_trade as _jopen
+                _jopen(
+                    ticket=int(result.get("ticket", 0)),
+                    symbol=symbol,
+                    direction=action,
+                    entry_price=entry,
+                    sl=sl,
+                    tp=tp,
+                    volume=lot,
+                    source="JTCC",
+                    strategies=decision.get("strategies_agreed", []),
+                    agent="jtcc_master",
+                    backend=decision.get("backend", ""),
+                    confluence_score=float(decision.get("confluence_score", 0)),
+                    rationale=decision.get("rationale", ""),
+                )
+            except Exception:
+                pass
             self._notify_signal(decision, lot, dry_run=False)
             self._state["last_signals"].append({
                 **decision, "lot": lot, "ticket": result.get("ticket"),

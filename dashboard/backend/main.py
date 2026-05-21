@@ -28,6 +28,7 @@ from api import signals as signals_api
 from api import desk as desk_api
 from api import system_time as system_time_api
 from api import iconic as iconic_api
+from api import journal as journal_api
 
 logging.basicConfig(
     level=logging.INFO,
@@ -120,6 +121,7 @@ app.include_router(signals_api.router,    prefix="/api", dependencies=_protected
 app.include_router(desk_api.router,       prefix="/api", dependencies=_protected)
 app.include_router(system_time_api.router, prefix="/api", dependencies=_protected)
 app.include_router(iconic_api.router,     prefix="/api", dependencies=_protected)
+app.include_router(journal_api.router,    prefix="/api", dependencies=_protected)
 
 # WebSocket validates the token itself (browsers can't set WS headers).
 app.include_router(ws.router)

@@ -105,13 +105,15 @@ class IconicConfluenceScorer:
                 flags.append(f"⚠️ {PULLBACK_TF} pullback volume not low "
                              f"({pvs.last_ratio}× MA) — counter-flow risk")
 
-        # 2) Purpose (session/news) -----------------------------------------
+        # 2) Purpose (news = strong; session open/overlap = weak) ──────────
         pr = self.purpose.evaluate(symbol, now=now)
         purpose_ok = pr.ok
-        if purpose_ok:
-            reasons.append(f"[✓] Purpose: {', '.join(pr.sources)}")
+        if pr.strong:
+            reasons.append(f"[✓] Purpose STRONG: {', '.join(pr.sources)}")
+        elif pr.session_ok:
+            reasons.append(f"[~] Purpose WEAK (session open/overlap): {', '.join(pr.sources)}")
         else:
-            reasons.append("[ ] No Purpose (no session open / no orange-red G7 news)")
+            reasons.append("[ ] No Purpose — no Orange/Red G7 news, not near session open")
 
         # 3) Correlation lineup ---------------------------------------------
         corr, directional = correlation_tier(side, symbol, strength)
@@ -125,9 +127,15 @@ class IconicConfluenceScorer:
             reasons.append(f"[✗] Correlation contradicts (dir {directional:+.1f})")
 
         # ── classify ────────────────────────────────────────────────────
-        if volume_ok and purpose_ok and corr == "strong":
+        # A = volume + STRONG purpose (actual Orange/Red news) + strong correlation
+        #     Navin: "A-class needs a real fundamental reason behind the move"
+        # B = volume + (weak purpose OR strong corr), not contradicting
+        #     session-open/overlap counts here but not for A
+        # C = anything else — no volume, contradicting corr, no purpose at all
+        purpose_strong = pr.strong    # news-driven (Orange/Red G7)
+        if volume_ok and purpose_strong and corr == "strong":
             klass = "A"
-        elif volume_ok and purpose_ok and corr == "neutral":
+        elif volume_ok and corr != "contradicts" and (purpose_ok or corr == "strong"):
             klass = "B"
         else:
             klass = "C"

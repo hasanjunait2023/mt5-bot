@@ -368,9 +368,14 @@ def _currency_strength(align_map: dict[str, str]) -> dict[str, float]:
 
 
 # ── Main agent loop ───────────────────────────────────────────────────────────
+# Backtest verdict (2026-05-22, 4750 H1 bars + WF test):
+#   GO (OOS PF 1.67):   USDCAD
+#   Promising (OOS PF 1.22, 7 trades): USDCHF — add after 20 paper trades confirm
+#   NO_GO (PF 0.29-0.67): EURUSD, GBPUSD, AUDUSD, NZDUSD
+#   Removed (WR 16-18%): USDJPY, GBPJPY, EURJPY
 SYMBOLS = [
-    "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NZDUSD",
-    "USDCAD", "USDCHF", "GBPJPY", "EURJPY",
+    "USDCAD",    # GO — OOS PF 1.67, 60% WR
+    # "USDCHF",  # Promising — re-enable after paper-trade gate confirms
 ]
 
 

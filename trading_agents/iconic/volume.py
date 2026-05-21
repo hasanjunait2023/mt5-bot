@@ -53,7 +53,9 @@ def vol_ma(df: pd.DataFrame, period: int = VOL_MA_PERIOD) -> pd.Series:
     return _vol(df).rolling(period).mean()
 
 
-POP_LOOKBACK = 20    # scan this many recent bars for the breakout pop
+POP_LOOKBACK = 60    # scan this many recent bars for the breakout pop
+# Money spot can be up to SPOT_MAX_LOOKBACK=40 bars back; impulse precedes
+# the spot, so pop detection must reach back at least 50-60 bars.
 
 
 def recent_pop(df: pd.DataFrame, *, window: int = 3, lookback: int = POP_LOOKBACK,

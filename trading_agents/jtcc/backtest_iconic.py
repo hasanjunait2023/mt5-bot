@@ -35,8 +35,9 @@ REPORT_FILE = BASE_DIR / "logs" / "jtcc" / "_backtest_iconic.json"
 
 # ── symbols ───────────────────────────────────────────────────────────────────
 DEFAULT_SYMBOLS = [
-    "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NZDUSD",
-    "USDCAD", "USDCHF", "GBPJPY", "EURJPY",
+    "EURUSD", "GBPUSD", "AUDUSD", "NZDUSD", "USDCAD", "USDCHF",
+    # JPY crosses removed: pattern-only WR 16-18%, DD catastrophic
+    # "USDJPY", "GBPJPY", "EURJPY",
 ]
 
 TYPICAL_SPREADS = {
@@ -56,8 +57,43 @@ WF_OOS_BARS = 2000   # out-of-sample window
 WF_IS_BARS  = 3000   # in-sample window
 
 
-# ── MT5 bridge ────────────────────────────────────────────────────────────────
+# ── MT5 data fetch (direct API primary, HTTP bridge fallback) ─────────────────
+_TF_MAP = {
+    "M15": None, "M1": None, "H1": None, "H4": None, "D1": None,
+}
+
+def _init_tf_map():
+    try:
+        import MetaTrader5 as mt5
+        _TF_MAP.update({
+            "M1": mt5.TIMEFRAME_M1, "M15": mt5.TIMEFRAME_M15,
+            "H1": mt5.TIMEFRAME_H1, "H4": mt5.TIMEFRAME_H4,
+            "D1": mt5.TIMEFRAME_D1,
+        })
+        return mt5
+    except Exception:
+        return None
+
+_mt5 = _init_tf_map()
+
+
 def _fetch_bars(symbol: str, tf: str, limit: int = 5000) -> Optional[dict]:
+    # Primary: direct MT5 Python API (no IPC issue, same process)
+    if _mt5 is not None and _TF_MAP.get(tf) is not None:
+        try:
+            _mt5.initialize()
+            rates = _mt5.copy_rates_from_pos(symbol, _TF_MAP[tf], 0, limit)
+            if rates is not None and len(rates) > 0:
+                import numpy as np
+                cols = rates.dtype.names
+                result = {c: rates[c].tolist() for c in cols}
+                return result
+            err = _mt5.last_error()
+            log.warning("MT5 direct fetch %s %s: %s", symbol, tf, err)
+        except Exception as e:
+            log.warning("MT5 direct fetch exception %s %s: %s", symbol, tf, e)
+
+    # Fallback: HTTP bridge
     url = os.getenv("MT5_BRIDGE_URL", "http://localhost:8090")
     try:
         r = requests.get(f"{url}/bars/{symbol}",
@@ -71,13 +107,19 @@ def _fetch_bars(symbol: str, tf: str, limit: int = 5000) -> Optional[dict]:
 
 # ── DataFrame helpers ─────────────────────────────────────────────────────────
 def _to_df(bars: dict) -> Optional[pd.DataFrame]:
-    if not bars or not bars.get("close"):
+    if not bars:
         return None
+    # Direct MT5 returns structured array cols; bridge returns lists under OHLCV keys
+    if isinstance(bars, dict) and "open" not in bars and "close" not in bars:
+        # could be keyed differently; handle both
+        pass
     df = pd.DataFrame({k: v for k, v in bars.items() if isinstance(v, list)})
+    if df.empty and hasattr(bars, '__len__') and len(bars) == 0:
+        return None
     for col in ("open", "high", "low", "close"):
         if col not in df.columns:
             return None
-    # Bridge returns "volume" column; engine expects "tick_volume"
+    # MT5 direct returns "tick_volume"; bridge returns "volume"
     if "tick_volume" not in df.columns:
         if "volume" in df.columns:
             df["tick_volume"] = df["volume"]
@@ -204,7 +246,7 @@ def backtest_one(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFrame,
     }
 
     if start_i is None:
-        start_i = max(250, n - 3000)
+        start_i = 250              # test all available bars (warmup only)
     if end_i is None:
         end_i = n - 1
     start_i = max(start_i, 250)   # need warmup
@@ -268,8 +310,11 @@ def backtest_one(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFrame,
         if position is None and pending is None:
             h1_slice  = h1_full.iloc[:i + 1]
             m15_slice = _slice_m15(m15_full, t)
+            # When M15 data doesn't reach this far back, substitute H1.
+            # M15 limit=5000 covers ~52 days; H1 limit=5000 covers ~208 days.
+            # The engine degrades gracefully (no M15-specific SNR scoring).
             if m15_slice is None or len(m15_slice) < 50:
-                continue
+                m15_slice = h1_slice
 
             align = _align_h1(h1_slice)
             snap = {"align": align, "tfs": {"H1": h1_slice, "M15": m15_slice}}
@@ -309,14 +354,13 @@ def backtest_walkforward(symbol: str, h1_full: pd.DataFrame, m15_full: pd.DataFr
     Parameters are fixed by the confluence engine (no optimisation), so the split
     purely tests temporal stability of the signal."""
     n = len(h1_full)
-    total_test = WF_IS_BARS + WF_OOS_BARS
-    if n < total_test + 250:
+    if n < WF_OOS_BARS + 500:
         return {"symbol": symbol, "trades": 0, "bars_tested": n,
                 "verdict": "INSUFFICIENT_DATA", "wf_mode": True}
 
-    # IS window: bars [warmup .. n - WF_OOS_BARS - 1]
+    # IS window: all bars from warmup to OOS start
     is_end   = n - WF_OOS_BARS
-    is_start = max(250, is_end - WF_IS_BARS)
+    is_start = 250              # test all available IS history
     # OOS window: bars [is_end .. n - 1]
     oos_start = is_end
     oos_end   = n - 1

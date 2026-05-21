@@ -1,6 +1,6 @@
 # ============================================================
-#  MT5 Trading Bot — Live Trader Launcher
-#  Usage: Right-click → "Run with PowerShell"
+#  MT5 Trading Bot - Live Trader Launcher
+#  Usage: Right-click -> "Run with PowerShell"
 #         or: powershell -File start_bot.ps1
 #
 #  REQUIREMENTS:
@@ -12,10 +12,20 @@ $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptDir
 
+# Idempotency guard: true if a python process whose command line contains
+# $needle is already running (prevents duplicate traders / double-trading).
+function Test-PyRunning([string]$needle) {
+    $procs = Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue
+    foreach ($p in $procs) {
+        if ($p.CommandLine -and $p.CommandLine -match $needle) { return $true }
+    }
+    return $false
+}
+
 Write-Host ""
 Write-Host "=================================================" -ForegroundColor Cyan
-Write-Host "   MTF EMA Alignment Scalper — LIVE TRADER" -ForegroundColor Cyan
-Write-Host "   Risk: 1% equity/trade  |  RR: 1:2  |  Compound" -ForegroundColor Green
+Write-Host "   MTF EMA Alignment Scalper - LIVE TRADER" -ForegroundColor Cyan
+Write-Host "   Risk: 1pct equity/trade | RR 1:2 | Compound" -ForegroundColor Green
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -32,22 +42,44 @@ if (-not $mt5) {
 }
 
 Write-Host "[INFO] Starting live trader..." -ForegroundColor Green
-Write-Host "[INFO] Pairs: Top performers from backtest" -ForegroundColor White
-Write-Host "[INFO] Risk : 1%% per trade (equity-based compounding)" -ForegroundColor White
-Write-Host "[INFO] RR   : 1:2 minimum" -ForegroundColor White
-Write-Host "[INFO] Daily DD limit: 3%%" -ForegroundColor White
-Write-Host "[INFO] Max DD limit  : 20%%" -ForegroundColor White
+Write-Host "[INFO] Risk 1pct/trade | RR 1:2 | DailyDD 3pct | MaxDD 20pct" -ForegroundColor White
 Write-Host ""
 
-# Navigate to mt5_bridge and start trader
+# Launch autonomous agents as persistent detached processes (per-agent
+# idempotent - start_agents.ps1 only launches the ones not already running).
+Write-Host "[INFO] Launching autonomous agents (persistent)..." -ForegroundColor Cyan
+& "$scriptDir\start_agents.ps1"
+Write-Host ""
+
+# Unified CPP-FX runner (detached): EURUSD/GBPUSD/USDJPY, hybrid agent,
+# HARD 20pct account-wide daily-DD breaker. Gold/Silver stay on the
+# S1/S15/S18 EAs attached in MT5.
+if (Test-PyRunning 'cpp_live_trader') {
+    Write-Host "[INFO] CPP-FX runner already running - skip (no duplicate)." -ForegroundColor DarkGray
+} else {
+    Write-Host "[INFO] Launching CPP-FX unified runner (detached, 20pct daily DD)..." -ForegroundColor Cyan
+    Start-Process -FilePath "python" `
+        -ArgumentList "cpp_live_trader.py","--pairs","EURUSD","GBPUSD","USDJPY","--dd","20","--agent","veto","--risk","1.0" `
+        -WorkingDirectory "$scriptDir\mt5_bridge" -WindowStyle Hidden
+}
+Write-Host ""
+
+# Start the MTF live trader (skip if one is already running - no duplicate).
 Set-Location "$scriptDir\mt5_bridge"
 
-python mtf_live_trader.py `
-    --risk 1.0 `
-    --dd 3.0 `
-    --maxdd 20.0 `
-    --maxtd 6
+if (Test-PyRunning 'mtf_live_trader') {
+    Write-Host "[INFO] Live trader already running - NOT starting a duplicate." -ForegroundColor Yellow
+    Write-Host "[INFO] Stop the existing one first if you want a fresh start." -ForegroundColor White
+} else {
+    python mtf_live_trader.py `
+        --risk 1.0 `
+        --dd 3.0 `
+        --maxdd 20.0 `
+        --maxtd 6
+}
 
 Write-Host ""
-Write-Host "[INFO] Live trader stopped." -ForegroundColor Yellow
+Write-Host "[INFO] Live trader stopped (or was already running)." -ForegroundColor Yellow
+Write-Host "[INFO] Autonomous agents keep running in the background (by design)." -ForegroundColor Cyan
+Write-Host "[INFO] To stop them: run  stop_agents.ps1" -ForegroundColor White
 Read-Host "Press ENTER to exit"

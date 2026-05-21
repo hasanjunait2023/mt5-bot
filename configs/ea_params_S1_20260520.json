@@ -1,0 +1,50 @@
+{
+  "strategy": "S1",
+  "generated_at": "2026-05-20T09:51:06.595457",
+  "python_source": "strategy1_swing_scalp.py",
+  "ea_source": "S1_Swing_Scalp.mq5",
+  "recommended_params": {
+    "SL_Pips": 80,
+    "PART_LV[0]": 25,
+    "PART_LV[1]": 50,
+    "PART_LV[2]": 100,
+    "TimeExitHrs": 24
+  },
+  "discrepancies": [
+    {
+      "parameter": "Entry Conditions",
+      "python_value": "Includes H1 Order Block + FVG filters",
+      "ea_value": "Removed Order Block/FVG (only H4 EMA + M15 EMA/RSI)",
+      "severity": "critical",
+      "description": "EA intentionally omits key Python entry filters per comment, reducing confluence"
+    },
+    {
+      "parameter": "SL Pips",
+      "python_value": "50-100 pips (capped at 80)",
+      "ea_value": "Fixed 60 pips",
+      "severity": "minor",
+      "description": "EA uses fixed SL from backtest, Python allows dynamic SL up to 80"
+    },
+    {
+      "parameter": "Partial Close Levels",
+      "python_value": "25, 50, 100, 200 pips",
+      "ea_value": "30, 60, 120 pips",
+      "severity": "minor",
+      "description": "Different profit-taking milestones affect RR realization"
+    },
+    {
+      "parameter": "Max Hold Time",
+      "python_value": "24 hours (3 sessions)",
+      "ea_value": "48 hours (TimeExitHrs=48)",
+      "severity": "minor",
+      "description": "EA allows positions to stay open twice as long"
+    },
+    {
+      "parameter": "News Filter",
+      "python_value": "Blocks trades 60min around high-impact news",
+      "ea_value": "No news filtering implemented",
+      "severity": "critical",
+      "description": "EA lacks Python's news avoidance logic"
+    }
+  ]
+}

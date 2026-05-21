@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts'
+import { CHART, tooltipProps, emptyClass } from './chartTheme'
 
 interface Props {
   wins: number
@@ -8,9 +9,7 @@ interface Props {
 export function WinLossDonut({ wins, losses }: Props) {
   const total = wins + losses
   if (total === 0) {
-    return (
-      <div className="h-40 flex items-center justify-center text-text-muted text-sm">No trades yet</div>
-    )
+    return <div className={`h-40 ${emptyClass}`}>No trades yet</div>
   }
 
   const data = [
@@ -20,19 +19,20 @@ export function WinLossDonut({ wins, losses }: Props) {
 
   return (
     <div>
-      <p className="text-text-muted text-xs text-center mb-1 font-mono">
-        Win rate {((wins / total) * 100).toFixed(1)}%
+      <p className="text-text-secondary text-xs text-center mb-1 font-mono">
+        Win rate{' '}
+        <span className="text-text-primary font-semibold">
+          {((wins / total) * 100).toFixed(1)}%
+        </span>
       </p>
       <ResponsiveContainer width="100%" height={160}>
         <PieChart>
-          <Pie data={data} innerRadius="55%" outerRadius="75%" dataKey="value" isAnimationActive={false}>
-            <Cell fill="#10b981" />
-            <Cell fill="#ef4444" />
+          <Pie data={data} innerRadius="58%" outerRadius="78%" dataKey="value"
+               paddingAngle={2} stroke="none" isAnimationActive={false}>
+            <Cell fill={CHART.profit} />
+            <Cell fill={CHART.loss} />
           </Pie>
-          <Tooltip
-            contentStyle={{ background: '#1e2330', border: '1px solid #252b3b', borderRadius: 4 }}
-            itemStyle={{ color: '#e8ecf4', fontFamily: 'monospace', fontSize: 12 }}
-          />
+          <Tooltip {...tooltipProps} />
           <Legend iconType="circle" iconSize={8}
                   formatter={(v) => <span className="text-text-secondary text-xs">{v}</span>} />
         </PieChart>

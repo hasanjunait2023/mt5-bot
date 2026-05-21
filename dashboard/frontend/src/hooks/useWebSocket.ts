@@ -1,10 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react'
 import type { WSMessage } from '../types/trading'
+import { wsUrl } from '../lib/api'
 
 type Listener = (data: unknown) => void
 type ConnectionState = 'connecting' | 'open' | 'closed'
 
-const WS_URL = '/ws'
+const WS_URL = wsUrl('/ws')
 const MAX_RETRY_MS = 30_000
 
 let socket: WebSocket | null = null

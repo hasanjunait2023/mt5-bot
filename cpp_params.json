@@ -1,0 +1,16 @@
+{
+  "_comment": "CPP FINALIZED config. Strict high-quality pullback-in-strong-trend entry + clean fixed 1:2. This is the genuinely profitable configuration on FX (USDJPY PF 1.84, GBPUSD 1.23, EURUSD 1.13 over 2y). Metals shown in the sweep for transparency but are a structural anti-fit for this strategy (route XAU/XAG to the repo's validated S1/S15/S18 instead). See CPP_FINDINGS.md.",
+  "exit_mode": "fixed",
+  "use_breakeven": false,
+  "adx_min": 22.0,
+  "adx_trend": 30.0,
+  "pullback_atr": 0.6,
+  "stoch_os": 25.0,
+  "stoch_ob": 75.0,
+  "rsi_buy": [40.0, 68.0],
+  "rsi_sell": [32.0, 60.0],
+  "min_body_frac": 0.30,
+  "sl_atr": 1.5,
+  "max_hold_bars": 96,
+  "max_trades_day": 6
+}

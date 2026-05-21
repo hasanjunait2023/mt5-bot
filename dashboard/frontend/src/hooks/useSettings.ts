@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { apiFetch } from '../lib/api'
 
 export function useSettings() {
   const [config, setConfig] = useState<Record<string, unknown>>({})
@@ -6,7 +7,7 @@ export function useSettings() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/settings')
+    apiFetch('/api/settings')
       .then(r => r.json())
       .then(setConfig)
       .catch(() => {})
@@ -16,7 +17,7 @@ export function useSettings() {
     setSaving(true)
     setError(null)
     try {
-      const res = await fetch('/api/settings', {
+      const res = await apiFetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),

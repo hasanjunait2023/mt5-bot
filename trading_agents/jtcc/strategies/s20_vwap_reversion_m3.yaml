@@ -1,0 +1,56 @@
+# ============================================================
+# S20: VWAP 2σ Mean Reversion (M3 execution)
+# Reference: Berkowitz, Logue, Noser (1988) — VWAP as institutional benchmark.
+#            Mean reversion documented edge in range markets. ~60-70% WR.
+# Tunable parameters: 4 (sigma_mult=2.0 in mtf, regime_filter via H1 trend,
+#                     sl_buffer, min_rr)
+# Hypothesis: When price stretches beyond 2σ from intraday VWAP in a
+#             range-bound regime (H1 NEUTRAL + low ADX), it tends to revert
+#             to the VWAP "value area." M3 close beyond ±2σ band = entry.
+# ============================================================
+
+name: "S20 VWAP Reversion M3"
+version: 1.1
+description: "Intraday VWAP ±2σ mean reversion. RESTRICTED to XAUUSD per 10-day M3 backtest 2026-05-20 (XAU PF 1.20 marginal, EUR/GBP/USDJPY UNPROFITABLE)."
+symbols: [XAUUSD]
+timeframe: M3
+backtest:
+  source: trading_agents/jtcc/backtest_m3.py
+  date: 2026-05-20
+  days_tested: 10
+  spread_costs_included: true
+  results:
+    XAUUSD: {trades: 108, wr_pct: 43.5, pf: 1.20, verdict: MARGINAL}
+  disabled_results:
+    EURUSD: {trades: 41, wr_pct: 34.1, pf: 0.60, verdict: UNPROFITABLE}
+    GBPUSD: {trades: 51, wr_pct: 29.4, pf: 0.46, verdict: UNPROFITABLE}
+    USDJPY: {trades: 46, wr_pct: 39.1, pf: 0.76, verdict: UNPROFITABLE}
+  notes: "108 trades on XAU in 10 days = very high frequency. Marginal PF means edge is thin — spread changes can flip it."
+
+entry_rules:
+  buy:
+    # Price below lower 2σ band → long back to VWAP
+    - "mtf.vwap.below_lower is true"
+    - "mtf.vwap.zscore < -2.0"
+    - "mtf.H1.trend == NEUTRAL"
+    - "momentum.adx < 25"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    # Price above upper 2σ band → short back to VWAP
+    - "mtf.vwap.above_upper is true"
+    - "mtf.vwap.zscore > 2.0"
+    - "mtf.H1.trend == NEUTRAL"
+    - "momentum.adx < 25"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 3
+  min_rr: 1.5                  # target is just back to VWAP — modest
+
+risk:
+  max_trades_per_day: 3        # mean-reversion can fire multiple times
+  confidence_required: 6

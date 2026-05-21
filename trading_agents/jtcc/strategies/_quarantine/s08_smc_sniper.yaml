@@ -1,0 +1,33 @@
+name: "SMC Sniper"
+version: 1.0
+description: "Full SMC setup — HTF bias + session + sweep + OTE zone entry. M15."
+symbols: [XAUUSD, EURUSD, GBPUSD, USDJPY]
+timeframe: M15
+
+entry_rules:
+  buy:
+    - "market.trend == BULLISH"
+    - "session.primary is true"
+    - "smc.sweep_detected is true"
+    - "smc.in_ote is true"
+    - "smc.in_discount is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "market.trend == BEARISH"
+    - "session.primary is true"
+    - "smc.sweep_detected is true"
+    - "smc.in_ote is true"
+    - "smc.in_premium is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "sweep_low"
+  tp_method: "liquidity_pool"
+  sl_buffer_pips: 5
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 2
+  confidence_required: 7

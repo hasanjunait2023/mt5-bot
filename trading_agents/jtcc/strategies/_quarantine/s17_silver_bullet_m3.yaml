@@ -1,0 +1,45 @@
+# ============================================================
+# S17: ICT Silver Bullet (M3 execution, MTF context)
+# Reference: ICT methodology (Michael Huddleston). Documented 60-75% WR on
+#            structured backtests when full discipline maintained.
+# Tunable parameters: 4 (windows hardcoded via intraday helper, htf_bias_required,
+#                     min_rr, confidence_required, max_trades_per_day)
+# Hypothesis: During 14:00-15:00 BD (London SB) or 21:00-22:00 BD (NY AM SB),
+#             smart money creates rapid moves from PD arrays. HTF bias defines
+#             direction; M3 entry in OTE + FVG inside H1 discount/premium.
+# ============================================================
+
+name: "S17 Silver Bullet M3"
+version: 1.0
+description: "ICT Silver Bullet on M3. Silver Bullet windows + HTF bias + H1 PD array + M3 entry in OTE FVG."
+symbols: [XAUUSD, XAGUSD, BTCUSD, EURUSD, GBPUSD, USDJPY]
+timeframe: M3
+execution_window: "14:00-15:00 BD or 21:00-22:00 BD"
+
+entry_rules:
+  buy:
+    - "intraday.silver_bullet_window is true"
+    - "mtf.D1.trend == BULLISH"
+    - "mtf.H1.in_discount is true"
+    - "mtf.M15.in_ote is true"
+    - "mtf.M3.bull_fvg_count > 0"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "intraday.silver_bullet_window is true"
+    - "mtf.D1.trend == BEARISH"
+    - "mtf.H1.in_premium is true"
+    - "mtf.M15.in_ote is true"
+    - "mtf.M3.bear_fvg_count > 0"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"           # uses M3 ATR
+  tp_method: "rr"
+  sl_buffer_pips: 3
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 2       # max 1 per window per symbol
+  confidence_required: 7

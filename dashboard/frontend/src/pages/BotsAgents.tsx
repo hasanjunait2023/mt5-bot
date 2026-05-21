@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { StatusDot } from '../components/ui/StatusDot'
 import { Badge } from '../components/ui/Badge'
 import { Table } from '../components/ui/Table'
+import { Panel } from '../components/ui/Panel'
+import { PageHeader } from '../components/ui/PageHeader'
+import { apiFetch } from '../lib/api'
 
 interface AgentsData {
   live_trader: {
@@ -30,18 +33,29 @@ interface AgentsData {
   }
 }
 
-function AgentCard({ title, status, items }: { title: string; status: 'running' | 'stopped' | 'offline'; items: [string, string][] }) {
+function AgentCard({
+  title, status, items, i,
+}: {
+  title: string
+  status: 'running' | 'stopped' | 'offline'
+  items: [string, string][]
+  i: number
+}) {
   return (
-    <div className="bg-bg-surface border border-border rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
+    <div
+      className="glass glass-hover reveal relative overflow-hidden p-5"
+      style={{ ['--i' as string]: i }}
+    >
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-text-primary font-semibold text-sm">{title}</h3>
         <StatusDot status={status} />
       </div>
-      <dl className="space-y-1">
+      <dl className="space-y-2">
         {items.map(([k, v]) => (
-          <div key={k} className="flex justify-between text-xs">
+          <div key={k} className="flex justify-between items-center text-xs">
             <dt className="text-text-secondary">{k}</dt>
-            <dd className="text-text-primary font-mono">{v}</dd>
+            <dd className="text-text-primary font-mono font-medium">{v}</dd>
           </div>
         ))}
       </dl>
@@ -53,7 +67,7 @@ export function BotsAgents() {
   const [agents, setAgents] = useState<AgentsData | null>(null)
 
   useEffect(() => {
-    const load = () => fetch('/api/agents').then(r => r.json()).then(setAgents).catch(() => {})
+    const load = () => apiFetch('/api/agents').then(r => r.json()).then(setAgents).catch(() => {})
     load()
     const id = setInterval(load, 10000)
     return () => clearInterval(id)
@@ -75,15 +89,13 @@ export function BotsAgents() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-text-primary text-xl font-semibold mb-1">Bots & Agents</h1>
-        <p className="text-text-muted text-sm">Status of all running components</p>
-      </div>
+      <PageHeader title="Bots & Agents" subtitle="Status of all running components" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <AgentCard
           title="Live Trader"
           status={lt.running ? (lt.mt5_connected ? 'running' : 'stopped') : 'offline'}
+          i={0}
           items={[
             ['MT5 Connected', lt.mt5_connected ? '✓ Yes' : '✗ No'],
             ['Symbols', lt.symbols.length.toString()],
@@ -93,6 +105,7 @@ export function BotsAgents() {
         <AgentCard
           title="Strategy Researcher"
           status={sr.last_updated ? 'running' : 'offline'}
+          i={1}
           items={[
             ['Total tested', sr.total_strategies.toString()],
             ['Successful', sr.successful.toString()],
@@ -103,6 +116,7 @@ export function BotsAgents() {
         <AgentCard
           title="Perf Optimizer"
           status={po.total_adaptations > 0 ? 'running' : 'offline'}
+          i={2}
           items={[
             ['Total adaptations', po.total_adaptations.toString()],
             ['Monthly cycles', po.monthly_cycles.toString()],
@@ -112,6 +126,7 @@ export function BotsAgents() {
         <AgentCard
           title="Execution Manager"
           status={em.daily_records > 0 ? 'running' : 'offline'}
+          i={3}
           items={[
             ['Daily records', em.daily_records.toString()],
             ['Last day P&L', em.last_day ? ((em.last_day as Record<string, number>).net_pnl_pct?.toFixed(2) ?? '—') + '%' : '—'],
@@ -120,8 +135,7 @@ export function BotsAgents() {
       </div>
 
       {/* Per-symbol signals table */}
-      <div className="bg-bg-surface border border-border rounded-lg p-4">
-        <h2 className="text-text-secondary text-xs uppercase tracking-widest mb-3">Symbol Signals (Today)</h2>
+      <Panel title="Symbol Signals (Today)" i={4}>
         <Table
           columns={[
             { key: 'sym', header: 'Symbol', render: r => <span className="font-semibold">{r.sym}</span> },
@@ -133,12 +147,11 @@ export function BotsAgents() {
           keyFn={r => r.sym}
           emptyText="No symbols tracked"
         />
-      </div>
+      </Panel>
 
       {/* Strategy knowledge base */}
       {Object.keys(sr.symbol_stats ?? {}).length > 0 && (
-        <div className="bg-bg-surface border border-border rounded-lg p-4">
-          <h2 className="text-text-secondary text-xs uppercase tracking-widest mb-3">Strategy Knowledge Base</h2>
+        <Panel title="Strategy Knowledge Base" i={5}>
           <Table
             columns={[
               { key: 'sym', header: 'Symbol', render: r => <span className="font-semibold">{r.sym}</span> },
@@ -148,7 +161,7 @@ export function BotsAgents() {
             data={Object.entries(sr.symbol_stats).map(([sym, s]) => ({ sym, ok: s.successful_patterns, fail: s.failed_patterns }))}
             keyFn={r => r.sym}
           />
-        </div>
+        </Panel>
       )}
     </div>
   )

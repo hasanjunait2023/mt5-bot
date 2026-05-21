@@ -41,6 +41,7 @@ class StatePoller(threading.Thread):
         self._knowledge_base: dict = {}
         self._perf_log: dict = {}
         self._sys_config: dict = {}
+        self._alerted: set = set()      # rising-edge debounce for HQ alerts
 
     def stop(self):
         self._stop.set()
@@ -74,13 +75,51 @@ class StatePoller(threading.Thread):
             "agents": agents,
         }
 
+        prev = self._state
         with self._lock:
             self._state = payload
             self._knowledge_base = kb
             self._perf_log = pl
             self._sys_config = cfg
 
+        try:
+            self._check_alerts(prev, payload, cfg)
+        except Exception as e:
+            log.debug(f"alert check error: {e}")
+
         ws_manager.broadcast_sync({"type": "state", "data": payload})
+
+    def _check_alerts(self, prev: dict, new: dict, cfg: dict):
+        """Push live-trading transitions to the Telegram HQ once per edge."""
+        from .notifier import send
+
+        def edge(key: str, active: bool, msg: str, level: str):
+            if active and key not in self._alerted:
+                self._alerted.add(key)
+                send("live_trading", msg, level=level, title="Live Trading")
+            elif not active:
+                self._alerted.discard(key)
+
+        # Trader went offline (was running, now not / stale)
+        edge("trader_offline",
+             prev.get("trader_running") and not new.get("trader_running"),
+             "🔌 Live trader is *offline* (state stale or stopped).", "WARNING")
+
+        # MT5 link dropped
+        edge("mt5_down",
+             prev.get("mt5_connected") and not new.get("mt5_connected"),
+             "❌ MT5 connection *lost*.", "CRITICAL")
+
+        # Daily drawdown limit breached
+        acct = new.get("account", {}) or {}
+        dd = float(acct.get("daily_dd_pct", 0) or 0)
+        limit = float(cfg.get("max_daily_loss_pct", 0) or 0)
+        if limit and limit <= 1:        # stored as fraction → percent
+            limit *= 100
+        edge("daily_dd",
+             bool(limit) and dd >= limit,
+             f"🚨 Daily drawdown {dd:.2f}% hit the {limit:.2f}% limit. "
+             f"Equity {acct.get('equity', 0):.2f}.", "CRITICAL")
 
     def _read_live_state(self) -> dict:
         if not LIVE_STATE_PATH.exists():

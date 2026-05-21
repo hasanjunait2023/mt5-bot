@@ -1,0 +1,49 @@
+# ============================================================
+# S23: BTC Daily Donchian Channel Breakout (20-day)
+# Hypothesis basis: TSMOM proved PF 1.27 on BTC D1 with 4-week lookback
+#                   (Liu-Tsyvinski 2021 crypto momentum confirmed). Donchian
+#                   breakout is the structural cousin of TSMOM — both capture
+#                   trend continuation.
+# Reference: Turtle Traders (1983) used 20-day Donchian breakout as core
+#            entry rule. Tested across 50+ years of commodities/FX data.
+# Tunable parameters: 3 (donchian_period, trend_filter, min_rr)
+# Rationale: BTC has momentum (validated). Donchian formalizes "buy new highs,
+#            sell new lows" — purest trend-follower entry trigger.
+# ============================================================
+
+name: "S23 BTC Donchian D1"
+version: 1.0
+description: "20-day Donchian breakout on BTC daily. Classical Turtle Traders rule. Validates TSMOM BTC edge."
+symbols: [BTCUSD]
+timeframe: D1
+based_on:
+  reference_strategy: "TSMOM 12-Month (s14_tsmom_12m.yaml)"
+  proven_edge: "BTC D1 PF 1.27, 44.7% WR, 85 trades over 3 years (28-day lookback)"
+  hypothesis: "Donchian breakout is a sharper trigger than rolling-return sign. Same momentum edge."
+
+entry_rules:
+  buy:
+    # Price breaks above 20-day high → trend continuation long
+    - "mtf.D1.price > mtf.D1.last_swing_high"
+    - "mtf.D1.trend == BULLISH"
+    - "mtf.D1.atr > 0"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "mtf.D1.price < mtf.D1.last_swing_low"
+    - "mtf.D1.trend == BEARISH"
+    - "mtf.D1.atr > 0"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 1000          # BTC large pip units
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 1
+  confidence_required: 6

@@ -1,0 +1,119 @@
+{
+  "group_chat_id": "-1003809133423",
+  "setup_complete": true,
+  "categories": {
+    "ceo": {
+      "label": "🧭 CEO · Maic",
+      "thread_id": 11,
+      "enabled": true,
+      "icon_color": 7322096
+    },
+    "live_trading": {
+      "label": "💹 Live Trading",
+      "thread_id": 13,
+      "enabled": true,
+      "icon_color": 16766590
+    },
+    "ea_guardian": {
+      "label": "🛡️ EA Guardian",
+      "thread_id": 15,
+      "enabled": true,
+      "icon_color": 13338331
+    },
+    "ea_coach": {
+      "label": "🎓 EA Coach · Approvals",
+      "thread_id": 17,
+      "enabled": true,
+      "icon_color": 9367192
+    },
+    "ea_validator": {
+      "label": "🧪 EA Validator",
+      "thread_id": 19,
+      "enabled": true,
+      "icon_color": 16749490
+    },
+    "dev_team": {
+      "label": "🛠️ Dev Team",
+      "thread_id": 21,
+      "enabled": true,
+      "icon_color": 16478047
+    },
+    "strategy_scout": {
+      "label": "🔭 Strategy Scout",
+      "thread_id": 23,
+      "enabled": true,
+      "icon_color": 7322096
+    },
+    "supervisor": {
+      "label": "🧭 Supervisor",
+      "thread_id": 25,
+      "enabled": true,
+      "icon_color": 16766590
+    },
+    "digest": {
+      "label": "📊 Daily Digest · Reminders",
+      "thread_id": 27,
+      "enabled": true,
+      "icon_color": 13338331
+    },
+    "critical": {
+      "label": "🚨 Critical Alerts",
+      "thread_id": 29,
+      "enabled": true,
+      "icon_color": 16478047
+    },
+    "signal_alignment": {
+      "label": "🧭 Signals · 4TF Alignment",
+      "thread_id": 660,
+      "enabled": true,
+      "icon_color": 16749490
+    },
+    "signal_cross": {
+      "label": "⚡ Signals · 9/15 Cross",
+      "thread_id": 662,
+      "enabled": true,
+      "icon_color": 16478047
+    },
+    "signal_touch": {
+      "label": "🎯 Signals · 200EMA Touch (M3)",
+      "thread_id": 664,
+      "enabled": true,
+      "icon_color": 7322096
+    },
+    "signal_improved": {
+      "label": "💎 Signals · IMPROVED (Phase 1)",
+      "thread_id": 771,
+      "enabled": true,
+      "icon_color": 16766590
+    },
+    "alpha_brief": {
+      "label": "📰 Alpha · Session Briefs",
+      "thread_id": 841,
+      "enabled": true,
+      "icon_color": 13338331
+    },
+    "alpha_signal": {
+      "label": "🌊 Alpha · Live Signals",
+      "thread_id": 843,
+      "enabled": true,
+      "icon_color": 9367192
+    },
+    "alpha_confluence": {
+      "label": "💎 Alpha · CONFLUENCE STACK 🔥🔥",
+      "thread_id": 846,
+      "enabled": true,
+      "icon_color": 16749490
+    }
+  },
+  "mirror_critical": true,
+  "digest": {
+    "enabled": true,
+    "hour_utc": 6,
+    "reminder_hours": 6
+  },
+  "quiet_hours": {
+    "enabled": false,
+    "start_utc": 22,
+    "end_utc": 6
+  }
+}

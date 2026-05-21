@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { LogEntry } from '../types/trading'
 import { useWebSocket } from './useWebSocket'
+import { apiFetch } from '../lib/api'
 
 const MAX_LINES = 1000
 
@@ -9,7 +10,7 @@ export function useLogs() {
   const linesRef = useRef<LogEntry[]>([])
 
   useEffect(() => {
-    fetch('/api/logs?n=200')
+    apiFetch('/api/logs?n=200')
       .then(r => r.json())
       .then(data => {
         linesRef.current = data.lines ?? []

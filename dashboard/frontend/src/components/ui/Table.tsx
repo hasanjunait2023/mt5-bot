@@ -16,14 +16,14 @@ interface Props<T> {
 
 export function Table<T>({ columns, data, keyFn, emptyText = 'No data' }: Props<T>) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
+    <div className="glass overflow-x-auto">
       <table className="w-full text-sm border-collapse min-w-max">
         <thead>
-          <tr className="bg-bg-elevated">
+          <tr className="sticky top-0 z-10 bg-bg-elevated/90 backdrop-blur-sm">
             {columns.map(col => (
               <th
                 key={col.key}
-                className={`px-3 py-2 text-text-secondary font-sans text-xs uppercase tracking-widest font-medium whitespace-nowrap text-${col.align ?? 'left'}`}
+                className={`px-3.5 py-2.5 text-text-secondary font-sans text-[11px] uppercase tracking-[0.12em] font-semibold whitespace-nowrap text-${col.align ?? 'left'} border-b border-border`}
               >
                 {col.header}
               </th>
@@ -33,17 +33,20 @@ export function Table<T>({ columns, data, keyFn, emptyText = 'No data' }: Props<
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-3 py-8 text-center text-text-muted">
+              <td colSpan={columns.length} className="px-3 py-12 text-center text-text-muted">
                 {emptyText}
               </td>
             </tr>
           ) : (
             data.map(row => (
-              <tr key={keyFn(row)} className="border-t border-border hover:bg-bg-elevated transition-colors">
+              <tr
+                key={keyFn(row)}
+                className="border-b border-white/[0.05] last:border-0 hover:bg-white/[0.035] transition-colors"
+              >
                 {columns.map(col => (
                   <td
                     key={col.key}
-                    className={`px-3 py-2.5 font-mono text-text-primary whitespace-nowrap text-${col.align ?? 'left'}`}
+                    className={`px-3.5 py-2.5 font-mono font-tabular text-text-primary whitespace-nowrap text-${col.align ?? 'left'}`}
                   >
                     {col.render(row)}
                   </td>

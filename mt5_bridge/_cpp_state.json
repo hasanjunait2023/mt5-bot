@@ -1,0 +1,24 @@
+{
+  "ts": "2026-05-19T16:55:03.134264+00:00",
+  "runner": "cpp_live_trader",
+  "running": true,
+  "mt5_connected": true,
+  "agent_mode": "veto",
+  "dd_breaker_tripped": false,
+  "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY"
+  ],
+  "magic": 20260519,
+  "last_signals": {
+    "EURUSD": null,
+    "GBPUSD": null,
+    "USDJPY": null
+  },
+  "account": {
+    "login": 415733764,
+    "balance": 942.3,
+    "equity": 942.3
+  }
+}

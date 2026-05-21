@@ -1,0 +1,32 @@
+{
+  "tracked_eas": ["S1", "S2", "S4", "S5", "S6", "MTF"],
+  "guardian_poll_seconds": 60,
+  "coach_cycle_hours": 6,
+  "graduation_criteria": {
+    "min_trades": 40,
+    "min_win_rate_pct": 55,
+    "min_profit_factor": 1.4,
+    "max_daily_dd_pct": 3.0,
+    "min_days_on_demo": 5
+  },
+  "validator_pass_criteria": {
+    "min_profit_factor": 1.4,
+    "min_win_rate_pct": 52,
+    "max_drawdown_pct": 15
+  },
+  "guardian_thresholds": {
+    "soft_max_consecutive_losses": 3,
+    "hard_max_consecutive_losses": 5,
+    "soft_win_rate_last_10": 35,
+    "hard_win_rate_last_10": 25,
+    "no_trade_alert_hours": 3,
+    "soft_dd_pct": 10,
+    "hard_dd_pct": 15
+  },
+  "test_pairs": ["EURUSD", "XAUUSD", "GBPUSD", "USDJPY", "CADJPY", "EURJPY"],
+  "test_sessions": {
+    "london": [7, 12],
+    "new_york": [13, 17],
+    "asian": [0, 6]
+  }
+}

@@ -1,0 +1,7 @@
+2026-05-19 21:59:09  INFO  Connected #415733764 @ Exness-MT5Trial14 | Equity $950.99
+2026-05-19 21:59:09  INFO  CPP-FX ['EURUSD', 'GBPUSD', 'USDJPY'] | risk 1.0% | agent=advisory | hard daily DD 6.0%
+2026-05-19 22:34:43  INFO  Connected #415733764 @ Exness-MT5Trial14 | Equity $942.30
+2026-05-19 22:34:43  INFO  CPP-FX ['EURUSD', 'GBPUSD', 'USDJPY'] | risk 1.0% | agent=veto | hard daily DD 6.0%
+2026-05-19 22:34:43  WARNING  HARD DAILY DD 6.65% >= 6.0% — no new trades today (account-wide)
+2026-05-19 22:43:02  INFO  Connected #415733764 @ Exness-MT5Trial14 | Equity $942.30
+2026-05-19 22:43:02  INFO  CPP-FX ['EURUSD', 'GBPUSD', 'USDJPY'] | risk 1.0% | agent=veto | hard daily DD 20.0%

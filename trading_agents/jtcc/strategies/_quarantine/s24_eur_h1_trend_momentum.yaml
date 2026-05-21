@@ -1,0 +1,53 @@
+# ============================================================
+# S24: EUR H1 Trend Momentum (D1+H4 bias + H1 ADX-filtered entry)
+# Hypothesis basis: TSMOM PF 4.06 on EUR proves trend-following has edge on
+#                   EUR. H1 with ADX>25 filter ensures we ONLY trade when
+#                   trend is strong — historically the most profitable subset
+#                   of trend-following signals.
+# Reference: ADX-filtered momentum is a documented robustness improvement
+#            over raw momentum (Welles Wilder 1978).
+# Tunable parameters: 3 (adx_threshold, ema_period, min_rr)
+# Rationale: Combine validated EUR trend edge with regime filter (ADX) to
+#            reduce false signals during ranging periods.
+# ============================================================
+
+name: "S24 EUR H1 Trend Momentum"
+version: 1.0
+description: "EUR H1 trend continuation with ADX>25 filter. Combines TSMOM edge with regime filter."
+symbols: [EURUSD]
+timeframe: H1
+based_on:
+  reference_strategy: "TSMOM 12-Month (s14_tsmom_12m.yaml)"
+  proven_edge: "EUR D1 PF 4.06 — strongest validated signal on Junait's data"
+  hypothesis: "Filter false signals via ADX trending-regime gate. Higher quality entries."
+
+entry_rules:
+  buy:
+    # Multi-TF trend alignment + strong trend gate
+    - "mtf.D1.trend == BULLISH"
+    - "mtf.H1.trend == BULLISH"
+    - "mtf.H1.price > mtf.H1.ema20"
+    - "momentum.adx > 25"
+    - "momentum.adx_trending is true"
+    - "session.primary is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "mtf.D1.trend == BEARISH"
+    - "mtf.H1.trend == BEARISH"
+    - "mtf.H1.price < mtf.H1.ema20"
+    - "momentum.adx > 25"
+    - "momentum.adx_trending is true"
+    - "session.primary is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 8
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 3
+  confidence_required: 7

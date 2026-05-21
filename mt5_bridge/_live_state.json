@@ -1,29 +1,65 @@
 {
-  "timestamp": "2026-05-18T06:59:03.098885+00:00",
+  "timestamp": "2026-05-21T14:48:03.007144+00:00",
   "trader_running": true,
   "mt5_connected": true,
-  "nvidia_api_alive": false,
+  "nvidia_api_alive": true,
   "account": {
     "login": 415733764,
     "server": "Exness-MT5Trial14",
-    "balance": 95.0,
-    "equity": 95.0,
-    "margin": 0.0,
-    "free_margin": 95.0,
-    "daily_pnl": 0.0,
+    "balance": 1079.92,
+    "equity": 1076.34,
+    "margin": 11.13,
+    "free_margin": 1065.21,
+    "daily_pnl": 12.45,
     "daily_dd_pct": 0.0,
     "total_dd_pct": 0.0,
-    "start_balance": 95.0
+    "start_balance": 1067.47
   },
-  "positions": [],
+  "positions": [
+    {
+      "ticket": 3156118990,
+      "symbol": "NZDJPY",
+      "direction": "BUY",
+      "volume": 0.38,
+      "entry_price": 93.28,
+      "current_price": 93.265,
+      "sl": 93.234,
+      "tp": 93.371,
+      "swap": 0.0,
+      "profit": -3.58,
+      "open_time": 1779374764,
+      "magic": 20260100,
+      "ea_name": "MTF_EMA_Scalper"
+    }
+  ],
   "ea_positions": {
-    "MTF_EMA_Scalper": [],
+    "MTF_EMA_Scalper": [
+      {
+        "ticket": 3156118990,
+        "symbol": "NZDJPY",
+        "direction": "BUY",
+        "volume": 0.38,
+        "entry_price": 93.28,
+        "current_price": 93.265,
+        "sl": 93.234,
+        "tp": 93.371,
+        "swap": 0.0,
+        "profit": -3.58,
+        "open_time": 1779374764,
+        "magic": 20260100,
+        "ea_name": "MTF_EMA_Scalper"
+      }
+    ],
     "ScalpMaster_HFT": [],
     "ScalpMaster_HFT_Aggressive": [],
     "XAUUSD_Gold_Scalper": [],
     "BTCUSD_Scalper": []
   },
-  "daily_trades": {},
+  "daily_trades": {
+    "AUDCHF": 2,
+    "USDCAD": 1,
+    "NZDJPY": 1
+  },
   "last_signals": {
     "CADJPY": {
       "direction": null,
@@ -70,8 +106,8 @@
       "bar_time": null
     },
     "NZDJPY": {
-      "direction": null,
-      "bar_time": null
+      "direction": "BUY",
+      "bar_time": "2026-05-21T14:45:00+00:00"
     },
     "AUDCAD": {
       "direction": null,

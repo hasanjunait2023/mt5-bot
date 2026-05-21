@@ -1,0 +1,60 @@
+# ============================================================
+# JTCC STRATEGY TEMPLATE — Copy this file to create a new strategy
+# Drop in strategies/ folder — system auto-loads within 5 seconds
+# ============================================================
+
+name: "My Strategy Name"       # Unique name (required)
+version: 1.0
+description: "Brief description of what this strategy does"
+symbols:
+  - XAUUSD                     # Leave empty [] to apply to all symbols
+  - EURUSD
+timeframe: M5                  # Informational (feed uses config.yaml timeframes)
+session:                       # Informational (session gate is in CLAUDE.md rules)
+  - london_kz
+  - ny_kz
+
+# ============================================================
+# ENTRY RULES — all conditions must be TRUE (AND logic)
+# Supported operators: ==, !=, >, <, >=, <=, in, not in, is true, is false
+# Context paths: market.trend, session.active, session.primary,
+#   momentum.rsi, momentum.atr, momentum.adx, momentum.ha_bull, momentum.ha_bear,
+#   momentum.ema20_above_50, momentum.ema50_above_200, momentum.price_above_ema200,
+#   momentum.stoch_oversold, momentum.stoch_overbought, momentum.macd_bullish,
+#   smc.sweep_detected, smc.in_ote, smc.in_discount, smc.in_premium,
+#   market.bos, market.choch, market.mss, market.hh, market.hl,
+#   news.blocked, risk.can_trade, risk.daily_dd_pct
+# ============================================================
+entry_rules:
+  buy:
+    - "market.trend == BULLISH"
+    - "session.active is true"
+    - "session.primary is true"
+    - "news.blocked is false"
+    - "momentum.rsi < 50"
+    - "momentum.ha_bull is true"
+  sell:
+    - "market.trend == BEARISH"
+    - "session.active is true"
+    - "session.primary is true"
+    - "news.blocked is false"
+    - "momentum.rsi > 50"
+    - "momentum.ha_bear is true"
+
+# ============================================================
+# EXIT RULES
+# sl_method: atr | sweep_low | swing_low | fixed
+# tp_method: rr (uses min_rr below) | liquidity_pool | fixed
+# ============================================================
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 5
+  min_rr: 2.0
+
+# ============================================================
+# RISK CONFIG (per-strategy overrides)
+# ============================================================
+risk:
+  max_trades_per_day: 2
+  confidence_required: 6

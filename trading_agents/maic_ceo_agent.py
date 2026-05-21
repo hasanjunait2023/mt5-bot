@@ -44,6 +44,41 @@ You are the central intelligence and master orchestrator of this automated tradi
 - performance_optimizer.py — Analyzes and optimizes portfolio performance
 - nvidia_model_router.py — Routes to NANO/LIGHT/MEDIUM/HEAVY NVIDIA NIM models
 
+### Strategy Scout (trading_agents/strategy_scout/) — Autonomous strategy discovery
+- strategy_scout.py — Collects trading edges from RSS/news, invents new setups with Claude, normalizes to canonical params
+- growth_pipeline.py — Autonomous loop: Scout → backtest → pitches winners to YOU (Maic) → you delegate dev_lead + ea_team
+
+### Supervisor (trading_agents/supervisor_agent.py) — Workspace-wide heartbeat
+- supervisor_agent.py — Runs every 10h; audits ALL layers; escalates bugs to dev team; confirms resolution; sends full Telegram report
+
+### EA Lifecycle Agents (trading_agents/ea_agents/) — EA management team
+- ea_lifecycle_manager.py — Orchestrator, routes EA tasks (entry point for all EA team requests)
+- ea_guardian.py — Live watchdog: detects anomalies, auto-escalates bugs to dev team
+- ea_coach.py — Performance analyst: 6h cycles, improvement proposals, demo→live gate, Telegram dialogue
+- ea_validator.py — Compatibility tester: tests EA across pairs × sessions × market conditions
+
+### JTCC — Junait Trading Command Center (trading_agents/jtcc/)
+The new 4-layer autonomous signal engine. Token-efficient (max 15 Claude API calls/day).
+Runs alongside EAs on magic 20260600 (separate from EA magics).
+- jtcc.main — Signal engine (L0 feed → L1 analysis → L2 strategy army → L3 master → L4 execution)
+- jtcc.guardian — JTCC-specific watchdog (60s cycle, escalates via incident_pipeline)
+- jtcc.coach — 6h analysis, proposes disable/pause/expand per strategy
+- jtcc.digest — Daily 00:30 BD summary to Telegram digest thread
+- strategies/*.yaml — 13 YAML strategies (hot-reloadable, drop new file = auto-load)
+- Master Agent uses llm_fallback (Claude→NVIDIA), same as other agents
+- All notifications via telegram_hq (live_trading, critical, ea_coach, digest threads)
+- Dashboard: /jtcc page with equity curve, heatmap, latency, confluence radar
+
+### Dev Agents (trading_agents/dev_agents/) — Engineering team
+- dev_lead.py — Orchestrates all dev agents (entry point for all dev tasks)
+- monitor_agent.py — Live system watchdog (anomaly detection)
+- backtest_analyst.py — Auto-analyzes backtest reports, generates verdicts
+- test_writer.py — Generates pytest test suites for any Python module
+- code_reviewer.py — Claude-powered code review on git diffs
+- debug_investigator.py — Root cause analysis for strategy issues
+- ea_sync_agent.py — Detects Python/MQL5 EA parameter drift
+- doc_keeper.py — Keeps docstrings and documentation up to date
+
 ### Dashboard
 - FastAPI backend at dashboard/backend/
 - Real-time WebSocket position tracking
@@ -87,6 +122,27 @@ Available delegations:
 - `[DELEGATE: video_analysis | path=videos/strategy.mp4]`
 - `[DELEGATE: session_analysis | symbol=XAUUSD]`
 - `[DELEGATE: ml_signals | symbol=XAUUSD]`
+- `[DELEGATE: dev_lead | task="write tests for backtest.py"]`
+- `[DELEGATE: dev_lead | task="debug S6 no trades after reconnect"]`
+- `[DELEGATE: dev_lead | task="review code HEAD"]`
+- `[DELEGATE: dev_lead | task="analyze backtests"]`
+- `[DELEGATE: dev_lead | task="sync S6 EA params"]`
+- `[DELEGATE: dev_lead | task="weekly health check"]`
+- `[DELEGATE: ea_team | task="check S6 health"]`
+- `[DELEGATE: ea_team | task="is S6 ready for live?"]`
+- `[DELEGATE: ea_team | task="test S6 on GBPUSD"]`
+- `[DELEGATE: ea_team | task="run full validation on S6"]`
+- `[DELEGATE: ea_team | task="S6 answer YES"]`
+- `[DELEGATE: ea_team | task="weekly EA report"]`
+- `[DELEGATE: supervisor | --once]` — run a full system audit right now
+- `[DELEGATE: scout | --once]` — run one strategy-discovery cycle right now
+
+## Delegation Integrity (non-negotiable)
+- If a delegation result begins with `[DELEGATION FAILED ...]`, you MUST report
+  it to Junait as a FAILURE, quote the reason, and propose a next step.
+- NEVER claim a task succeeded, or summarize truncated/timed-out output as
+  complete. A timeout or non-zero exit is a failure, not a partial success.
+- If you are unsure whether an action ran, say so explicitly — do not guess.
 
 ## Communication Style
 - Be decisive and strategic — you are the CEO
@@ -147,6 +203,10 @@ def _run_delegation(delegation_str: str) -> str:
         "ml_signals": BASE_DIR / "mt5_bridge" / "ml_enhanced_signals.py",
         "video_analysis": BASE_DIR / "trading_agents" / "video_analysis_agent.py",
         "live_status": BASE_DIR / "mt5_bridge" / "mt5_bridge.py",
+        "dev_lead": BASE_DIR / "trading_agents" / "dev_agents" / "dev_lead.py",
+        "ea_team":    BASE_DIR / "trading_agents" / "ea_agents"  / "ea_lifecycle_manager.py",
+        "supervisor": BASE_DIR / "trading_agents" / "supervisor_agent.py",
+        "scout":      BASE_DIR / "trading_agents" / "strategy_scout" / "growth_pipeline.py",
     }
 
     if script not in script_map:
@@ -156,26 +216,49 @@ def _run_delegation(delegation_str: str) -> str:
     if not script_path.exists():
         return f"Script not found: {script_path}"
 
-    cmd = [sys.executable, str(script_path)]
+    # Package modules MUST run via `-m` so their intra-package imports
+    # (`from .notifier import notify`, `from trading_agents... import ...`)
+    # resolve. cwd=BASE_DIR puts the trading_agents namespace package on
+    # sys.path. Standalone scripts (mt5_bridge/*, video_analysis) stay as
+    # file-path invocations.
+    _MODULE_TARGETS = {
+        "dev_lead":   "trading_agents.dev_agents.dev_lead",
+        "ea_team":    "trading_agents.ea_agents.ea_lifecycle_manager",
+        "supervisor": "trading_agents.supervisor_agent",
+        "scout":      "trading_agents.strategy_scout.growth_pipeline",
+    }
+    if script in _MODULE_TARGETS:
+        cmd = [sys.executable, "-m", _MODULE_TARGETS[script]]
+    else:
+        cmd = [sys.executable, str(script_path)]
     if params_raw:
         for param in params_raw.split():
             cmd.append(f"--{param}" if "=" in param else param)
 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, cwd=BASE_DIR)
-        output = result.stdout.strip() or result.stderr.strip() or "Script ran with no output."
-        return output[:2000]  # cap output
+        out = (result.stdout or "").strip()
+        err = (result.stderr or "").strip()
+        if result.returncode != 0:
+            # Non-zero exit — the script FAILED. Never let this be summarized
+            # as success: mark it explicitly so Maic reports the failure.
+            return (f"[DELEGATION FAILED rc={result.returncode}] {script} "
+                    f"errored — DO NOT report this as success.\n"
+                    f"{(err or out)[:1800]}")
+        return (out or err or "Script ran with no output.")[:2000]
     except subprocess.TimeoutExpired:
-        return f"Delegation to {script} timed out after 120 seconds."
+        return (f"[DELEGATION FAILED: timeout] {script} exceeded 120s and was "
+                f"killed — result is INCOMPLETE; DO NOT report success.")
     except Exception as e:
-        return f"Delegation error: {e}"
+        return f"[DELEGATION FAILED: error] {script}: {e}"
 
 
 # ── NVIDIA fallback ───────────────────────────────────────────────────────────
 
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
-# Primary CEO model: Nemotron Super 49B (confirmed fast ~1.5s)
-# Fallback CEO model: Mistral Large 675B (confirmed ~6.4s, deepest reasoning)
+# Primary CEO brain: Claude Opus 4.7 via Claude CLI (see _call_claude --model).
+# These NVIDIA models are the offline fallback only, used when the Claude CLI
+# is unavailable: Nemotron Super 49B (fast ~1.5s) → Mistral Large 675B (deepest).
 NVIDIA_CEO_MODEL         = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
 NVIDIA_CEO_MODEL_FALLBACK = "mistralai/mistral-large-3-675b-instruct-2512"
 
@@ -219,13 +302,23 @@ def _call_nvidia(history: list, user_message: str) -> str:
                 model=model,
                 messages=messages,
                 temperature=0.3,
-                max_tokens=2048,
+                max_tokens=4096,
                 timeout=120,
             )
-            content = resp.choices[0].message.content
-            if content and content.strip():
+            msg = resp.choices[0].message
+            content = (getattr(msg, "content", None) or "").strip()
+            # Nemotron-style reasoning models put the answer in reasoning_content
+            # when content is empty. Pull from there so we never silently fail.
+            if not content:
+                rc = (getattr(msg, "reasoning_content", None) or "").strip()
+                if rc:
+                    # Strip any leading <think>...</think> block if present
+                    cleaned = re.sub(r"^<think>.*?</think>\s*", "", rc, flags=re.S)
+                    content = cleaned.strip() or rc
+            if content:
                 log.info(f"[Maic] NVIDIA fallback responded via {model}")
-                return content.strip()
+                return content
+            log.warning(f"[Maic] NVIDIA model {model} returned empty content+reasoning")
         except Exception as e:
             log.warning(f"[Maic] NVIDIA model {model} failed: {e}")
 
@@ -239,7 +332,8 @@ def _call_claude(full_prompt: str) -> str | None:
     try:
         stdin_payload = f"[SYSTEM CONTEXT]\n{MAIC_SYSTEM_PROMPT}\n\n[CONVERSATION]\n{full_prompt}"
         result = subprocess.run(
-            ["claude", "-p", "--no-session-persistence"],
+            # CEO runs on the most capable model — Opus 4.7
+            ["claude", "-p", "--model", "claude-opus-4-7", "--no-session-persistence"],
             input=stdin_payload,
             capture_output=True,
             text=True,
@@ -269,7 +363,7 @@ def _call_claude_followup(followup_payload: str) -> str | None:
     """Claude CLI call for delegation followup. Returns text or None."""
     try:
         result = subprocess.run(
-            ["claude", "-p", "--no-session-persistence"],
+            ["claude", "-p", "--model", "claude-opus-4-7", "--no-session-persistence"],
             input=followup_payload,
             capture_output=True, text=True, timeout=120,
             cwd=str(BASE_DIR), encoding="utf-8", errors="replace"
@@ -278,6 +372,19 @@ def _call_claude_followup(followup_payload: str) -> str | None:
         return text if text and result.returncode == 0 else None
     except Exception:
         return None
+
+
+_ACTION_KW = ("backtest", "optimize", "run ", "audit", "validate", "deploy",
+              "status", "position", "analy", "sync", "health check",
+              "go live", "graduate", "scout", "supervisor", "ml signal")
+
+
+def _looks_actionable(msg: str) -> bool:
+    """Heuristic: did Junait likely ask for an operation? Used only to flag a
+    dropped action transparently — never to auto-execute (the live bridge is
+    not something to fire on a fuzzy keyword guess)."""
+    m = msg.lower()
+    return any(k in m for k in _ACTION_KW)
 
 
 def chat(chat_id: str, user_message: str) -> str:
@@ -336,6 +443,15 @@ def chat(chat_id: str, user_message: str) -> str:
 
     if backend == "nvidia":
         response += "\n\n[via NVIDIA NIM — Claude CLI unavailable]"
+
+    # Fail-safe: an actionable request that produced NO delegation was likely
+    # dropped (model omitted the [DELEGATE] block). Don't silently swallow it,
+    # and don't risk auto-firing scripts against the live bridge — flag it.
+    if _looks_actionable(user_message):
+        log.warning("[Maic] Actionable request with no delegation: %r", user_message[:120])
+        response += ("\n\n⚠️ I did not run any operation for this. If you "
+                     "intended an action, reply with an explicit command "
+                     '(e.g. "backtest XAUUSD M15") and I will execute it.')
 
     history.append({"user": user_message, "assistant": response,
                     "timestamp": datetime.now().isoformat()})

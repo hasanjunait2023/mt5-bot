@@ -30,7 +30,7 @@ MODELS = {
     # Fastest — 1B; heartbeat / boolean yes-no (confirmed ✅)
     "NANO": {
         "primary":   "meta/llama-3.2-1b-instruct",
-        "fallback":  "google/gemma-3-4b-it",
+        "fallback":  "meta/llama-3.1-8b-instruct",
         "max_tokens": 64,
         "timeout":   30,
         "description": "Heartbeat, ping, boolean status checks",
@@ -39,7 +39,7 @@ MODELS = {
     # Quick — 8B Nemotron Nano; quick filter (confirmed ✅ ~4s)
     "LIGHT": {
         "primary":   "nvidia/llama-3.1-nemotron-nano-8b-v1",
-        "fallback":  "deepseek-ai/deepseek-v4-flash",
+        "fallback":  "meta/llama-3.1-8b-instruct",
         "max_tokens": 256,
         "timeout":   30,
         "description": "Market status, quick signal filter, log summary",
@@ -48,7 +48,7 @@ MODELS = {
     # Workhorse — 70B Llama; signal analysis, trade decisions (confirmed ✅ ~4s)
     "MEDIUM": {
         "primary":   "meta/llama-3.3-70b-instruct",
-        "fallback":  "deepseek-ai/deepseek-v4-flash",
+        "fallback":  "nvidia/llama-3.3-nemotron-super-49b-v1.5",
         "max_tokens": 1024,
         "timeout":   60,
         "description": "Signal analysis, trade validation, news sentiment",
@@ -65,8 +65,8 @@ MODELS = {
 
     # Ultra — mistral-large-3 675B (confirmed ✅ 6.4s); for future deepest analysis
     "ULTRA": {
-        "primary":   "mistralai/mistral-large-3-675b-instruct-2512",
-        "fallback":  "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+        "primary":   "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+        "fallback":  "nvidia/llama-3.3-nemotron-super-49b-v1",
         "max_tokens": 4096,
         "timeout":   180,
         "description": "Deepest multi-symbol analysis, rare complex decisions",

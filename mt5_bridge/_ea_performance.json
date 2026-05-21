@@ -1,0 +1,91 @@
+{
+  "generated_at": "2026-05-19T16:52:31.597658+00:00",
+  "lookback_days": 30,
+  "account": {
+    "login": 415733764,
+    "server": "Exness-MT5Trial14",
+    "balance": 942.3,
+    "equity": 942.3,
+    "currency": "USD"
+  },
+  "summary": {
+    "total_eas": 4,
+    "total_trades": 6,
+    "total_net_pnl": -67.7
+  },
+  "eas": [
+    {
+      "magic": 20260516,
+      "name": "ScalpMaster HFT",
+      "group": "ScalpMaster",
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl": -5.0,
+      "gross_profit": 0,
+      "gross_loss": 5.0,
+      "avg_win": 0.0,
+      "avg_loss": 5.0,
+      "expectancy": -5.0,
+      "max_drawdown": 5.0,
+      "last_close": "2026-05-17T01:41:20"
+    },
+    {
+      "magic": 20260102,
+      "name": "S1 Swing Scalp",
+      "group": "FxVault",
+      "trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl": -17.39,
+      "gross_profit": 0,
+      "gross_loss": 17.39,
+      "avg_win": 0.0,
+      "avg_loss": 8.7,
+      "expectancy": -8.7,
+      "max_drawdown": 17.39,
+      "last_close": "2026-05-19T11:15:06"
+    },
+    {
+      "magic": 20260100,
+      "name": "MTF EMA Scalper M1",
+      "group": "ScalpMaster",
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl": -19.52,
+      "gross_profit": 0,
+      "gross_loss": 19.52,
+      "avg_win": 0.0,
+      "avg_loss": 19.52,
+      "expectancy": -19.52,
+      "max_drawdown": 19.52,
+      "last_close": "2026-05-19T15:15:12"
+    },
+    {
+      "magic": 20260500,
+      "name": "S5 News Spike Reversal",
+      "group": "FxVault",
+      "trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "net_pnl": -25.79,
+      "gross_profit": 0,
+      "gross_loss": 25.79,
+      "avg_win": 0.0,
+      "avg_loss": 12.89,
+      "expectancy": -12.89,
+      "max_drawdown": 25.79,
+      "last_close": "2026-05-19T16:26:01"
+    }
+  ],
+  "note": "Realized P&L incl. spread/commission/swap \u2014 real (not backtest)."
+}

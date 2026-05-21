@@ -1,0 +1,9 @@
+RiskPct=1.0
+ADX_Min=25.0
+StochDeepBuy=25.0
+StochDeepSell=75.0
+SL_ATR_Mult=0.3
+RR=2.5
+Max_Spread=60
+MaxTradesDay=3
+MagicNumber=20261500

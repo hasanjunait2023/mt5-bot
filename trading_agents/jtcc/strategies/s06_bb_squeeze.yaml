@@ -1,0 +1,39 @@
+name: "BB Squeeze Breakout"
+version: 2.0
+description: "BB squeeze breakout D1 — VALIDATED 2026-05-21 (session-fix + real momentum). The ONLY profitable Elite-family strategy. XAU PF 1.53 / XAG PF 1.60."
+symbols: [XAUUSD, XAGUSD]
+timeframe: D1
+backtest:
+  source: trading_agents/jtcc/backtest_jtcc.py
+  date: 2026-05-21
+  config: "Session filter removed (D1 bars close off-session), real momentum indicators"
+  proven_results:
+    XAUUSD: {trades: 142, wr_pct: 50.0, pf: 1.53, verdict: DECENT}
+    XAGUSD: {trades: 142, wr_pct: 46.5, pf: 1.60, verdict: DECENT}
+  notes: "142 trades each = strong sample. Survived where all other Elite-family strategies (J/V6/G/HA/Stoch) failed. PROVEN profitable."
+
+entry_rules:
+  buy:
+    - "market.trend == BULLISH"
+    - "market.bos is true"
+    - "momentum.adx_trending is true"
+    - "momentum.volatility != EXTREME"
+    - "news.blocked is false"
+    - "momentum.ema50_above_200 is true"
+  sell:
+    - "market.trend == BEARISH"
+    - "market.bos is true"
+    - "momentum.adx_trending is true"
+    - "momentum.volatility != EXTREME"
+    - "news.blocked is false"
+    - "momentum.ema50_above_200 is false"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 50
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 1
+  confidence_required: 6

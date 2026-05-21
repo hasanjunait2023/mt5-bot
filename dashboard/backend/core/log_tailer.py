@@ -60,6 +60,13 @@ class LogTailer(threading.Thread):
             with self._lock:
                 self._buf.append(entry)
             ws_manager.broadcast_sync({"type": "log", "data": entry})
+            if entry["level"] == "ERROR":
+                try:
+                    from .notifier import send
+                    send("live_trading", f"`{entry['message'][:300]}`",
+                         level="CRITICAL", title="Live Trader Error")
+                except Exception as e:
+                    log.debug(f"hq notify error: {e}")
 
     def _parse(self, line: str) -> dict:
         m = _LINE_RE.match(line)

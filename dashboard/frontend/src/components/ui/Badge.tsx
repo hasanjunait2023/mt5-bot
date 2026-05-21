@@ -6,15 +6,20 @@ interface Props {
 }
 
 const STYLES = {
-  buy:     'text-profit border border-profit/30 bg-bg-overlay',
-  sell:    'text-loss border border-loss/30 bg-bg-overlay',
-  neutral: 'text-text-secondary border border-border bg-bg-overlay',
-  info:    'text-accent border border-accent/30 bg-bg-overlay',
+  buy:     'text-profit ring-1 ring-profit/30 bg-profit/10',
+  sell:    'text-loss ring-1 ring-loss/30 bg-loss/10',
+  neutral: 'text-text-secondary ring-1 ring-border bg-white/[0.04]',
+  info:    'text-accent ring-1 ring-accent/30 bg-accent/10',
 }
 
 export function Badge({ children, variant = 'neutral' }: Props) {
   return (
-    <span className={clsx('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold font-mono', STYLES[variant])}>
+    <span
+      className={clsx(
+        'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold font-mono tracking-wide',
+        STYLES[variant],
+      )}
+    >
       {children}
     </span>
   )

@@ -1,0 +1,31 @@
+name: "Stoch GBP S14"
+version: 1.0
+description: "S14 Stochastic deep cross GBPUSD H1 — 66.7% WR."
+symbols: [GBPUSD, GBPJPY]
+timeframe: H1
+
+entry_rules:
+  buy:
+    - "momentum.stoch_oversold is true"
+    - "momentum.price_above_ema200 is true"
+    - "momentum.ema50_above_200 is true"
+    - "momentum.rsi < 70"
+    - "session.primary is true"
+    - "news.blocked is false"
+  sell:
+    - "momentum.stoch_overbought is true"
+    - "momentum.price_above_ema200 is false"
+    - "momentum.ema50_above_200 is false"
+    - "momentum.rsi > 30"
+    - "session.primary is true"
+    - "news.blocked is false"
+
+exit_rules:
+  sl_method: "swing_low"
+  tp_method: "rr"
+  sl_buffer_pips: 10
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 2
+  confidence_required: 6

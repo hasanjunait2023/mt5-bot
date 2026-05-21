@@ -1,0 +1,29 @@
+{
+  "cycle_hours": 8,
+  "ideas_per_cycle": 5,
+  "target_symbols": ["EURUSD", "XAUUSD", "GBPUSD", "USDJPY"],
+  "sources": {
+    "rss": true,
+    "firecrawl": true,
+    "news": true,
+    "claude_brainstorm": true,
+    "gap_fill": true
+  },
+  "rss_feeds": [
+    "https://www.babypips.com/feed.rss",
+    "https://www.forexlive.com/feed/news"
+  ],
+  "firecrawl_urls": [
+    "https://www.forexlive.com/Technical/",
+    "https://www.babypips.com/news"
+  ],
+  "thresholds": {
+    "min_confidence": 0.45,
+    "pf_threshold": 1.4,
+    "consistency_threshold": 0.5,
+    "dedup_similarity": 0.9
+  },
+  "backtest_months": 3,
+  "stall_cycles": 6,
+  "max_pitches_per_cycle": 2
+}

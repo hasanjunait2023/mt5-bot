@@ -1,0 +1,29 @@
+name: "Elite V6"
+version: 1.0
+description: "HA+ADX30 Gold D1 — 76.9% WR. Strict ADX30 filter."
+symbols: [XAUUSD]
+timeframe: D1
+
+entry_rules:
+  buy:
+    - "momentum.ha_bull is true"
+    - "momentum.ha_streak >= 3"
+    - "momentum.ema50_above_200 is true"
+    - "momentum.adx >= 30"
+    - "news.blocked is false"
+  sell:
+    - "momentum.ha_bear is true"
+    - "momentum.ha_streak >= 3"
+    - "momentum.ema50_above_200 is false"
+    - "momentum.adx >= 30"
+    - "news.blocked is false"
+
+exit_rules:
+  sl_method: "swing_low"
+  tp_method: "rr"
+  sl_buffer_pips: 50
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 1
+  confidence_required: 7

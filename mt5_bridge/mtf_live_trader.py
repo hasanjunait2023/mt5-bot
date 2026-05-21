@@ -32,6 +32,7 @@ BARS_M15     = 100
 BAR_WAIT_SEC = 3
 LOG_PATH     = Path(__file__).parent / "_live_log.txt"
 STATE_PATH   = Path(__file__).parent / "_live_state.json"
+DAILY_PATH   = Path(__file__).parent / "_daily_persist.json"
 DIV          = "=" * 64
 
 NVIDIA_HB_INTERVAL = 1800  # check NVIDIA API every 30 minutes
@@ -94,16 +95,38 @@ log = logging.getLogger("MTF_Live")
 # ── Daily state ───────────────────────────────────────────────────────────────
 
 class DailyState:
-    def __init__(self, balance: float):
-        self.date          = datetime.now(timezone.utc).date()
-        self.start_balance = balance
-        self.trades: Dict[str, int] = {}
+    def __init__(self, start_balance: float, date, trades: Dict[str, int]):
+        self.date          = date
+        self.start_balance = start_balance
+        self.trades        = trades
+
+    @classmethod
+    def load(cls, current_balance: float) -> "DailyState":
+        """Load from disk if same UTC day; otherwise start fresh and save."""
+        today = datetime.now(timezone.utc).date()
+        if DAILY_PATH.exists():
+            try:
+                d = _json.loads(DAILY_PATH.read_text())
+                if d.get("date") == str(today):
+                    log.info(f"Daily state restored — start=${d['start_balance']:.2f}  trades={d.get('trades', {})}")
+                    return cls(d["start_balance"], today, d.get("trades", {}))
+            except Exception:
+                pass
+        inst = cls(current_balance, today, {})
+        inst.save()
+        return inst
+
+    def save(self):
+        DAILY_PATH.write_text(_json.dumps(
+            {"date": str(self.date), "start_balance": self.start_balance, "trades": self.trades}
+        ))
 
     def roll_if_new_day(self, balance: float):
         today = datetime.now(timezone.utc).date()
         if today != self.date:
             log.info(f"New day {today} — resetting daily state")
             self.date = today; self.start_balance = balance; self.trades = {}
+            self.save()
 
     def daily_loss_pct(self, equity: float) -> float:
         if self.start_balance <= 0: return 0.0
@@ -111,6 +134,7 @@ class DailyState:
 
     def add_trade(self, symbol: str):
         self.trades[symbol] = self.trades.get(symbol, 0) + 1
+        self.save()
 
     def trades_today(self, symbol: str) -> int:
         return self.trades.get(symbol, 0)
@@ -233,15 +257,34 @@ def place_order(symbol, signal, sl, rr, risk_pct):
         log.warning(f"  {symbol}: lot=0, skip")
         return False
 
+    # Broker-supported filling mode. Exness rejects a hardcoded IOC on many
+    # symbols (retcode 10030 = INVALID_FILL). The MetaTrader5 Python package
+    # does NOT expose SYMBOL_FILLING_* constants, so read the raw symbol_info
+    # bitmask directly (FOK bit = 1, IOC bit = 2) to pick the preferred
+    # ORDER_FILLING_* first, then fall back through the others on rejection.
+    fm = int(getattr(sym, "filling_mode", 0) or 0)
+    if fm & 1:        # SYMBOL_FILLING_FOK
+        fill_order = [mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_RETURN]
+    elif fm & 2:      # SYMBOL_FILLING_IOC
+        fill_order = [mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_RETURN]
+    else:
+        fill_order = [mt5.ORDER_FILLING_RETURN, mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC]
+
     req = {
         "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol,
         "volume": lots, "type": order_type, "price": entry,
         "sl": round(sl, digits), "tp": round(tp, digits),
         "deviation": 10, "magic": MAGIC, "comment": "MTF_Scalper",
         "type_time": mt5.ORDER_TIME_GTC,
-        "type_filling": mt5.ORDER_FILLING_IOC,
+        "type_filling": fill_order[0],
     }
+    _INVALID_FILL = 10030  # TRADE_RETCODE_INVALID_FILL (numeric — constant not always exported)
     res = mt5.order_send(req)
+    _fi = 1
+    while (res is None or res.retcode == _INVALID_FILL) and _fi < len(fill_order):
+        req["type_filling"] = fill_order[_fi]
+        _fi += 1
+        res = mt5.order_send(req)
     if res is None or res.retcode != mt5.TRADE_RETCODE_DONE:
         code = res.retcode if res else "None"
         log.error(f"  {symbol}: order FAILED retcode={code}")
@@ -393,7 +436,7 @@ def main():
 
     acc             = mt5.account_info()
     initial_balance = acc.balance
-    daily           = DailyState(acc.balance)
+    daily           = DailyState.load(acc.balance)
     p               = MTF_DEFAULT_PARAMS.copy()
     enable          = MTF_DEFAULT_FILTERS.copy()
     enable["currency_strength"] = False

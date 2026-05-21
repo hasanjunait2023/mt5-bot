@@ -2,3 +2,10 @@ fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
 websockets>=12.0
 python-multipart>=0.0.9
+python-dotenv>=1.0.0
+requests>=2.31.0
+# Signal engine — multi-TF EMA scanner
+MetaTrader5>=5.0.45
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0

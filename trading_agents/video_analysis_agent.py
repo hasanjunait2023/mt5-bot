@@ -50,7 +50,9 @@ except ImportError:
 # ── constants ──────────────────────────────────────────────────────────────────
 SUPPORTED_FORMATS = {".mp4", ".avi", ".mov", ".mkv", ".wmv", ".flv", ".webm"}
 DEFAULT_TARGET_FRAMES = 30
-DEFAULT_WHISPER_MODEL = "base"
+# large-v3: "base" mis-transcribes price levels / indicator numbers, which
+# corrupts the extracted strategy. Fidelity matters more than speed here.
+DEFAULT_WHISPER_MODEL = "large-v3"
 DEFAULT_CLAUDE_MODEL  = "claude-sonnet-4-6"
 FRAME_BATCH_SIZE = 5          # frames per Claude Vision API call
 MAX_HISTORY_TURNS = 40        # conversation history limit (messages, not turns)

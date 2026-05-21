@@ -1,0 +1,33 @@
+name: "Power of Three"
+version: 1.0
+description: "ICT PO3 — AMD cycle. Asian range manipulation → NY expansion."
+symbols: [XAUUSD, EURUSD, GBPUSD]
+timeframe: H1
+
+entry_rules:
+  buy:
+    - "market.trend == BULLISH"
+    - "smc.sweep_detected is true"
+    - "smc.sweep_type == SSL_SWEEP"
+    - "session.name == ny_kz"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "market.bos is true"
+  sell:
+    - "market.trend == BEARISH"
+    - "smc.sweep_detected is true"
+    - "smc.sweep_type == BSL_SWEEP"
+    - "session.name == ny_kz"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "market.bos is true"
+
+exit_rules:
+  sl_method: "sweep_low"
+  tp_method: "rr"
+  sl_buffer_pips: 5
+  min_rr: 2.5
+
+risk:
+  max_trades_per_day: 1
+  confidence_required: 7

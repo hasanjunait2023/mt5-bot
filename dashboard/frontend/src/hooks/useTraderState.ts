@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { TraderState } from '../types/trading'
 import { useWebSocket } from './useWebSocket'
+import { apiFetch } from '../lib/api'
 
 const INITIAL: TraderState = {
   timestamp: null,
@@ -31,7 +32,7 @@ export function useTraderState(): TraderState {
   })
 
   useEffect(() => {
-    fetch('/api/overview')
+    apiFetch('/api/overview')
       .then(r => r.json())
       .then(data => setState(prev => ({ ...prev, ...data })))
       .catch(() => {})

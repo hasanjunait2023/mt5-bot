@@ -1,0 +1,47 @@
+# ============================================================
+# S14: Time Series Momentum (TSMOM)
+# Reference: Moskowitz, Ooi, Pedersen (2012) "Time Series Momentum"
+#            Journal of Financial Economics 104(2), 228-250.
+# Tunable parameters: 2 (lookback in analytics module, vol target)
+# Hypothesis: Past 12-month return sign predicts next month's return.
+# ============================================================
+
+name: "TSMOM 12-Month"
+version: 1.1
+description: "Academic: Moskowitz-Ooi-Pedersen 2012. Restricted to EURUSD+BTCUSD per 2026-05-20 backtest (PF 4.06 EUR / 1.27 BTC). GBP/USDJPY DISABLED (PF<1.0). 2 parameters."
+symbols: [EURUSD, BTCUSD]
+timeframe: D1
+backtest:
+  source: trading_agents/jtcc/backtest_academic.py
+  date: 2026-05-20
+  bars_tested: 856 (3 years D1)
+  proven_results:
+    EURUSD: {trades: 16, wr_pct: 56.2, pf: 4.06, verdict: STRONG}
+    BTCUSD: {trades: 85, wr_pct: 44.7, pf: 1.27, verdict: MARGINAL}
+  disabled_results:
+    GBPUSD: {wr_pct: 20.0, pf: 0.68, verdict: UNPROFITABLE}
+    USDJPY: {wr_pct: 52.6, pf: 0.82, verdict: UNPROFITABLE}
+
+entry_rules:
+  buy:
+    - "analytics.tsmom.bullish is true"
+    - "analytics.tsmom.lookback_return > 0.02"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "analytics.tsmom.bearish is true"
+    - "analytics.tsmom.lookback_return < -0.02"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 50
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 1
+  confidence_required: 6

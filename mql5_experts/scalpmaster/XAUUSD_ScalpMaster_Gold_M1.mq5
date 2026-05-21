@@ -22,7 +22,7 @@
 input group "=== RISK & MONEY MANAGEMENT ==="
 input double   RiskPct         = 2.0;    // % of equity per trade (compound)
 input double   RRRatio         = 2.0;    // Reward : Risk ratio (Gold optimized)
-input double   ATR_SL_Multi    = 0.8;    // SL = ATR × this value
+input double   ATR_SL_Multi    = 2.0;    // SL = ATR × this value (Gold M1 needs wide stops)
 input double   MaxDDPct        = 30.0;   // Stop EA if total DD exceeds %
 input double   DailyDDLimit    = 4.5;    // Stop trading today if daily DD exceeds %
 input int      MaxTradesDay    = 12;     // Max trades per day
@@ -55,7 +55,7 @@ input int      Sess2_End       = 23;     // 19:00-23:00 UTC
 
 //── FILTERS ────────────────────────────────────────────────────────
 input group "=== FILTERS ==="
-input double   MaxSpreadPoints = 100;    // Max spread in points (100 = $1.00 for Gold)
+input double   MaxSpreadPoints = 50;     // Max spread in points (50 = $0.50 for Gold)
 input double   MinATR_Points   = 20;     // Min ATR in points (20 = $0.20 — gold movement)
 
 //── SYSTEM ─────────────────────────────────────────────────────────
@@ -235,6 +235,11 @@ void OpenBuy(double atrVal)
    sym.Refresh();
    double ask=sym.Ask();
    double slDist=MathMax(atrVal*ATR_SL_Multi,sym.Point()*MinATR_Points);
+   // Guard: SL must always clear spread + broker min-stop, else instant stop-out
+   double spreadB=sym.Ask()-sym.Bid();
+   double stopsB=(double)SymbolInfoInteger(_Symbol,SYMBOL_TRADE_STOPS_LEVEL)*sym.Point();
+   slDist=MathMax(slDist,spreadB*3.0);
+   slDist=MathMax(slDist,stopsB+spreadB);
    double sl=NormalizeDouble(ask-slDist,sym.Digits());
    double tp=NormalizeDouble(ask+slDist*RRRatio,sym.Digits());
    double lots=CalcLots(slDist);
@@ -250,6 +255,11 @@ void OpenSell(double atrVal)
    sym.Refresh();
    double bid=sym.Bid();
    double slDist=MathMax(atrVal*ATR_SL_Multi,sym.Point()*MinATR_Points);
+   // Guard: SL must always clear spread + broker min-stop, else instant stop-out
+   double spreadS=sym.Ask()-sym.Bid();
+   double stopsS=(double)SymbolInfoInteger(_Symbol,SYMBOL_TRADE_STOPS_LEVEL)*sym.Point();
+   slDist=MathMax(slDist,spreadS*3.0);
+   slDist=MathMax(slDist,stopsS+spreadS);
    double sl=NormalizeDouble(bid+slDist,sym.Digits());
    double tp=NormalizeDouble(bid-slDist*RRRatio,sym.Digits());
    double lots=CalcLots(slDist);

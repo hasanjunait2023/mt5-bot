@@ -1,0 +1,48 @@
+# ============================================================
+# S16: Pairs Trading EUR-GBP (USD major spread)
+# Reference: Gatev, Goetzmann, Rouwenhorst (2006) — same as S15
+# Tunable parameters: 3 (formation_bars, entry_z, exit_z — in analytics module)
+# Hypothesis: EURUSD and GBPUSD share USD driver + correlated EU economics.
+#             Divergence > 2σ_formation reverts.
+# ============================================================
+
+name: "Pairs EUR-GBP"
+version: 1.1
+description: "Academic: Gatev-Goetzmann-Rouwenhorst 2006. EUR/GBP spread mean-reversion. Validated 2026-05-20 backtest: PF 1.42, 75% WR. 3 parameters."
+symbols: [EURUSD]
+timeframe: H4
+backtest:
+  source: trading_agents/jtcc/backtest_academic.py
+  date: 2026-05-20
+  bars_tested: 856 (3 years D1)
+  proven_results:
+    trades: 4
+    win_rate_pct: 75.0
+    profit_factor: 1.42
+    avg_hold_bars: 76
+    verdict: DECENT
+  notes: "Small sample (4 trades over 3 years), but consistent. Pair execution dollar-neutral via main.py _maybe_place_pair_leg."
+
+entry_rules:
+  buy:
+    - "analytics.has_pair is true"
+    - "analytics.pairs.eur_gbp.want_long is true"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "analytics.has_pair is true"
+    - "analytics.pairs.eur_gbp.want_short is true"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 8
+  min_rr: 1.5
+
+risk:
+  max_trades_per_day: 2
+  confidence_required: 6

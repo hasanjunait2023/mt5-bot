@@ -1,0 +1,29 @@
+name: "Heikin Ashi Trend Rider"
+version: 2.0
+description: "S18 HA Trend Rider — Gold D1 71.4% WR. Fresh trend + EMA alignment."
+symbols: [XAUUSD, XAGUSD]
+timeframe: D1
+
+entry_rules:
+  buy:
+    - "momentum.ha_bull is true"
+    - "momentum.ha_streak >= 3"
+    - "momentum.ema50_above_200 is true"
+    - "market.trend == BULLISH"
+    - "news.blocked is false"
+  sell:
+    - "momentum.ha_bear is true"
+    - "momentum.ha_streak >= 3"
+    - "momentum.ema50_above_200 is false"
+    - "market.trend == BEARISH"
+    - "news.blocked is false"
+
+exit_rules:
+  sl_method: "swing_low"
+  tp_method: "rr"
+  sl_buffer_pips: 50
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 1
+  confidence_required: 6

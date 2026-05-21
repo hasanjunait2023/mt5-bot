@@ -1,0 +1,62 @@
+# ============================================================
+# S25: MTF EMA Alignment Scalper Replica
+# Reference: MTF_EMA_Scalper_M1.mq5 — PROVEN on 8 FX pairs (3-month backtest,
+#            $10k start, 2% risk, May 2026). Avg WR 44.5%, Avg PF 1.89.
+# Tunable parameters: 4 (EMA periods 200/9/15, MTF alignment, RR, session)
+# Hypothesis: 3-EMA crossover with M15+M3 alignment on London+NY sessions
+#             captures intraday trend continuations across major FX pairs.
+# ============================================================
+
+name: "S25 MTF EMA Alignment"
+version: 1.0
+description: "JTCC YAML replica of validated MTF EMA Scalper (PF 1.96-6.37 on 8 pairs, 3-mo backtest). Restricted to PROVEN profitable pairs only."
+symbols: [EURJPY, USDJPY, GBPAUD, AUDNZD, USDCAD, EURUSD, AUDCHF, NZDUSD]
+timeframe: M3
+based_on:
+  reference: "MTF_EMA_Scalper_M1.mq5 backtest May 2026"
+  proven_edge: "8 pairs avg PF 1.89, top 3: EURJPY (PF 6.37), USDJPY (PF 4.43), GBPAUD (PF 3.42)"
+backtest:
+  source: "MTF EMA Scalper 3-month backtest, $10k start, 2% risk"
+  date: 2026-05-17
+  proven_results:
+    EURJPY: {wr_pct: 77.8, pf: 6.37, net_usd: 2638}
+    USDJPY: {wr_pct: 68.8, pf: 4.43, net_usd: 3915}
+    GBPAUD: {wr_pct: 64.3, pf: 3.42, net_usd: 2866}
+    AUDNZD: {wr_pct: 60.0, pf: 3.05, net_usd: 2608}
+    USDCAD: {wr_pct: 57.9, pf: 2.80, net_usd: 3097}
+    EURUSD: {wr_pct: 57.1, pf: 2.56, net_usd: 2123}
+    AUDCHF: {wr_pct: 53.3, pf: 2.24, net_usd: 1881}
+    NZDUSD: {wr_pct: 50.0, pf: 1.96, net_usd: 1424}
+  excluded:
+    GBPUSD: {pf: 0.97, reason: UNPROFITABLE}
+    USDCHF: {pf: 0.65, reason: UNPROFITABLE}
+    EURAUD: {pf: 0.55, reason: UNPROFITABLE}
+    EURCHF: {pf: 0.20, reason: UNPROFITABLE}
+
+entry_rules:
+  buy:
+    # 3-EMA alignment: 9 > 15 > 200 (uptrend)
+    - "mtf.M3.ema20 > mtf.M3.ema50"
+    - "mtf.M3.price > mtf.M3.ema200"
+    - "mtf.M15.trend == BULLISH"
+    - "session.primary is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    # 3-EMA alignment: 9 < 15 < 200 (downtrend)
+    - "mtf.M3.ema20 < mtf.M3.ema50"
+    - "mtf.M3.price < mtf.M3.ema200"
+    - "mtf.M15.trend == BEARISH"
+    - "session.primary is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 8
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 3
+  confidence_required: 6

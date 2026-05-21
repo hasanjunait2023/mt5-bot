@@ -14,11 +14,13 @@ Write-Host "   Trading Dashboard — Starting..." -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Start backend API in background
+# Start backend API in background. Backend uses local imports (core.config, api.*)
+# so uvicorn must be launched from inside dashboard/backend/, not the project root.
 Write-Host "[INFO] Starting FastAPI backend on http://localhost:8000" -ForegroundColor Green
+$backendDir = Join-Path $scriptDir "dashboard\backend"
 $backendJob = Start-Job -ScriptBlock {
-    Set-Location $using:scriptDir
-    python -m uvicorn dashboard.backend.api:app --host 0.0.0.0 --port 8000 --reload
+    Set-Location $using:backendDir
+    python -m uvicorn main:app --host 0.0.0.0 --port 8000
 }
 
 Start-Sleep -Seconds 3
@@ -26,8 +28,8 @@ Start-Sleep -Seconds 3
 # Check if frontend exists
 $frontendPath = "$scriptDir\dashboard\frontend"
 if (Test-Path "$frontendPath\package.json") {
-    Write-Host "[INFO] Starting React frontend on http://localhost:3000" -ForegroundColor Green
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$frontendPath'; npm start"
+    Write-Host "[INFO] Starting Vite frontend on http://localhost:5173" -ForegroundColor Green
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$frontendPath'; npm run dev"
 } else {
     Write-Host "[INFO] No frontend found. Dashboard API only at http://localhost:8000/docs" -ForegroundColor Yellow
 }

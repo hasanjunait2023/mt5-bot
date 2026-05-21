@@ -1,0 +1,48 @@
+# ============================================================
+# S22: EUR H4 Multi-Timeframe Trend Follower
+# Hypothesis basis: TSMOM proved PF 4.06 on EUR D1 (2026-05-20 backtest).
+#                   This strategy replicates trend-following edge on faster
+#                   H4 timeframe for more frequent signals while maintaining
+#                   D1 bias alignment.
+# Tunable parameters: 4 (HTF alignment, ADX filter, EMA period, min_rr)
+# Rationale: Take the validated EUR trend edge, just trade it more frequently.
+#            D1 bias + H4 trend + H1 entry on EMA pullback.
+# ============================================================
+
+name: "S22 EUR H4 Trend Follower"
+version: 1.0
+description: "Replicates TSMOM EUR edge (PF 4.06) on H4 timeframe. D1+H4 trend aligned + H1 EMA pullback entry."
+symbols: [EURUSD]
+timeframe: H4
+based_on:
+  reference_strategy: "TSMOM 12-Month (s14_tsmom_12m.yaml)"
+  proven_edge: "EUR D1 PF 4.06, 56.2% WR, 16 trades over 3 years (2026-05-20 backtest)"
+  hypothesis: "Same trend edge on faster timeframe = more trades, smaller targets, same direction bias"
+
+entry_rules:
+  buy:
+    - "mtf.D1.trend == BULLISH"
+    - "mtf.H4.trend == BULLISH"
+    - "mtf.H1.price > mtf.H1.ema20"
+    - "mtf.H1.ema50_above_200 is true"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "mtf.D1.trend == BEARISH"
+    - "mtf.H4.trend == BEARISH"
+    - "mtf.H1.price < mtf.H1.ema20"
+    - "mtf.H1.ema50_above_200 is false"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 10
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 2
+  confidence_required: 6

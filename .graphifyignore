@@ -1,0 +1,33 @@
+# Dependencies / virtualenvs
+node_modules/
+**/node_modules/
+.venv/
+**/.venv/
+free-claude-code/
+
+# Python caches / build artifacts
+__pycache__/
+**/__pycache__/
+*.pyc
+dist/
+build/
+*.egg-info/
+
+# Third-party vendored MCP server
+mt5_bridge/tradingview-mcp/
+
+# Data / logs / generated output (not source)
+logs/
+backtest_reports/
+results/
+db/
+graphify-out/
+*.jsonl
+*.log
+
+# Live state / data dumps
+mt5_bridge/_*.json
+mt5_bridge/_*.txt
+
+# Git
+.git/

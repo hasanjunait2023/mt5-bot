@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "notebooklm": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "notebooklm-mcp@latest"],
+      "env": {
+        "NOTEBOOKLM_PROFILE": "standard"
+      }
+    }
+  }
+}

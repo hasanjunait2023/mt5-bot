@@ -1,0 +1,42 @@
+{
+  "ideas": {
+    "0461d79af226": {
+      "id": "0461d79af226",
+      "description": "EURUSD London Session Mean Reversion with Volume Confirmation",
+      "source": "mixed",
+      "stage": "REJECTED",
+      "first_seen_cycle": 1,
+      "last_update": "2026-05-19T12:00:20.916712+00:00",
+      "reason": "backtest produced no result"
+    },
+    "c04ab34156b1": {
+      "id": "c04ab34156b1",
+      "description": "XAUUSD VIX-Filtered Momentum Surge",
+      "source": "mixed",
+      "stage": "REJECTED",
+      "first_seen_cycle": 1,
+      "last_update": "2026-05-19T12:00:22.623052+00:00",
+      "reason": "backtest produced no result"
+    },
+    "8ccf9cf8cc8f": {
+      "id": "8ccf9cf8cc8f",
+      "description": "GBPUSD Divergence Breakout Confluence",
+      "source": "mixed",
+      "stage": "REJECTED",
+      "first_seen_cycle": 1,
+      "last_update": "2026-05-19T12:00:22.626067+00:00",
+      "reason": "backtest produced no result"
+    }
+  },
+  "cycles": 1,
+  "scorecard": {
+    "cycle": 1,
+    "collected": 3,
+    "backtested": 3,
+    "passed": 0,
+    "pitched": 0,
+    "total_in_pipeline": 3,
+    "live": 0
+  },
+  "updated_at": "2026-05-19T12:00:22.629071+00:00"
+}

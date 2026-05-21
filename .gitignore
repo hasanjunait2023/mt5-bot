@@ -55,3 +55,11 @@ mt5_bridge/tradingview-mcp/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Claude Code local lock/state
+.claude/scheduled_tasks.lock
+
+# Graphify — commit graph.json/html/report, skip mtime manifest + cache
+graphify-out/manifest.json
+graphify-out/cache/
+graphify-out/cost.json

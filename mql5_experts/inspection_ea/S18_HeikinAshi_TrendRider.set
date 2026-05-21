@@ -1,0 +1,8 @@
+RiskPct=1.0
+EMAFastP=50
+EMASlowP=200
+ATRPeriod=14
+SL_ATR_Mult=1.5
+TP_ATR_Mult=3.5
+Max_Spread=60
+MagicNumber=20261800

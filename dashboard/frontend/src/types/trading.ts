@@ -93,7 +93,25 @@ export interface TraderState {
   recent_events?: LogEntry[]
 }
 
+export interface SignalEvent {
+  id: string
+  ts: string
+  type: 'alignment' | 'cross' | 'touch'
+  symbol: string
+  side: 'BUY' | 'SELL'
+  timeframe: string
+  price: number
+  ema9: number
+  ema15: number
+  ema200: number
+  note: string
+  chart_path?: string | null
+  chart_b64?: string
+  detect_ms?: number
+}
+
 export type WSMessage =
   | { type: 'connected'; data: { server_time: string } }
   | { type: 'state';     data: TraderState }
   | { type: 'log';       data: LogEntry }
+  | { type: 'signal';    data: SignalEvent }

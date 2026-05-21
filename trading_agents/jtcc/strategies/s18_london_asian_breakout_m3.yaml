@@ -1,0 +1,55 @@
+# ============================================================
+# S18: London Asian Range Breakout (M3 execution)
+# Reference: Classic London open breakout — Cheung & Wong (2000), widely
+#            documented in institutional FX literature. Documented 55-65% WR.
+# Tunable parameters: 4 (asian_window in mtf module, breakout_window,
+#                     sl_buffer, min_rr)
+# Hypothesis: Asian session (07:00-13:00 BD) builds a tight range. London open
+#             (13:00 BD) brings institutional flow that breaks the range
+#             directionally. M3 close beyond range = entry signal.
+# ============================================================
+
+name: "S18 London Asian Breakout M3"
+version: 1.1
+description: "London open breakout of Asian session range. RESTRICTED to EURUSD per 10-day M3 backtest 2026-05-20 (EUR PF 1.03 marginal, XAU/GBP/USDJPY UNPROFITABLE)."
+symbols: [EURUSD]
+timeframe: M3
+execution_window: "13:00-14:00 BD"
+backtest:
+  source: trading_agents/jtcc/backtest_m3.py
+  date: 2026-05-20
+  days_tested: 10
+  spread_costs_included: true
+  results:
+    EURUSD: {trades: 6, wr_pct: 50.0, pf: 1.03, verdict: MARGINAL}
+  disabled_results:
+    XAUUSD: {trades: 5, wr_pct: 40.0, pf: 0.33, verdict: UNPROFITABLE}
+    GBPUSD: {trades: 7, wr_pct: 42.9, pf: 0.85, verdict: UNPROFITABLE}
+    USDJPY: {trades: 3, wr_pct: 0.0, pf: 0.00, verdict: INSUFFICIENT}
+  notes: "Marginal even on EUR. Re-test on 60+ days needed before promotion to live money."
+
+entry_rules:
+  buy:
+    - "mtf.asian_range.built is true"
+    - "mtf.M3.price > mtf.asian_range.high"
+    - "intraday.london_open_window is true"
+    - "mtf.D1.trend != BEARISH"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "mtf.asian_range.built is true"
+    - "mtf.M3.price < mtf.asian_range.low"
+    - "intraday.london_open_window is true"
+    - "mtf.D1.trend != BULLISH"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 5
+  min_rr: 1.5                  # tighter RR for breakout strategy
+
+risk:
+  max_trades_per_day: 1         # one shot at LDN open
+  confidence_required: 6

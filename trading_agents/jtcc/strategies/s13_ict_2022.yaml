@@ -1,0 +1,55 @@
+name: "ICT 2022 Model"
+version: 2.0
+description: "ICT 2022 Mentorship — VALIDATED via walk-forward (backtest_reports/ict_wf_results.json, 2026-05-20). XAUUSD PROMOTED."
+symbols: [XAUUSD, EURUSD, GBPUSD]
+timeframe: M15
+backtest:
+  source: "backtest_reports/ict_wf_results.json (walk-forward 2024 IS + 2025+ OOS)"
+  date: 2026-05-20
+  proven_results:
+    XAUUSD:
+      in_sample: {pf: 0.57, dd: 5.2, wr: 50.0, trades: 8}
+      out_of_sample: {pf: 2.15, dd: 11.0, wr: 67.8, trades: 171, ret_pct: 272.6}
+      full_period: {pf: 2.11, dd: 12.0, wr: 67.4, trades: 181, ret_pct: 302.1}
+      verdict: PASS_PROMOTED
+    GBPUSD:
+      out_of_sample: {pf: 4.46, dd: 3.5, wr: 56.6, trades: 83, ret_pct: 53.6}
+      full_period: {pf: 1.87, dd: 8.9, wr: 54.8, trades: 135, ret_pct: 53.1}
+      verdict: PENDING_IS_DATA
+    EURUSD:
+      out_of_sample: {pf: 1.69, dd: 3.8, wr: 34.4, trades: 61, ret_pct: 11.8}
+      full_period: {pf: 0.92, dd: 9.8}
+      verdict: MARGINAL
+  notes: "XAUUSD is THE proven winner (PF 2.11, 302% return full period). GBPUSD OOS strong but needs IS validation."
+
+entry_rules:
+  buy:
+    - "market.trend == BULLISH"
+    - "session.primary is true"
+    - "smc.sweep_detected is true"
+    - "smc.sweep_type == SSL_SWEEP"
+    - "market.mss is true"
+    - "smc.bull_fvg_count > 0"
+    - "smc.in_ote is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "market.trend == BEARISH"
+    - "session.primary is true"
+    - "smc.sweep_detected is true"
+    - "smc.sweep_type == BSL_SWEEP"
+    - "market.mss is true"
+    - "smc.bear_fvg_count > 0"
+    - "smc.in_ote is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "sweep_low"
+  tp_method: "liquidity_pool"
+  sl_buffer_pips: 5
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 2
+  confidence_required: 8

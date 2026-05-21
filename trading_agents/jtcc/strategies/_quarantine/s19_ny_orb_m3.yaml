@@ -1,0 +1,46 @@
+# ============================================================
+# S19: NY Opening Range Breakout with NR7 filter (M3 execution)
+# Reference: Crabel (1990) "Day Trading with Short Term Price Patterns and
+#            Opening Range Breakout". NR7 filter (Narrow Range 7-day) is
+#            Crabel's signature edge — documented 55-68% WR; ~70%+ with NR7.
+# Tunable parameters: 5 (orb_minutes=30 in mtf, nr7_required, sl_buffer,
+#                     min_rr, max_trades_per_day)
+# Hypothesis: After a narrow-range day (today's range < min(last 7 days)),
+#             coiled volatility releases on NY open. First 30-min range = key
+#             reference; M3 break with momentum = entry.
+# ============================================================
+
+name: "S19 NY ORB NR7 M3"
+version: 1.0
+description: "NY open range breakout filtered by NR7 narrow-range day. M3 entry, 30-min ORB on M5."
+symbols: [XAUUSD, XAGUSD, BTCUSD, EURUSD, GBPUSD, USDJPY]
+timeframe: M3
+execution_window: "18:30-19:30 BD"
+
+entry_rules:
+  buy:
+    - "mtf.nr7.is_nr7 is true"
+    - "mtf.ny_orb.built is true"
+    - "mtf.M3.price > mtf.ny_orb.high"
+    - "intraday.ny_open_window is true"
+    - "mtf.D1.trend != BEARISH"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "mtf.nr7.is_nr7 is true"
+    - "mtf.ny_orb.built is true"
+    - "mtf.M3.price < mtf.ny_orb.low"
+    - "intraday.ny_open_window is true"
+    - "mtf.D1.trend != BULLISH"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 5
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 1
+  confidence_required: 7

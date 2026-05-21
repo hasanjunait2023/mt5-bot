@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>S5 — News Spike Backtest Report</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px}
+  h1{color:#1a237e} h2{color:#283593;border-bottom:2px solid #3949ab;padding-bottom:6px}
+  .card{background:#fff;border-radius:8px;padding:20px;margin:16px 0;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+  .stat{background:#e8eaf6;border-radius:6px;padding:14px;text-align:center}
+  .stat .val{font-size:1.6em;font-weight:bold;color:#1a237e}
+  .stat .lbl{font-size:.8em;color:#555;margin-top:4px}
+  table{width:100%;border-collapse:collapse;font-size:.85em}
+  th{background:#3949ab;color:#fff;padding:8px;text-align:left}
+  td{padding:6px 8px;border-bottom:1px solid #eee}
+  tr:hover{background:#f0f4ff}
+</style></head><body>
+<h1>S5 — News Spike — Backtest Report</h1>
+<p style="color:#555">Period: 2024-01-01 to 2026-05-17 &nbsp;|&nbsp;
+   Initial Balance: $1,000.00 &nbsp;|&nbsp;
+   Final Balance: <b>$739.52</b></p>
+
+<div class="card">
+  <h2>Equity Curve</h2>
+  <svg width="600" height="120" style="background:#fff;border:1px solid #ddd;border-radius:4px">
+    <polyline points="0,0 10,1 21,3 32,5 42,12 53,20 64,14 75,16 85,17 96,25 107,27 117,21 128,15 139,23 150,25 160,33 171,41 182,42 192,44 203,46 214,48 225,56 235,57 246,51 257,59 267,61 278,63 289,64 300,72 310,66 321,68 332,76 342,70 353,78 364,72 375,80 385,82 396,76 407,84 417,78 428,80 439,73 450,75 460,68 471,70 482,79 492,88 503,97 514,106 525,99 535,101 546,103 557,105 567,114 578,116 589,118 600,120" fill="none" stroke="#d50000" stroke-width="2"/>
+  </svg>
+</div>
+
+<div class="card">
+  <h2>Summary</h2>
+  <div class="grid">
+    <div class="stat"><div class="val" style="color:#d50000">-260.48</div><div class="lbl">Net Profit ($)</div></div>
+    <div class="stat"><div class="val" style="color:#d50000">-26.0%</div><div class="lbl">Return</div></div>
+    <div class="stat"><div class="val">21.4%</div><div class="lbl">Win Rate</div></div>
+    <div class="stat"><div class="val">0.39</div><div class="lbl">Profit Factor</div></div>
+    <div class="stat"><div class="val" style="color:red">26.0%</div><div class="lbl">Max Drawdown</div></div>
+    <div class="stat"><div class="val">56</div><div class="lbl">Total Trades</div></div>
+    <div class="stat"><div class="val" style="color:green">12</div><div class="lbl">Wins</div></div>
+    <div class="stat"><div class="val" style="color:red">44</div><div class="lbl">Losses</div></div>
+    <div class="stat"><div class="val" style="color:green">$13.65</div><div class="lbl">Avg Win</div></div>
+    <div class="stat"><div class="val" style="color:red">$-9.64</div><div class="lbl">Avg Loss</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Monthly P&amp;L</h2>
+  <table><tr><th>Month</th><th>P&amp;L ($)</th></tr>
+  <tr><td>2026-04</td><td style='color:green'>$+9.90</td></tr>
+<tr><td>2026-05</td><td style='color:green'>$+142.90</td></tr>
+
+  </table>
+</div>
+
+<div class="card">
+  <h2>Trade Log (last 200)</h2>
+  <table>
+    <tr><th>Entry Time</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Lots</th><th>Pips</th><th>P&amp;L</th><th>Exit Reason</th></tr>
+    <tr style='background:#e8f5e9'><td>2026-04-29 12:37</td><td>BUY</td><td>4553.5460</td><td>4553.2460</td><td>0.33</td><td>-30.0</td><td style='color:green'>$+3.30</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-04-29 13:25</td><td>BUY</td><td>4535.7150</td><td>4535.4150</td><td>0.33</td><td>-30.0</td><td style='color:green'>$+3.30</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-04-29 16:10</td><td>SELL</td><td>4562.6510</td><td>4562.9510</td><td>0.33</td><td>-30.0</td><td style='color:green'>$+3.30</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-04-30 07:06</td><td>SELL</td><td>4591.5350</td><td>4591.8350</td><td>0.33</td><td>-30.0</td><td style='color:red'>$-9.90</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-04-30 18:06</td><td>SELL</td><td>4623.2870</td><td>4623.5870</td><td>0.33</td><td>-30.0</td><td style='color:red'>$-9.90</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-04-30 19:56</td><td>BUY</td><td>4615.4240</td><td>4616.1240</td><td>0.33</td><td>+70.0</td><td style='color:green'>$+19.80</td><td>TP2</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-01 11:36</td><td>SELL</td><td>4576.6130</td><td>4576.9130</td><td>0.33</td><td>-30.0</td><td style='color:green'>$+3.30</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-01 12:19</td><td>SELL</td><td>4588.4370</td><td>4588.7370</td><td>0.33</td><td>-30.0</td><td style='color:green'>$+3.30</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-01 18:10</td><td>BUY</td><td>4623.2910</td><td>4622.9910</td><td>0.33</td><td>-30.0</td><td style='color:red'>$-9.90</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-01 19:12</td><td>SELL</td><td>4626.0290</td><td>4626.3290</td><td>0.33</td><td>-30.0</td><td style='color:green'>$+3.30</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-01 19:19</td><td>SELL</td><td>4627.2310</td><td>4626.5310</td><td>0.33</td><td>+70.0</td><td style='color:green'>$+19.80</td><td>TP2</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-04 09:52</td><td>BUY</td><td>4578.5160</td><td>4579.2160</td><td>0.34</td><td>+70.0</td><td style='color:green'>$+20.40</td><td>TP2</td></tr>
+<tr style='background:#ffebee'><td>2026-05-05 07:06</td><td>SELL</td><td>4552.7870</td><td>4553.0870</td><td>0.35</td><td>-30.0</td><td style='color:red'>$-10.50</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-05 08:59</td><td>SELL</td><td>4558.3150</td><td>4558.6150</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-05 10:25</td><td>BUY</td><td>4550.5320</td><td>4550.2320</td><td>0.34</td><td>-30.0</td><td style='color:red'>$-10.20</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-05 11:00</td><td>BUY</td><td>4541.5940</td><td>4541.2940</td><td>0.34</td><td>-30.0</td><td style='color:red'>$-10.20</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-05 11:28</td><td>SELL</td><td>4556.6440</td><td>4556.9440</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-05 13:02</td><td>SELL</td><td>4570.5730</td><td>4570.8730</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-05 13:09</td><td>SELL</td><td>4575.9390</td><td>4576.2390</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-05 14:27</td><td>SELL</td><td>4583.5650</td><td>4583.8650</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-05 19:26</td><td>BUY</td><td>4555.8450</td><td>4555.5450</td><td>0.34</td><td>-30.0</td><td style='color:red'>$-10.20</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-06 12:11</td><td>BUY</td><td>4679.0030</td><td>4678.7030</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-06 16:16</td><td>BUY</td><td>4682.9820</td><td>4683.6820</td><td>0.34</td><td>+70.0</td><td style='color:green'>$+20.40</td><td>TP2</td></tr>
+<tr style='background:#ffebee'><td>2026-05-07 10:43</td><td>SELL</td><td>4737.7830</td><td>4738.0830</td><td>0.34</td><td>-30.0</td><td style='color:red'>$-10.20</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-07 12:16</td><td>SELL</td><td>4746.5760</td><td>4746.8760</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-08 12:23</td><td>BUY</td><td>4705.8960</td><td>4705.5960</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-08 14:20</td><td>BUY</td><td>4724.4520</td><td>4724.1520</td><td>0.34</td><td>-30.0</td><td style='color:green'>$+3.40</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-08 18:05</td><td>SELL</td><td>4726.3670</td><td>4726.6670</td><td>0.34</td><td>-30.0</td><td style='color:red'>$-10.20</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-08 20:27</td><td>BUY</td><td>4716.0730</td><td>4716.7730</td><td>0.34</td><td>+70.0</td><td style='color:green'>$+20.40</td><td>TP2</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-11 19:45</td><td>SELL</td><td>4728.4220</td><td>4728.7220</td><td>0.35</td><td>-30.0</td><td style='color:green'>$+3.50</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-11 20:50</td><td>BUY</td><td>4734.1320</td><td>4733.8320</td><td>0.35</td><td>-30.0</td><td style='color:red'>$-10.50</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-12 11:35</td><td>SELL</td><td>4702.3580</td><td>4701.6580</td><td>0.35</td><td>+70.0</td><td style='color:green'>$+21.00</td><td>TP2</td></tr>
+<tr style='background:#ffebee'><td>2026-05-12 12:07</td><td>BUY</td><td>4700.2640</td><td>4699.9640</td><td>0.35</td><td>-30.0</td><td style='color:red'>$-10.50</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-12 12:43</td><td>SELL</td><td>4708.1690</td><td>4707.4690</td><td>0.35</td><td>+70.0</td><td style='color:green'>$+21.00</td><td>TP2</td></tr>
+<tr style='background:#ffebee'><td>2026-05-12 14:50</td><td>BUY</td><td>4676.4600</td><td>4676.1600</td><td>0.36</td><td>-30.0</td><td style='color:red'>$-10.80</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-12 18:39</td><td>SELL</td><td>4691.4050</td><td>4691.7050</td><td>0.35</td><td>-30.0</td><td style='color:green'>$+3.50</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-12 18:58</td><td>SELL</td><td>4696.5890</td><td>4695.8890</td><td>0.35</td><td>+70.0</td><td style='color:green'>$+21.00</td><td>TP2</td></tr>
+<tr style='background:#ffebee'><td>2026-05-13 13:46</td><td>BUY</td><td>4675.5140</td><td>4675.2140</td><td>0.36</td><td>-30.0</td><td style='color:red'>$-10.80</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-13 15:47</td><td>SELL</td><td>4699.3850</td><td>4698.6850</td><td>0.36</td><td>+70.0</td><td style='color:green'>$+21.60</td><td>TP2</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-13 16:15</td><td>SELL</td><td>4702.9130</td><td>4703.2130</td><td>0.36</td><td>-30.0</td><td style='color:green'>$+3.60</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-13 17:44</td><td>BUY</td><td>4691.0520</td><td>4691.7520</td><td>0.37</td><td>+70.0</td><td style='color:green'>$+22.20</td><td>TP2</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-14 12:33</td><td>SELL</td><td>4707.5200</td><td>4707.8200</td><td>0.37</td><td>-30.0</td><td style='color:green'>$+3.70</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-14 13:27</td><td>BUY</td><td>4690.3950</td><td>4691.0950</td><td>0.37</td><td>+70.0</td><td style='color:green'>$+22.20</td><td>TP2</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-14 16:10</td><td>BUY</td><td>4676.1300</td><td>4675.8300</td><td>0.38</td><td>-30.0</td><td style='color:green'>$+3.80</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-14 18:38</td><td>BUY</td><td>4671.7080</td><td>4671.4080</td><td>0.38</td><td>-30.0</td><td style='color:red'>$-11.40</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-15 07:19</td><td>SELL</td><td>4586.1150</td><td>4586.4150</td><td>0.38</td><td>-30.0</td><td style='color:red'>$-11.40</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-15 08:00</td><td>BUY</td><td>4568.1310</td><td>4567.8310</td><td>0.38</td><td>-30.0</td><td style='color:red'>$-11.40</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-15 08:16</td><td>BUY</td><td>4560.2520</td><td>4559.9520</td><td>0.37</td><td>-30.0</td><td style='color:red'>$-11.10</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-15 10:17</td><td>SELL</td><td>4561.1690</td><td>4560.4690</td><td>0.37</td><td>+70.0</td><td style='color:green'>$+22.20</td><td>TP2</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-15 13:35</td><td>BUY</td><td>4538.8080</td><td>4538.5080</td><td>0.38</td><td>-30.0</td><td style='color:green'>$+3.80</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-15 13:42</td><td>BUY</td><td>4529.1930</td><td>4528.8930</td><td>0.38</td><td>-30.0</td><td style='color:green'>$+3.80</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-15 16:30</td><td>SELL</td><td>4542.2600</td><td>4542.5600</td><td>0.38</td><td>-30.0</td><td style='color:green'>$+3.80</td><td>SL</td></tr>
+<tr style='background:#ffebee'><td>2026-05-15 17:20</td><td>SELL</td><td>4556.6310</td><td>4556.9310</td><td>0.38</td><td>-30.0</td><td style='color:red'>$-11.40</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-15 19:15</td><td>BUY</td><td>4550.3540</td><td>4550.0540</td><td>0.38</td><td>-30.0</td><td style='color:green'>$+3.80</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-15 19:26</td><td>BUY</td><td>4549.0000</td><td>4548.7000</td><td>0.38</td><td>-30.0</td><td style='color:green'>$+3.80</td><td>SL</td></tr>
+<tr style='background:#e8f5e9'><td>2026-05-15 19:53</td><td>BUY</td><td>4548.9000</td><td>4548.6000</td><td>0.38</td><td>-30.0</td><td style='color:green'>$+3.80</td><td>SL</td></tr>
+
+  </table>
+</div>
+</body></html>

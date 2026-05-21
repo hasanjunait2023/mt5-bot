@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { Table } from '../components/ui/Table'
 import { Badge } from '../components/ui/Badge'
 import { PriceBar } from '../components/ui/PriceBar'
+import { apiFetch } from '../lib/api'
+import { Panel } from '../components/ui/Panel'
+import { PageHeader } from '../components/ui/PageHeader'
 import { PnLBarChart } from '../components/charts/PnLBarChart'
 import type { Position } from '../types/trading'
 
@@ -10,7 +13,7 @@ export function Positions() {
 
   useEffect(() => {
     const load = () =>
-      fetch('/api/positions').then(r => r.json()).then(d => setPositions(d.positions ?? []))
+      apiFetch('/api/positions').then(r => r.json()).then(d => setPositions(d.positions ?? []))
     load()
     const id = setInterval(load, 5000)
     return () => clearInterval(id)
@@ -26,7 +29,7 @@ export function Positions() {
     { key: 'entry', header: 'Entry', render: (p: Position) => p.entry_price.toFixed(5), align: 'right' as const },
     { key: 'current', header: 'Current', render: (p: Position) => p.current_price?.toFixed(5) ?? '—', align: 'right' as const },
     { key: 'pnl', header: 'P&L', align: 'right' as const, render: (p: Position) => (
-      <span className={p.profit >= 0 ? 'text-profit' : 'text-loss'}>
+      <span className={`font-semibold ${p.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
         {p.profit >= 0 ? '+' : ''}${p.profit.toFixed(2)}
       </span>
     )},
@@ -41,31 +44,32 @@ export function Positions() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-text-primary text-xl font-semibold mb-1">Live Positions</h1>
-          <p className="text-text-muted text-sm">{positions.length} open — updates every 5s</p>
-        </div>
-        <div className="text-right">
-          <p className="text-text-secondary text-xs uppercase tracking-widest">Total P&L</p>
-          <p className={`text-2xl font-mono font-bold ${totalPnL >= 0 ? 'text-profit' : 'text-loss'}`}>
-            {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
-          </p>
-        </div>
-      </div>
-
-      <Table
-        columns={columns}
-        data={positions}
-        keyFn={p => p.ticket}
-        emptyText="No open positions"
+      <PageHeader
+        title="Live Positions"
+        subtitle={`${positions.length} open · updates every 5s`}
+        right={
+          <div className="text-right">
+            <p className="eyebrow mb-1.5">Total P&L</p>
+            <p className={`text-2xl font-mono font-bold font-tabular ${totalPnL >= 0 ? 'text-profit' : 'text-loss'}`}>
+              {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+            </p>
+          </div>
+        }
       />
 
+      <div className="reveal" style={{ ['--i' as string]: 0 }}>
+        <Table
+          columns={columns}
+          data={positions}
+          keyFn={p => p.ticket}
+          emptyText="No open positions"
+        />
+      </div>
+
       {chartData.length > 0 && (
-        <div className="bg-bg-surface border border-border rounded-lg p-4">
-          <h2 className="text-text-secondary text-xs uppercase tracking-widest mb-3">P&L by Position</h2>
+        <Panel title="P&L by Position" i={1}>
           <PnLBarChart data={chartData} />
-        </div>
+        </Panel>
       )}
     </div>
   )

@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
+import clsx from 'clsx'
 import { Table } from '../components/ui/Table'
 import { Badge } from '../components/ui/Badge'
+import { apiFetch } from '../lib/api'
+import { Panel } from '../components/ui/Panel'
+import { PageHeader } from '../components/ui/PageHeader'
 import { WinLossDonut } from '../components/charts/WinLossDonut'
 
 interface Trade {
@@ -29,7 +33,7 @@ export function History() {
 
   const load = useCallback(() => {
     const sym = symbol !== 'ALL' ? `&symbol=${symbol}` : ''
-    fetch(`/api/history?page=${page}&per_page=50${sym}`)
+    apiFetch(`/api/history?page=${page}&per_page=50${sym}`)
       .then(r => r.json())
       .then(setData)
       .catch(() => {})
@@ -53,42 +57,46 @@ export function History() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-text-primary text-xl font-semibold mb-1">Trade History</h1>
-        <p className="text-text-muted text-sm">{data.total} orders logged</p>
-      </div>
+      <PageHeader title="Trade History" subtitle={`${data.total} orders logged`} />
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1">
-          {SYMBOLS.map(s => (
-            <button key={s}
-              onClick={() => { setSymbol(s); setPage(1) }}
-              className={`px-2 py-1 rounded text-xs font-mono transition-colors ${
-                symbol === s ? 'bg-accent text-white' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'
-              }`}
-            >{s}</button>
-          ))}
-        </div>
+      {/* Symbol filter — segmented control */}
+      <div className="flex flex-wrap gap-1.5">
+        {SYMBOLS.map(s => (
+          <button
+            key={s}
+            onClick={() => { setSymbol(s); setPage(1) }}
+            className={clsx(
+              'px-3 h-8 rounded-lg text-xs font-mono font-medium transition-all',
+              symbol === s
+                ? 'bg-accent text-white shadow-glow-accent'
+                : 'bg-white/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary hover:bg-white/[0.07]',
+            )}
+          >
+            {s}
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 reveal" style={{ ['--i' as string]: 0 }}>
           <Table columns={columns} data={data.trades} keyFn={(t) => t.open_time} emptyText="No trades found" />
           {data.total > 50 && (
-            <div className="flex justify-center gap-2 mt-3">
+            <div className="flex justify-center items-center gap-2 mt-4">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="px-3 py-1 rounded text-xs bg-bg-elevated text-text-secondary disabled:opacity-40">← Prev</button>
-              <span className="text-text-muted text-xs py-1">Page {page}</span>
+                className="px-3 h-8 rounded-lg text-xs bg-white/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:hover:text-text-secondary transition-colors">
+                ← Prev
+              </button>
+              <span className="text-text-muted text-xs font-mono px-2">Page {page}</span>
               <button onClick={() => setPage(p => p + 1)} disabled={data.trades.length < 50}
-                className="px-3 py-1 rounded text-xs bg-bg-elevated text-text-secondary disabled:opacity-40">Next →</button>
+                className="px-3 h-8 rounded-lg text-xs bg-white/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:hover:text-text-secondary transition-colors">
+                Next →
+              </button>
             </div>
           )}
         </div>
-        <div className="bg-bg-surface border border-border rounded-lg p-4">
-          <h2 className="text-text-secondary text-xs uppercase tracking-widest mb-2">Win / Loss</h2>
+        <Panel title="Win / Loss" i={1}>
           <WinLossDonut wins={wins} losses={losses} />
-        </div>
+        </Panel>
       </div>
     </div>
   )

@@ -1,0 +1,45 @@
+# ============================================================
+# S21: Killzone Sweep + MSS with M3 Refined Entry
+# Reference: ICT methodology — Bias → Killzone → Sweep → MSS → FVG entry.
+#            High-confidence variant of existing S09/S13. Documented 65-75% WR
+#            when full confluence required.
+# Tunable parameters: 5 (kz_required, sweep_required, mss_required,
+#                     fvg_required, min_rr)
+# Hypothesis: HTF bias gives direction; primary KZ (LDN/NY) is when smart
+#             money operates; H1 sweep takes opposing liquidity; M15 MSS
+#             confirms reversal; M3 entry in fresh FVG = maximum confluence.
+# ============================================================
+
+name: "S21 KZ Sweep MSS M3"
+version: 1.0
+description: "Full ICT confluence on M3 entry: D1 bias + primary KZ + H1 sweep + M15 MSS + M3 FVG."
+symbols: [XAUUSD, XAGUSD, BTCUSD, EURUSD, GBPUSD, USDJPY]
+timeframe: M3
+
+entry_rules:
+  buy:
+    - "mtf.D1.trend == BULLISH"
+    - "session.primary is true"
+    - "mtf.H1.sweep_type == SSL_SWEEP"
+    - "mtf.M15.mss is true"
+    - "mtf.M3.bull_fvg_count > 0"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    - "mtf.D1.trend == BEARISH"
+    - "session.primary is true"
+    - "mtf.H1.sweep_type == BSL_SWEEP"
+    - "mtf.M15.mss is true"
+    - "mtf.M3.bear_fvg_count > 0"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 3
+  min_rr: 2.5                   # high RR justifies tight confluence
+
+risk:
+  max_trades_per_day: 2
+  confidence_required: 8        # highest tier — only A+

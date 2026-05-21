@@ -1,0 +1,31 @@
+name: "Elite J"
+version: 2.0
+description: "HA+ADX+MACD confluence — Gold D1 80% WR strategy. 1:3 RR."
+symbols: [XAUUSD, XAGUSD]
+timeframe: D1
+
+entry_rules:
+  buy:
+    - "momentum.ha_bull is true"
+    - "momentum.ha_streak >= 3"
+    - "momentum.ema50_above_200 is true"
+    - "momentum.adx >= 25"
+    - "momentum.macd_bullish is true"
+    - "news.blocked is false"
+  sell:
+    - "momentum.ha_bear is true"
+    - "momentum.ha_streak >= 3"
+    - "momentum.ema50_above_200 is false"
+    - "momentum.adx >= 25"
+    - "momentum.macd_bullish is false"
+    - "news.blocked is false"
+
+exit_rules:
+  sl_method: "swing_low"
+  tp_method: "rr"
+  sl_buffer_pips: 50
+  min_rr: 3.0
+
+risk:
+  max_trades_per_day: 1
+  confidence_required: 7

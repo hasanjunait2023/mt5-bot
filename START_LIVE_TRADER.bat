@@ -8,7 +8,7 @@ echo   Tier1: CADJPY EURJPY USDJPY GBPAUD BTCUSD AUDNZD
 echo          USDCAD EURUSD AUDCHF NZDUSD
 echo   New  : EURNZD NZDJPY AUDCAD GBPJPY AUDUSD AUDJPY
 echo          GBPUSD XAUUSD
-echo   Risk : 2%% per trade  ^|  Daily DD limit: 4.5%%
+echo   Risk : 1%% per trade  ^|  Daily DD limit: 3.0%%
 echo ================================================================
 echo.
 
@@ -35,7 +35,7 @@ echo.
 :restart_loop
 echo [%date% %time%] Starting MTF Live Trader...
 cd /d "c:\Users\Junait\mt5 bot"
-python mt5_bridge/mtf_live_trader.py --pairs CADJPY EURJPY USDJPY GBPAUD BTCUSD AUDNZD USDCAD EURUSD AUDCHF NZDUSD EURNZD NZDJPY AUDCAD GBPJPY AUDUSD AUDJPY GBPUSD XAUUSD --risk 2.0
+python mt5_bridge/mtf_live_trader.py --pairs CADJPY EURJPY USDJPY GBPAUD BTCUSD AUDNZD USDCAD EURUSD AUDCHF NZDUSD EURNZD NZDJPY AUDCAD GBPJPY AUDUSD AUDJPY GBPUSD XAUUSD --risk 1.0 --dd 3.0 --maxdd 20.0 --maxtd 6
 
 echo.
 echo [%date% %time%] Trader stopped. Restarting in 15 seconds... (Ctrl+C to cancel)

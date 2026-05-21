@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { CHART, tooltipProps } from './chartTheme'
 
 interface PnLItem { label: string; value: number }
 
@@ -13,18 +14,19 @@ export function PnLBarChart({ data, height = 180 }: Props) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid stroke="#252b3b" strokeOpacity={0.4} vertical={false} />
-        <XAxis dataKey="label" tick={{ fill: '#4a5568', fontSize: 10 }} />
-        <YAxis tick={{ fill: '#4a5568', fontSize: 10 }} tickFormatter={v => `$${v}`} width={50} />
+        <CartesianGrid stroke={CHART.grid} vertical={false} />
+        <XAxis dataKey="label" tick={{ fill: CHART.axis, fontSize: 10 }}
+               axisLine={{ stroke: CHART.grid }} tickLine={false} />
+        <YAxis tick={{ fill: CHART.axis, fontSize: 10 }} tickFormatter={v => `$${v}`} width={50}
+               axisLine={false} tickLine={false} />
         <Tooltip
-          contentStyle={{ background: '#1e2330', border: '1px solid #252b3b', borderRadius: 4 }}
-          labelStyle={{ color: '#8896a8', fontSize: 11 }}
-          itemStyle={{ fontFamily: 'monospace', fontSize: 12 }}
+          {...tooltipProps}
+          cursor={{ fill: 'rgba(255,255,255,0.04)' }}
           formatter={(v: number) => [`$${v.toFixed(2)}`, 'P&L']}
         />
-        <Bar dataKey="value" radius={[2, 2, 0, 0]} isAnimationActive={false}>
+        <Bar dataKey="value" radius={[3, 3, 0, 0]} isAnimationActive={false}>
           {data.map((d, i) => (
-            <Cell key={i} fill={d.value >= 0 ? '#10b981' : '#ef4444'} />
+            <Cell key={i} fill={d.value >= 0 ? CHART.profit : CHART.loss} />
           ))}
         </Bar>
       </BarChart>

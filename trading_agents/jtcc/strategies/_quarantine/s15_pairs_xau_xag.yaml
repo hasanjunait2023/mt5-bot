@@ -1,0 +1,43 @@
+# ============================================================
+# S15: Pairs Trading XAU-XAG (precious metals spread)
+# Reference: Gatev, Goetzmann, Rouwenhorst (2006) "Pairs Trading:
+#            Performance of a Relative-Value Arbitrage Rule"
+#            Review of Financial Studies 19(3), 797-827.
+# Tunable parameters: 3 (formation_bars, entry_z, exit_z — in analytics module)
+# Hypothesis: XAU and XAG are cointegrated (both precious metals, similar drivers).
+#             Short-term spread divergence > 2σ_formation mean-reverts.
+# Mechanic:    When this YAML fires on XAUUSD, take the XAU leg of the pair.
+#              The XAG leg is taken by s16 mirror strategy (or hedge manually).
+# ============================================================
+
+name: "Pairs XAU-XAG"
+version: 1.0
+description: "Academic: Gatev-Goetzmann-Rouwenhorst 2006. Mean-reversion on XAU/XAG spread. 3 parameters."
+symbols: [XAUUSD]
+timeframe: H4
+
+entry_rules:
+  buy:
+    # XAU is underpriced relative to XAG → long XAU
+    - "analytics.has_pair is true"
+    - "analytics.pairs.xau_xag.want_long is true"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+  sell:
+    # XAU is overpriced relative to XAG → short XAU
+    - "analytics.has_pair is true"
+    - "analytics.pairs.xau_xag.want_short is true"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 30
+  min_rr: 1.5
+
+risk:
+  max_trades_per_day: 2
+  confidence_required: 6

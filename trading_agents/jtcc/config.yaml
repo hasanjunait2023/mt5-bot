@@ -1,0 +1,113 @@
+symbols:
+  - XAUUSD
+  - XAGUSD
+  - BTCUSD
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+
+timeframes:
+  bars: [1min, 5min, 15min, 1hour, 4hour, 1day]
+  primary: 5min
+
+timezone: Asia/Dhaka  # UTC+6
+
+risk:
+  risk_pct_per_trade: 1.0       # 1% equity per trade
+  daily_dd_pct: 6.0             # hard shutdown threshold
+  max_concurrent_trades: 3
+  max_trades_per_symbol_per_day: 2
+  min_rr: 2.0
+  spread_max_pct_of_sl: 20.0
+
+min_sl_pips:
+  XAUUSD: 50
+  XAGUSD: 50
+  BTCUSD: 1000
+  EURUSD: 8
+  GBPUSD: 10
+  USDJPY: 8
+
+sessions:
+  asian_kz:
+    start: "07:00"
+    end: "11:00"
+  london_kz:
+    start: "13:00"
+    end: "16:00"
+    primary: true
+  ny_kz:
+    start: "18:00"
+    end: "21:00"
+    primary: true
+  silver_bullet_london:
+    start: "14:00"
+    end: "15:00"
+  silver_bullet_ny:
+    start: "21:00"
+    end: "22:00"
+
+# Multi-timeframe analytics for M3 scalping strategies (S17-S21)
+mtf_timeframes:
+  htf: [D1, H4, H1]      # higher TFs for trend/structure context
+  ltf: [M15, M3]          # lower TFs for entry refinement
+  cache_ttl_s:
+    D1: 3600
+    H4: 1800
+    H1: 900
+    M15: 300
+    M3: 60
+
+# ICT 2022 Specialist — LLM-powered analyst that votes alongside YAML strategies
+# Smart pre-gating: only calls LLM when ICT-relevant conditions exist
+ict_specialist:
+  enabled: true
+  model: claude-opus-4-7
+  nvidia_tier: HEAVY                # fallback when Claude unavailable
+  max_calls_per_day: 30              # separate budget from Master Agent's 15
+  max_tokens: 400
+  symbols: [XAUUSD, EURUSD, GBPUSD]  # ICT works best on these majors
+
+master_agent:
+  min_strategies_required: 1    # each validated strategy is a standalone edge (was 3 — too high for pruned diverse-TF set, blocked all trades)
+  min_confluence_score: 6.0
+  model: claude-opus-4-7
+  max_tokens: 600
+  thinking: false                # fast path, no extended thinking
+  # Fallback chain when Claude fails (rate limit / auth / network):
+  #   ULTRA = mistral-675b (highest quality)
+  #   HEAVY = nemotron-49b (decision tasks)  ← Master Agent default
+  #   MEDIUM = llama-70b   (routing tasks)
+  #   LIGHT = nano-8b      (simple tasks)
+  nvidia_tier: HEAVY
+  alert_on_fallback: true       # Telegram alert when NVIDIA path is used
+  fallback_alert_cooldown_min: 15  # dedup window
+
+mt5_bridge:
+  state_file: mt5_bridge/_live_state.json
+  poll_interval_s: 1.0
+  # MT5_BRIDGE_URL from env
+
+fmp:
+  base_url: https://financialmodelingprep.com/api/v3
+  # FMP_API_KEY from env
+  bar_limit: 200                 # bars to fetch per request
+
+news:
+  block_before_mins: 30
+  block_after_mins: 15
+  min_impact: HIGH               # HIGH only, not MEDIUM/LOW
+  calendar_lookahead_hours: 24
+
+strategies:
+  require_backtest: false        # set true to auto-validate new YAML
+  backtest_days: 30
+  hot_reload: true               # watchdog auto-load new .yaml files
+  hot_reload_interval_s: 5
+
+telegram:
+  category: live_trading         # which Telegram HQ thread to use
+
+logging:
+  level: INFO
+  file: logs/jtcc/jtcc.log

@@ -1,0 +1,48 @@
+name: "Asian Range Breakout"
+version: 3.0
+description: "S6v2 — VALIDATED 2026-05-19 across 7 symbols post-cost (21-pip spread, ATR-relative bounds, RiskPct=1.5). The proven multi-symbol edge."
+symbols: [XAUUSD, EURUSD, GBPUSD, USDJPY, EURJPY, GBPJPY, BTCUSD]
+timeframe: M15
+backtest:
+  source: "FxVault 2-year backtest with APPLY_COSTS=True (backtest_runner.py)"
+  date: 2026-05-19
+  config: "S6v2 + ATR-relative bounds + range-proportional BE, RiskPct=1.5"
+  proven_results:
+    XAUUSD: {pf: 1.42, return_pct: 49, dd_pct: 8.0, verdict: STRONG}
+    EURUSD: {pf: 1.89, return_pct: 180, dd_pct: 9.0, verdict: STRONG}
+    GBPUSD: {pf: 1.66, return_pct: 166, dd_pct: 9.0, verdict: STRONG}
+    EURJPY: {pf: 1.68, return_pct: 85, dd_pct: 9.0, verdict: STRONG}
+    USDJPY: {pf: 1.69, return_pct: 55, dd_pct: 9.0, verdict: STRONG}
+    GBPJPY: {pf: 1.43, return_pct: 50, dd_pct: 10.0, verdict: STRONG}
+    BTCUSD: {pf: 1.38, return_pct: 34, dd_pct: 11.0, verdict: DECENT}
+  excluded:
+    AUDUSD: {pf: 1.05, verdict: MARGINAL, reason: "edge too thin post-cost"}
+  notes: "FX fill-math bug fixed (BE-after-TP1). 7 deployable symbols PF 1.38-1.89. THE most empirically validated JTCC strategy."
+
+entry_rules:
+  buy:
+    - "market.trend == BULLISH"
+    - "market.bos is true"
+    - "session.name == london_kz"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "momentum.adx_trending is true"
+    - "risk.can_trade is true"
+  sell:
+    - "market.trend == BEARISH"
+    - "market.bos is true"
+    - "session.name == london_kz"
+    - "session.active is true"
+    - "news.blocked is false"
+    - "momentum.adx_trending is true"
+    - "risk.can_trade is true"
+
+exit_rules:
+  sl_method: "atr"
+  tp_method: "rr"
+  sl_buffer_pips: 5
+  min_rr: 2.0
+
+risk:
+  max_trades_per_day: 2
+  confidence_required: 6

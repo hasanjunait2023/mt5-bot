@@ -1,0 +1,66 @@
+{
+  "date": "2026-05-19",
+  "updated": "2026-05-19T16:55:03.052999+00:00",
+  "start_balance": 942.3,
+  "balance": 942.3,
+  "equity": 942.3,
+  "wins": 0,
+  "losses": 6,
+  "trades": 6,
+  "win_rate": 0.0,
+  "daily_pnl": -62.7,
+  "floating_pnl": 0,
+  "daily_dd_pct": 6.65,
+  "dd_limit_pct": 20.0,
+  "dd_breaker_tripped": false,
+  "target": {
+    "wins": 15,
+    "losses": 6,
+    "dd": 20.0
+  },
+  "target_hit": false,
+  "per_symbol": {
+    "XAUUSD": {
+      "wins": 0,
+      "losses": 5,
+      "pnl": -43.18
+    },
+    "USDCAD": {
+      "wins": 0,
+      "losses": 1,
+      "pnl": -19.52
+    }
+  },
+  "recent_trades": [
+    {
+      "symbol": "XAUUSD",
+      "pnl": -6.96,
+      "time": "08:15"
+    },
+    {
+      "symbol": "XAUUSD",
+      "pnl": -17.1,
+      "time": "08:23"
+    },
+    {
+      "symbol": "XAUUSD",
+      "pnl": -1.59,
+      "time": "11:15"
+    },
+    {
+      "symbol": "XAUUSD",
+      "pnl": -8.84,
+      "time": "11:15"
+    },
+    {
+      "symbol": "USDCAD",
+      "pnl": -19.52,
+      "time": "15:15"
+    },
+    {
+      "symbol": "XAUUSD",
+      "pnl": -8.69,
+      "time": "16:26"
+    }
+  ]
+}

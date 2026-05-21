@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "full_auto": true,
+  "halt_dd_pct": 20.0,
+  "max_fix_attempts": 3,
+  "attempt_lookback_h": 12,
+  "fxvault_magics": [20260102, 20260500, 20260602],
+  "history_cap": 300,
+  "_doc": "full_auto=true: CEO auto-fixes+deploys then notifies (user-chosen). Circuit breakers are hard-on and ignore these toggles: DD>=halt_dd_pct trips the kill-switch; a component failing >max_fix_attempts in attempt_lookback_h halts auto-fix and escalates to a human."
+}

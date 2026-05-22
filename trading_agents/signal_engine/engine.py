@@ -88,11 +88,27 @@ TF_BARS = {
     "H1":  260,
 }
 
+_ADX_TREND_MIN = 25.0   # H1 ADX threshold: >= trending, < ranging (cross/touch gate)
+
 
 # ── helpers ─────────────────────────────────────────────────────────────────
 
 def _ema(s: pd.Series, period: int) -> pd.Series:
     return s.ewm(span=period, adjust=False).mean()
+
+
+def _adx(df: pd.DataFrame, period: int = 14) -> float:
+    """Return latest ADX value (0-100). >= 25 = trending, < 25 = ranging."""
+    h, l, c = df["high"], df["low"], df["close"]
+    tr       = pd.concat([(h - l), (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
+    up, dn   = h.diff(), -l.diff()
+    plus_dm  = up.where((up > dn) & (up > 0), 0.0)
+    minus_dm = dn.where((dn > up) & (dn > 0), 0.0)
+    atr14    = tr.ewm(alpha=1 / period, adjust=False).mean()
+    plus_di  = 100 * plus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr14.replace(0, np.nan)
+    minus_di = 100 * minus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr14.replace(0, np.nan)
+    dx       = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+    return float(dx.ewm(alpha=1 / period, adjust=False).mean().iloc[-1])
 
 
 def _add_emas(df: pd.DataFrame) -> pd.DataFrame:
@@ -209,33 +225,56 @@ class SignalEngine:
         if mt5 is None:
             log.error("MetaTrader5 module not available — engine cannot start")
             return
-        if not mt5.initialize():
-            log.error("mt5.initialize() failed: %s", mt5.last_error())
-            return
 
-        self._verified_symbols = self._verify_symbols(self.symbols)
-        log.info("SignalEngine starting on %d symbols", len(self._verified_symbols))
-        self._save_state(running=True)
+        # Outer reconnect loop — retries forever until _stop is set
+        while not self._stop.is_set():
+            if not mt5.initialize():
+                log.warning("mt5.initialize() failed: %s — retry in 30s", mt5.last_error())
+                self._stop.wait(30)
+                continue
 
-        try:
-            while not self._stop.is_set():
-                t0 = time.time()
-                try:
-                    self._scan_once()
-                except Exception:
-                    log.exception("scan_once failed")
-                dt = time.time() - t0
-                sleep = max(0.0, self.tick_sec - dt)
-                self._stop.wait(sleep)
-        finally:
-            self._save_state(running=False)
-            if self.tracker is not None:
-                try: self.tracker.stop()
-                except Exception: pass
+            self._verified_symbols = self._verify_symbols(self.symbols)
+            log.info("SignalEngine connected — %d symbols", len(self._verified_symbols))
+            self._save_state(running=True)
+            consecutive_empty = 0
+
             try:
-                mt5.shutdown()
+                while not self._stop.is_set():
+                    t0 = time.time()
+                    try:
+                        n_snapshots = self._scan_once()
+                        if n_snapshots == 0:
+                            consecutive_empty += 1
+                            if consecutive_empty >= 5:
+                                # 5 empty scans → MT5 probably dropped
+                                info = mt5.terminal_info()
+                                if info is None or not info.connected:
+                                    log.warning("MT5 connection lost — reconnecting")
+                                    break  # break inner loop → outer reconnect
+                                consecutive_empty = 0
+                        else:
+                            consecutive_empty = 0
+                    except Exception:
+                        log.exception("scan_once failed")
+                    dt = time.time() - t0
+                    self._stop.wait(max(0.0, self.tick_sec - dt))
             except Exception:
-                pass
+                log.exception("SignalEngine inner loop crashed")
+            finally:
+                try:
+                    mt5.shutdown()
+                except Exception:
+                    pass
+
+            if not self._stop.is_set():
+                self._save_state(running=False)
+                log.info("SignalEngine disconnected — reconnecting in 15s")
+                self._stop.wait(15)
+
+        self._save_state(running=False)
+        if self.tracker is not None:
+            try: self.tracker.stop()
+            except Exception: pass
 
     # ── symbol verification ──────────────────────────────────────────────
     def _verify_symbols(self, symbols: Iterable[str]) -> list[str]:
@@ -312,7 +351,8 @@ class SignalEngine:
         return b["low"] <= b["ema200"] <= b["high"]
 
     # ── per-tick scan ────────────────────────────────────────────────────
-    def _scan_once(self):
+    def _scan_once(self) -> int:
+        """Run one scan cycle. Returns count of valid snapshots (0 = MT5 likely dead)."""
         # Pass 1 — snapshot every symbol (fetch TFs, compute alignment).
         snapshots: dict[str, dict] = {}
         for symbol in self._verified_symbols:
@@ -350,26 +390,30 @@ class SignalEngine:
                 if align == "none":
                     continue
 
+                # Trend gate (shared) — H1 ADX must confirm trending market
+                h1_adx = _adx(tfs["H1"])
+                in_trend = h1_adx >= _ADX_TREND_MIN
+
                 # 2) 9/15 cross on M1 in alignment direction
                 cross = self._cross_event(tfs["M1"])
-                if cross is not None:
+                if cross is not None and in_trend:
                     bar_ts = int(tfs["M1"].iloc[-1]["time"].timestamp())
                     if self._last_cross_bar.get(symbol) != bar_ts:
                         want = "up" if align == "bull" else "down"
                         if cross == want:
                             side = "BUY" if cross == "up" else "SELL"
                             self._emit("cross", symbol, side, "M1", tfs["M1"],
-                                       note="9/15 EMA cross in alignment direction",
+                                       note=f"9/15 EMA cross in trend (H1 ADX {h1_adx:.1f})",
                                        detect_ms=detect_ms, strength=strength)
                             self._last_cross_bar[symbol] = bar_ts
 
                 # 3) M3 200EMA touch
-                if self._touch_event(tfs["M3"]):
+                if self._touch_event(tfs["M3"]) and in_trend:
                     bar_ts = int(tfs["M3"].iloc[-1]["time"].timestamp())
                     if self._last_touch_bar.get(symbol) != bar_ts:
                         side = "BUY" if align == "bull" else "SELL"
                         self._emit("touch", symbol, side, "M3", tfs["M3"],
-                                   note="Price touched 200 EMA on M3 (pullback)",
+                                   note=f"200 EMA touch in trend (H1 ADX {h1_adx:.1f})",
                                    detect_ms=detect_ms, strength=strength)
                         self._last_touch_bar[symbol] = bar_ts
             except Exception:
@@ -402,6 +446,8 @@ class SignalEngine:
                 self.iconic.consume(snapshots, strength)
             except Exception:
                 log.exception("iconic consume failed")
+
+        return len(snapshots)
 
     # ── currency strength ────────────────────────────────────────────────
     @staticmethod

@@ -50,6 +50,7 @@ TOUCH_ANTISPAM_S  = 30 * 60  # 30 min
 TOUCH_COUNT_WINDOW = 4 * 3600  # 4h
 TOUCH_COUNT_DOWNGRADE = 3
 SEQUENCE_WINDOW_S = 30 * 60   # 30 min for alignment→touch→cross
+ADX_TREND_MIN     = 25.0     # H1 ADX must be >= this for cross/touch (range filter)
 
 
 @dataclass
@@ -84,6 +85,20 @@ def _atr(df: pd.DataFrame, period: int = 14) -> float:
     h = df["high"]; l = df["low"]; c = df["close"]
     tr = pd.concat([(h - l), (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
     return float(tr.ewm(alpha=1/period, adjust=False).mean().iloc[-1])
+
+
+def _adx(df: pd.DataFrame, period: int = 14) -> float:
+    """Return latest ADX value (0-100). >= 25 = trending, < 25 = ranging."""
+    h, l, c = df["high"], df["low"], df["close"]
+    tr       = pd.concat([(h - l), (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
+    up, dn   = h.diff(), -l.diff()
+    plus_dm  = up.where((up > dn) & (up > 0), 0.0)
+    minus_dm = dn.where((dn > up) & (dn > 0), 0.0)
+    atr14    = tr.ewm(alpha=1 / period, adjust=False).mean()
+    plus_di  = 100 * plus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr14.replace(0, np.nan)
+    minus_di = 100 * minus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr14.replace(0, np.nan)
+    dx       = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
+    return float(dx.ewm(alpha=1 / period, adjust=False).mean().iloc[-1])
 
 
 class ImprovedDetector:
@@ -205,8 +220,13 @@ class ImprovedDetector:
         if existing and existing.get("bar_ts") == bar_ts:
             return None
 
+        # Trend gate — skip cross in ranging market (H1 ADX < ADX_TREND_MIN)
+        adx_h1 = _adx(tfs["H1"])
+        if adx_h1 < ADX_TREND_MIN:
+            return None
+
         # Quality gates
-        notes: list[str] = []
+        notes: list[str] = [f"[✓] H1 ADX {adx_h1:.1f} (trending, not range)"]
         score = 0.0
 
         # Body ratio
@@ -323,6 +343,7 @@ class ImprovedDetector:
             touch_count = len(hist)
 
             notes: list[str] = [
+                f"[✓] H1 ADX {pending.get('adx_h1', '?')} (trending, not range)",
                 f"[✓] {'Bullish' if align == 'bull' else 'Bearish'} alignment 4/4",
                 f"[✓] Wick touched EMA200 (body stayed in trend)",
                 f"[✓] Rejection candle closed {'up' if side == 'BUY' else 'down'} (confirmed)",
@@ -359,6 +380,11 @@ class ImprovedDetector:
 
         side = "BUY" if align == "bull" else "SELL"
 
+        # Trend gate — skip touch in ranging market (H1 ADX < ADX_TREND_MIN)
+        adx_h1 = _adx(tfs["H1"])
+        if adx_h1 < ADX_TREND_MIN:
+            return None
+
         # anti-spam: same symbol touched in last 30 min?
         last_touch = self._last_touch_emit.get(symbol)
         if last_touch and now_ts - last_touch["ts"] < TOUCH_ANTISPAM_S:
@@ -372,7 +398,8 @@ class ImprovedDetector:
 
         # register pending — wait for next bar's rejection
         self._pending_touch[symbol] = {"bar_ts": bar_ts, "side": side,
-                                       "ema200": float(b["ema200"])}
+                                       "ema200": float(b["ema200"]),
+                                       "adx_h1": round(adx_h1, 1)}
         return None
 
     # ── sequence detection ──────────────────────────────────────────────

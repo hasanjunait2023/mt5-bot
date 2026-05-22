@@ -193,6 +193,13 @@ function TradesTable({ trades }: { trades: PaperTrade[] }) {
 }
 
 // ── Iconic Scalp types ────────────────────────────────────────────────────────
+interface SymStats {
+  paper_trades: number
+  paper_pf: number
+  paper_wr: number
+  live: boolean
+}
+
 interface IconicScalpAgentState {
   mode: string
   live_mode: boolean
@@ -207,6 +214,8 @@ interface IconicScalpAgentState {
   equity: number
   daily_loss_pct: number
   trades_today: Record<string, number>
+  sym_live: Record<string, boolean>
+  sym_stats: Record<string, SymStats>
   updated_at: string | null
 }
 
@@ -231,16 +240,109 @@ const ICONIC_EMPTY: IconicScalpAgentState = {
   paper_trades: 0, paper_pf: 0, paper_pf_live: 0,
   paper_pending: [], paper_closed: 0, paper_wins: 0, paper_win_rate: 0,
   partial_exits_taken: 0, equity: 0, daily_loss_pct: 0,
-  trades_today: {}, updated_at: null,
+  trades_today: {}, sym_live: {}, sym_stats: {}, updated_at: null,
+}
+
+// ── SymPromotionGrid ──────────────────────────────────────────────────────────
+function SymPromotionGrid({
+  symStats, symLive,
+}: { symStats: Record<string, SymStats>; symLive: Record<string, boolean> }) {
+  const entries = Object.entries(symStats)
+  if (!entries.length) return null
+
+  return (
+    <div className="glass rounded-xl p-4 space-y-3">
+      <p className="eyebrow">Symbol Gate Progress</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {entries.map(([sym, s]) => {
+          const live         = symLive[sym] ?? s.live ?? false
+          const tradesProg   = Math.min(100, (s.paper_trades / PAPER_MIN_TRADES) * 100)
+          const pfProg       = Math.min(100, (s.paper_pf / PAPER_MIN_PF) * 100)
+          const gateReady    = s.paper_trades >= PAPER_MIN_TRADES && s.paper_pf >= PAPER_MIN_PF
+          const isProven     = sym === 'NZDUSD'
+
+          return (
+            <div key={sym} className={`rounded-lg p-3 space-y-2 ring-1 ${
+              live
+                ? 'bg-profit/10 ring-profit/30'
+                : gateReady
+                  ? 'bg-accent/10 ring-accent/30'
+                  : 'bg-white/[0.03] ring-white/[0.06]'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-mono text-sm font-bold text-text-primary">{sym}</span>
+                  {isProven && (
+                    <span className="ml-1.5 text-[9px] text-profit uppercase tracking-wide">proven</span>
+                  )}
+                </div>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ring-1 uppercase ${
+                  live
+                    ? 'text-emerald-400 bg-emerald-500/10 ring-emerald-500/30'
+                    : 'text-amber-400 bg-amber-500/10 ring-amber-500/30'
+                }`}>
+                  {live ? '● LIVE' : '◎ PAPER'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div>
+                  <p className="text-[9px] text-text-muted uppercase tracking-wide">Trades</p>
+                  <p className="font-mono text-sm font-bold text-text-primary">{s.paper_trades}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-text-muted uppercase tracking-wide">PF</p>
+                  <p className={`font-mono text-sm font-bold ${
+                    s.paper_pf >= 1.3 ? 'text-profit' : s.paper_pf >= 1.0 ? 'text-amber-400' : 'text-text-secondary'
+                  }`}>
+                    {s.paper_pf > 0 ? s.paper_pf.toFixed(2) : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] text-text-muted uppercase tracking-wide">WR%</p>
+                  <p className={`font-mono text-sm font-bold ${s.paper_wr >= 55 ? 'text-profit' : 'text-text-secondary'}`}>
+                    {s.paper_wr > 0 ? `${s.paper_wr.toFixed(0)}%` : '—'}
+                  </p>
+                </div>
+              </div>
+
+              {!live && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div className="h-full rounded-full bg-accent/50 transition-all"
+                           style={{ width: `${tradesProg}%` }} />
+                    </div>
+                    <span className="text-[9px] text-text-muted font-mono w-8 text-right">
+                      {s.paper_trades}/{PAPER_MIN_TRADES}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${gateReady ? 'bg-profit' : 'bg-accent/50'}`}
+                           style={{ width: `${pfProg}%` }} />
+                    </div>
+                    <span className={`text-[9px] font-mono w-8 text-right ${gateReady ? 'text-profit' : 'text-text-muted'}`}>
+                      {s.paper_pf > 0 ? s.paper_pf.toFixed(2) : '—'}
+                    </span>
+                  </div>
+                  {gateReady && (
+                    <p className="text-[10px] text-profit font-semibold text-center">Gate passed — promoting</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 // ── IconicScalpPanel ──────────────────────────────────────────────────────────
 function IconicScalpPanel({ state, trades }: { state: IconicScalpAgentState; trades: IconicScalpTrade[] }) {
   const isRunning  = state.mode !== 'NOT_RUNNING' && state.mode !== 'STOPPED'
   const isHalted   = state.mode === 'HALTED'
-  const tradesProgress = Math.min(100, (state.paper_closed / PAPER_MIN_TRADES) * 100)
-  const pfProgress     = Math.min(100, (state.paper_pf_live / PAPER_MIN_PF) * 100)
-  const gateReady      = state.paper_closed >= PAPER_MIN_TRADES && state.paper_pf_live >= PAPER_MIN_PF
 
   const modeColor = state.live_mode
     ? 'text-emerald-400 bg-emerald-500/10 ring-emerald-500/30'
@@ -256,7 +358,7 @@ function IconicScalpPanel({ state, trades }: { state: IconicScalpAgentState; tra
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-lg font-bold text-text-primary tracking-tight">Iconic Scalp Agent</h2>
-          <p className="text-text-tertiary text-xs mt-0.5">NZDUSD M15 · Set1/2 money-spot · partial exit at 1R</p>
+          <p className="text-text-tertiary text-xs mt-0.5">M15 · 5-symbol scan · NZDUSD execute + EUR/GBP/CHF/AUD paper</p>
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-[11px] font-bold px-2.5 py-1 rounded ring-1 uppercase tracking-wider ${modeColor}`}>
@@ -289,36 +391,8 @@ function IconicScalpPanel({ state, trades }: { state: IconicScalpAgentState; tra
           sub={`${Object.values(state.trades_today).reduce((a, b) => a + b, 0)} trades today`} />
       </div>
 
-      {/* Promotion progress */}
-      {!state.live_mode && (
-        <div className="glass rounded-xl p-4 space-y-3">
-          <p className="eyebrow">Paper-trade gate to LIVE</p>
-          <div className="space-y-2">
-            <div>
-              <div className="flex justify-between text-[10px] text-text-muted mb-1">
-                <span>Trades</span><span>{state.paper_closed}/{PAPER_MIN_TRADES}</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                <div className="h-full rounded-full bg-accent/60 transition-all duration-500"
-                     style={{ width: `${tradesProgress}%` }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-[10px] text-text-muted mb-1">
-                <span>Profit Factor</span>
-                <span>{(state.paper_pf_live || state.paper_pf).toFixed(2)}/{PAPER_MIN_PF}</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-500 ${gateReady ? 'bg-profit' : 'bg-accent/60'}`}
-                     style={{ width: `${pfProgress}%` }} />
-              </div>
-            </div>
-          </div>
-          {gateReady && (
-            <p className="text-[11px] text-profit font-semibold text-center">Gate passed — promote to LIVE</p>
-          )}
-        </div>
-      )}
+      {/* Per-symbol promotion grid */}
+      <SymPromotionGrid symStats={state.sym_stats ?? {}} symLive={state.sym_live ?? {}} />
 
       {/* Open positions */}
       {state.paper_pending.length > 0 && (

@@ -1,10 +1,13 @@
-"""Iconic Scalp Agent — NZDUSD M15, partial exit at 1R.
+"""Iconic Scalp Agent — 3-tier wide scanning architecture.
 
-Backtest verdict (2026-05-22, 10000 M15 bars / 100 days):
-  NZDUSD: GO — PF 1.45, 65.2% WR, 23 trades. Partial exit at 1R is critical
-  (WR 47.8%→65.2% without/with partial). All other pairs NO_GO at 100-day horizon.
+Tier 1 — EXECUTE (proven GO, can promote to live):
+  NZDUSD — PF 1.45, 65.2% WR, 100-day backtest with partial exit at 1R.
 
-Paper-trade gate: 20 trades at PF >= 1.3 before live promotion.
+Tier 2 — PAPER ONLY until per-symbol gate (20 trades + PF >= 1.3 → auto-promote):
+  EURUSD, GBPUSD, USDCHF, AUDUSD — scan all, paper-trade independently.
+
+Each symbol has its own paper gate. A symbol that clears the gate auto-promotes to live.
+Partial exit at 1R: close 50%, move stop to breakeven on all symbols.
 
 Usage:
   python -m trading_agents.iconic.agent_scalp
@@ -28,25 +31,28 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
 
-LOG_DIR      = BASE_DIR / "logs" / "iconic_scalp"
+LOG_DIR    = BASE_DIR / "logs" / "iconic_scalp"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
-LOG_PATH     = LOG_DIR / "_agent_log.txt"
-STATE_PATH   = LOG_DIR / "_agent_state.json"
-DAILY_PATH   = LOG_DIR / "_agent_daily.json"
-PAPER_PATH   = LOG_DIR / "_paper_trades.jsonl"
+LOG_PATH   = LOG_DIR / "_agent_log.txt"
+STATE_PATH = LOG_DIR / "_agent_state.json"
+DAILY_PATH = LOG_DIR / "_agent_daily.json"
+PAPER_PATH = LOG_DIR / "_paper_trades.jsonl"
 
-MAGIC               = 20260701   # distinct from H1 Iconic agent (20260700)
-BARS_M15            = 500
-BARS_H1             = 500
-POLL_INTERVAL_S     = 30         # M15 agent needs tighter scan loop
-PAPER_MIN_TRADES    = 20
-PAPER_MIN_PF        = 1.3
-MAX_TRADES_PER_DAY  = 2          # per symbol
+MAGIC              = 20260701   # distinct from H1 Iconic agent (20260700)
+BARS_M15           = 500
+BARS_H1            = 500
+POLL_INTERVAL_S    = 30
+PAPER_MIN_TRADES   = 20
+PAPER_MIN_PF       = 1.3
+MAX_TRADES_PER_DAY = 2          # per symbol
 
-SYMBOLS = [
-    "NZDUSD",   # GO — 100-day PF 1.45, 65.2% WR with partial exit
-    # "AUDUSD",  # NO_GO — add after live paper confirms any improvement
-]
+# Tier 1 — proven GO, eligible for live execution
+TIER1_SYMBOLS = ["NZDUSD"]
+
+# Tier 2 — paper-only until each symbol independently passes the gate
+TIER2_SYMBOLS = ["EURUSD", "GBPUSD", "USDCHF", "AUDUSD"]
+
+SYMBOLS = TIER1_SYMBOLS + TIER2_SYMBOLS
 
 logging.basicConfig(
     level=logging.INFO,
@@ -133,10 +139,11 @@ class DailyState:
         return self.trades.get(symbol, 0)
 
 
-# ── Scalp paper tracker (supports partial exit at 1R) ─────────────────────────
+# ── Scalp paper tracker (per-symbol, partial exit at 1R) ──────────────────────
 class ScalpPaperTracker:
-    """Paper-trade tracker with partial exit simulation.
+    """Per-symbol paper tracker with partial exit simulation.
 
+    Each symbol tracks its own closed-trade list for independent promotion gates.
     When a position reaches 1R profit:
       - Locks in partial_pnl = 0.5 × risk_dist (50% closed)
       - Moves virtual stop to breakeven
@@ -144,9 +151,10 @@ class ScalpPaperTracker:
     """
 
     def __init__(self, force_paper: bool = False):
-        self.force_paper = force_paper
-        self._pending: dict = {}   # symbol → position dict
-        self._closed: list  = []
+        self.force_paper       = force_paper
+        self._pending: dict    = {}   # symbol → position dict
+        self._closed: list     = []   # all closed trades
+        self._closed_by_sym: dict = {}  # symbol → list of closed trades
         self._load()
 
     def _load(self) -> None:
@@ -156,10 +164,19 @@ class ScalpPaperTracker:
                     t = json.loads(line)
                     if t.get("status") == "closed":
                         self._closed.append(t)
+                        sym = t.get("symbol", "")
+                        self._closed_by_sym.setdefault(sym, []).append(t)
             except Exception:
                 pass
-        log.info("Scalp paper trades loaded: %d closed", len(self._closed))
+        log.info("Scalp paper: %d total closed across %d symbols",
+                 len(self._closed), len(self._closed_by_sym))
 
+    def _record_close(self, pos: dict) -> None:
+        self._closed.append(pos)
+        sym = pos.get("symbol", "")
+        self._closed_by_sym.setdefault(sym, []).append(pos)
+
+    # ── Overall stats ──
     @property
     def profit_factor(self) -> float:
         wins   = sum(t["pnl"] for t in self._closed if t.get("pnl", 0) > 0)
@@ -170,10 +187,27 @@ class ScalpPaperTracker:
     def trade_count(self) -> int:
         return len(self._closed)
 
-    def is_live_ready(self) -> bool:
+    # ── Per-symbol stats ──
+    def pf_sym(self, sym: str) -> float:
+        closed = self._closed_by_sym.get(sym, [])
+        wins   = sum(t["pnl"] for t in closed if t.get("pnl", 0) > 0)
+        losses = abs(sum(t["pnl"] for t in closed if t.get("pnl", 0) < 0))
+        return round(wins / losses, 2) if losses > 0 else (99.0 if wins > 0 else 0.0)
+
+    def count_sym(self, sym: str) -> int:
+        return len(self._closed_by_sym.get(sym, []))
+
+    def wr_sym(self, sym: str) -> float:
+        closed = self._closed_by_sym.get(sym, [])
+        if not closed:
+            return 0.0
+        return round(sum(1 for t in closed if t.get("pnl", 0) > 0) / len(closed) * 100, 1)
+
+    def ready_sym(self, sym: str) -> bool:
+        """True when this symbol independently passed the paper promotion gate."""
         if self.force_paper:
             return False
-        return self.trade_count >= PAPER_MIN_TRADES and self.profit_factor >= PAPER_MIN_PF
+        return self.count_sym(sym) >= PAPER_MIN_TRADES and self.pf_sym(sym) >= PAPER_MIN_PF
 
     def open_paper(self, symbol: str, side: str, entry: float,
                    stop: float, tp: float, risk_dist: float, klass: str) -> None:
@@ -195,21 +229,20 @@ class ScalpPaperTracker:
         if symbol not in self._pending:
             return
         pos = self._pending[symbol]
-        side       = pos["side"]
-        entry      = pos["entry"]
-        stop       = pos["stop"]
-        tp         = pos["tp"]
-        risk_dist  = pos["risk_dist"]
+        side      = pos["side"]
+        entry     = pos["entry"]
+        stop      = pos["stop"]
+        tp        = pos["tp"]
+        risk_dist = pos["risk_dist"]
 
-        # Partial exit: check if 1R hit and partial not yet done
         if not pos["partial_done"]:
             hit_1r = (high >= entry + risk_dist) if side == "BUY" \
                      else (low  <= entry - risk_dist)
             if hit_1r:
                 pos["partial_done"] = True
-                pos["partial_pnl"]  = risk_dist  # raw 1R (before spread — paper simplification)
-                pos["stop"]         = entry       # move stop to breakeven
-                log.info("[PAPER] PARTIAL: %s %s 1R hit → stop moved to BE %.5f",
+                pos["partial_pnl"]  = risk_dist
+                pos["stop"]         = entry
+                log.info("[PAPER] PARTIAL: %s %s 1R hit → stop → BE %.5f",
                          side, symbol, entry)
                 _tg(f"[PAPER] Scalp {side} {symbol} partial exit at 1R — stop → BE {entry:.5f}")
                 with PAPER_PATH.open("a") as f:
@@ -218,56 +251,53 @@ class ScalpPaperTracker:
                                                   else entry - risk_dist,
                                         "ts": datetime.now(timezone.utc).isoformat(
                                             timespec="seconds")}) + "\n")
-                stop = entry  # update local variable for SL check below
+                stop = entry
 
         hit_sl = (low  <= stop) if side == "BUY" else (high >= stop)
         hit_tp = (high >= tp)   if side == "BUY" else (low  <= tp)
 
         if hit_sl or hit_tp:
-            exit_price = stop if hit_sl else tp
-            raw_pnl    = (exit_price - entry) if side == "BUY" else (entry - exit_price)
+            exit_price  = stop if hit_sl else tp
+            raw_pnl     = (exit_price - entry) if side == "BUY" else (entry - exit_price)
             partial_pnl = pos.get("partial_pnl", 0.0)
-            if partial_pnl:
-                full_pnl = 0.5 * partial_pnl + 0.5 * raw_pnl
-            else:
-                full_pnl = raw_pnl
-
-            exit_tag = "TP" if hit_tp else ("BE_SL" if (hit_sl and pos["partial_done"])
-                                             else "SL")
+            full_pnl    = (0.5 * partial_pnl + 0.5 * raw_pnl) if partial_pnl else raw_pnl
+            exit_tag    = "TP" if hit_tp else ("BE_SL" if (hit_sl and pos["partial_done"])
+                                                else "SL")
             pos.update({
                 "status": "closed", "exit": exit_tag,
                 "exit_price": exit_price, "pnl": round(full_pnl, 8),
                 "ts_close": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             })
-            self._closed.append(pos)
+            self._record_close(pos)
             del self._pending[symbol]
             with PAPER_PATH.open("a") as f:
                 f.write(json.dumps(pos) + "\n")
             icon = "+" if full_pnl > 0 else "-"
-            log.info("[PAPER] CLOSE %s %s @ %.5f  %s  PnL=%s%.5f  PF=%.2f (%d trades)",
+            log.info("[PAPER] CLOSE %s %s @ %.5f  %s  PnL=%s%.5f  "
+                     "[%s] PF=%.2f(%d trades)",
                      side, symbol, exit_price, exit_tag, icon, abs(full_pnl),
-                     self.profit_factor, self.trade_count)
+                     symbol, self.pf_sym(symbol), self.count_sym(symbol))
             _tg(f"[PAPER] Scalp {exit_tag} {side} {symbol} @ {exit_price:.5f}  "
-                f"PnL={icon}{abs(full_pnl):.5f}  PF={self.profit_factor:.2f}")
-            if self.is_live_ready():
-                log.info("[PAPER] *** SCALP PROMOTION GATE PASSED: PF=%.2f trades=%d → LIVE ***",
-                         self.profit_factor, self.trade_count)
-                _tg(f"Iconic Scalp PROMOTION GATE passed — "
-                    f"PF={self.profit_factor:.2f} ({self.trade_count} paper trades). GOING LIVE.",
-                    level="WARNING")
+                f"PnL={icon}{abs(full_pnl):.5f}  PF[{symbol}]={self.pf_sym(symbol):.2f}")
+            if self.ready_sym(symbol):
+                log.info("[PAPER] *** %s GATE PASSED: PF=%.2f trades=%d → PROMOTE TO LIVE ***",
+                         symbol, self.pf_sym(symbol), self.count_sym(symbol))
+                _tg(f"Iconic Scalp {symbol} GATE PASSED — "
+                    f"PF={self.pf_sym(symbol):.2f} ({self.count_sym(symbol)} trades). "
+                    f"Promoting to LIVE.", level="WARNING")
 
     def force_close(self, symbol: str, exit_price: float, reason: str) -> None:
         if symbol not in self._pending:
             return
         pos = self._pending[symbol]
         side, entry = pos["side"], pos["entry"]
-        raw_pnl = (exit_price - entry) if side == "BUY" else (entry - exit_price)
+        raw_pnl     = (exit_price - entry) if side == "BUY" else (entry - exit_price)
         partial_pnl = pos.get("partial_pnl", 0.0)
-        full_pnl = (0.5 * partial_pnl + 0.5 * raw_pnl) if partial_pnl else raw_pnl
+        full_pnl    = (0.5 * partial_pnl + 0.5 * raw_pnl) if partial_pnl else raw_pnl
         pos.update({"status": "closed", "exit": reason,
                     "exit_price": exit_price, "pnl": round(full_pnl, 8),
                     "ts_close": datetime.now(timezone.utc).isoformat(timespec="seconds")})
-        self._closed.append(pos)
+        self._record_close(pos)
         del self._pending[symbol]
         with PAPER_PATH.open("a") as f:
             f.write(json.dumps(pos) + "\n")
@@ -465,11 +495,22 @@ def _currency_strength(align_map: dict) -> dict:
 
 # ── State writer ──────────────────────────────────────────────────────────────
 def _write_state(mode: str, daily: DailyState, paper: ScalpPaperTracker,
-                 live_mode: bool, equity: float) -> None:
+                 sym_live: dict, symbols: list, equity: float) -> None:
+    sym_stats = {
+        sym: {
+            "paper_trades": paper.count_sym(sym),
+            "paper_pf":     paper.pf_sym(sym),
+            "paper_wr":     paper.wr_sym(sym),
+            "live":         sym_live.get(sym, False),
+        }
+        for sym in symbols
+    }
     try:
         STATE_PATH.write_text(json.dumps({
             "mode":           mode,
-            "live_mode":      live_mode,
+            "live_mode":      any(sym_live.values()) if sym_live else False,
+            "sym_live":       sym_live,
+            "sym_stats":      sym_stats,
             "paper_trades":   paper.trade_count,
             "paper_pf":       paper.profit_factor,
             "paper_pending":  [
@@ -486,7 +527,6 @@ def _write_state(mode: str, daily: DailyState, paper: ScalpPaperTracker,
 
 
 # ── Live partial exit monitor ─────────────────────────────────────────────────
-# Tracks which live positions have triggered partial exit
 _partial_done: dict[str, bool] = {}   # symbol → True if partial already done
 
 
@@ -510,7 +550,7 @@ def _check_live_partial(symbol: str, entry: float, stop: float,
         close_lots = round(lots * 0.5, 2)
         if _partial_close(symbol, close_lots, side):
             _partial_done[symbol] = True
-            _modify_sl(symbol, entry)   # move stop to breakeven
+            _modify_sl(symbol, entry)
             _tg(f"Iconic Scalp {side} {symbol} PARTIAL EXIT at 1R — "
                 f"closed {close_lots} lots, stop → BE {entry:.5f}", level="INFO")
 
@@ -520,30 +560,33 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
         force_paper: bool) -> None:
     import MetaTrader5 as mt5
 
-    log.info("=== Iconic Scalp Agent starting ===")
-    log.info("Symbols: %s | risk=%.1f%% | DD=%.1f%% | paper=%s",
-             symbols, risk_pct, dd_limit, force_paper)
+    log.info("=== Iconic Scalp Agent starting (3-tier) ===")
+    log.info("Tier1=%s  Tier2=%s | risk=%.1f%%  DD=%.1f%%  force_paper=%s",
+             TIER1_SYMBOLS, TIER2_SYMBOLS, risk_pct, dd_limit, force_paper)
 
     if not _mt5_connect():
         log.error("Cannot connect to MT5 — aborting")
         sys.exit(1)
 
-    acc      = mt5.account_info()
-    daily    = DailyState.load(acc.balance)
-    paper    = ScalpPaperTracker(force_paper=force_paper)
-    live_mode = paper.is_live_ready()
+    acc   = mt5.account_info()
+    daily = DailyState.load(acc.balance)
+    paper = ScalpPaperTracker(force_paper=force_paper)
+
+    # Per-symbol live status; each symbol promotes independently
+    sym_live: dict[str, bool] = {sym: paper.ready_sym(sym) for sym in symbols}
+    for sym in symbols:
+        status = "LIVE (gate passed from prior session)" if sym_live[sym] \
+                 else f"PAPER ({paper.count_sym(sym)} trades, PF={paper.pf_sym(sym):.2f})"
+        log.info("  %s: %s", sym, status)
 
     from trading_agents.iconic.engine_scalp import IconicScalpEngine, SCALP_SETUP_TF
     engine = IconicScalpEngine()
 
-    # Live position tracking: symbol → {entry, stop, side, lots, ticket}
     _live_positions: dict[str, dict] = {}
     _last_m15_bar:   dict[str, int]  = {}
 
-    log.info("Initial state: paper=%d trades  PF=%.2f  live=%s",
-             paper.trade_count, paper.profit_factor, live_mode)
-    _tg(f"Iconic Scalp Agent started — symbols={symbols} | "
-        f"paper={paper.trade_count} trades | PF={paper.profit_factor:.2f}")
+    _tg(f"Iconic Scalp Agent started — {len(symbols)} symbols | "
+        f"paper={paper.trade_count} total closed")
 
     while True:
         try:
@@ -561,18 +604,20 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
             if dd_pct >= dd_limit:
                 log.warning("Daily DD %.1f%% >= limit — HALTED", dd_pct)
                 _tg(f"Iconic Scalp HALTED — daily DD {dd_pct:.1f}%", level="WARNING")
-                _write_state("HALTED", daily, paper, live_mode, equity)
+                _write_state("HALTED", daily, paper, sym_live, symbols, equity)
                 time.sleep(300)
                 continue
 
-            if not live_mode and paper.is_live_ready():
-                live_mode = True
-                log.info("PROMOTED TO LIVE MODE (PF=%.2f, %d paper trades)",
-                         paper.profit_factor, paper.trade_count)
+            # Check per-symbol promotion gate
+            for sym in symbols:
+                if not sym_live.get(sym) and paper.ready_sym(sym):
+                    sym_live[sym] = True
+                    log.info("PROMOTED %s TO LIVE (PF=%.2f, %d trades)",
+                             sym, paper.pf_sym(sym), paper.count_sym(sym))
 
             now = datetime.now(timezone.utc)
 
-            # Monitor live positions: partial exit + paper tick updates
+            # Monitor live positions + paper tick
             for sym in symbols:
                 tick = mt5.symbol_info_tick(sym)
                 if tick is None:
@@ -580,18 +625,15 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
                 high_approx = max(tick.ask, tick.bid)
                 low_approx  = min(tick.ask, tick.bid)
 
-                # Live partial monitor
-                if live_mode and sym in _live_positions:
+                if sym_live.get(sym) and sym in _live_positions:
                     lp = _live_positions[sym]
                     _check_live_partial(sym, lp["entry"], lp["stop"],
                                         lp["side"], lp["lots"])
-                    # Clean up if position closed
                     if not _has_open_position(sym):
                         del _live_positions[sym]
                         _partial_done.pop(sym, None)
                         log.info("Live position %s closed (TP/SL)", sym)
 
-                # Paper tick
                 paper.tick_paper(sym, high_approx, low_approx)
 
             # New M15 bar scan
@@ -606,7 +648,6 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
                 if len(h1) < 200:
                     h1 = m15
 
-                # Gate on new M15 bar close (penultimate bar = last closed)
                 last_t = int(m15.iloc[-2]["time"]) if "time" in m15.columns else 0
                 if _last_m15_bar.get(sym) == last_t:
                     continue
@@ -617,7 +658,6 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
                 align = "bull" if close > ema else ("bear" if close < ema else "none")
                 align_map[sym] = align
 
-                # H1 alignment overrides M15 as primary bias
                 if len(h1) >= 200:
                     h1_close = float(h1.iloc[-2]["close"])
                     h1_ema   = float(h1.iloc[-2]["ema200"])
@@ -629,14 +669,14 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
                 snapshots[sym] = {
                     "align": align,
                     "tfs": {
-                        SCALP_SETUP_TF: m15.iloc[:-1],   # exclude unclosed bar
-                        "M3": m15.iloc[:-1],              # M3 substitute
+                        SCALP_SETUP_TF: m15.iloc[:-1],
+                        "M3": m15.iloc[:-1],
                         "H1": h1.iloc[:-1],
                     },
                 }
 
             if not snapshots:
-                _write_state("SCANNING", daily, paper, live_mode, equity)
+                _write_state("SCANNING", daily, paper, sym_live, symbols, equity)
                 time.sleep(POLL_INTERVAL_S)
                 continue
 
@@ -659,14 +699,15 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
                     log.debug("%s: daily limit reached", sym)
                     continue
 
-                log.info("SIGNAL: %s %s class=%s score=%.0f  "
+                mode_label = "LIVE" if sym_live.get(sym) else "PAPER"
+                log.info("SIGNAL [%s]: %s %s class=%s score=%.0f  "
                          "entry=%.5f  SL=%.5f  TP=%.5f  RR=%.1f",
-                         sig.side, sym, sig.klass, sig.score,
+                         mode_label, sig.side, sym, sig.klass, sig.score,
                          sig.entry, sig.stop, sig.tp_final, sig.rr_final)
                 for r in sig.reasons:
                     log.debug("  %s", r)
 
-                if live_mode:
+                if sym_live.get(sym):
                     result = _place_order(sym, sig.side, sig.entry, sig.stop,
                                           sig.tp_final, risk_pct)
                     if result is not None:
@@ -697,8 +738,8 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
             # Align-flip exit on paper positions
             for sym in list(paper._pending.keys()):
                 if sym in align_map:
-                    pos_side   = paper._pending[sym]["side"]
-                    cur_align  = align_map[sym]
+                    pos_side  = paper._pending[sym]["side"]
+                    cur_align = align_map[sym]
                     if (pos_side == "BUY" and cur_align == "bear") or \
                        (pos_side == "SELL" and cur_align == "bull"):
                         tick = mt5.symbol_info_tick(sym)
@@ -706,7 +747,7 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
                             ep = tick.bid if pos_side == "BUY" else tick.ask
                             paper.force_close(sym, ep, "ALIGN_FLIP")
 
-            _write_state("SCANNING", daily, paper, live_mode, equity)
+            _write_state("SCANNING", daily, paper, sym_live, symbols, equity)
             time.sleep(POLL_INTERVAL_S)
 
         except KeyboardInterrupt:
@@ -717,7 +758,7 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
             time.sleep(30)
 
     acc2 = mt5.account_info()
-    _write_state("STOPPED", daily, paper, live_mode, acc2.equity if acc2 else 0.0)
+    _write_state("STOPPED", daily, paper, sym_live, symbols, acc2.equity if acc2 else 0.0)
     mt5.shutdown()
     log.info("=== Iconic Scalp Agent stopped ===")
 
@@ -725,7 +766,7 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
 # ── Entry point ───────────────────────────────────────────────────────────────
 def main() -> None:
     import argparse
-    parser = argparse.ArgumentParser(description="Iconic Scalp Agent — NZDUSD M15")
+    parser = argparse.ArgumentParser(description="Iconic Scalp Agent — 3-tier wide scan")
     parser.add_argument("--symbols", nargs="+", default=SYMBOLS)
     parser.add_argument("--risk",    type=float, default=1.0)
     parser.add_argument("--dd",      type=float, default=6.0)

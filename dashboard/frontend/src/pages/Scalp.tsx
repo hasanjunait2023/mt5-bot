@@ -192,20 +192,228 @@ function TradesTable({ trades }: { trades: PaperTrade[] }) {
   )
 }
 
+// ── Iconic Scalp types ────────────────────────────────────────────────────────
+interface IconicScalpAgentState {
+  mode: string
+  live_mode: boolean
+  paper_trades: number
+  paper_pf: number
+  paper_pf_live: number
+  paper_pending: Array<{ symbol: string; side: string; entry: number; stop: number; tp: number; partial_done: boolean }>
+  paper_closed: number
+  paper_wins: number
+  paper_win_rate: number
+  partial_exits_taken: number
+  equity: number
+  daily_loss_pct: number
+  trades_today: Record<string, number>
+  updated_at: string | null
+}
+
+interface IconicScalpTrade {
+  symbol: string
+  side: string
+  entry: number
+  stop: number
+  tp: number
+  klass: string
+  pnl?: number
+  exit?: string
+  partial_done?: boolean
+  partial_pnl?: number
+  status: string
+  ts_open: string
+  ts_close?: string
+}
+
+const ICONIC_EMPTY: IconicScalpAgentState = {
+  mode: 'NOT_RUNNING', live_mode: false,
+  paper_trades: 0, paper_pf: 0, paper_pf_live: 0,
+  paper_pending: [], paper_closed: 0, paper_wins: 0, paper_win_rate: 0,
+  partial_exits_taken: 0, equity: 0, daily_loss_pct: 0,
+  trades_today: {}, updated_at: null,
+}
+
+// ── IconicScalpPanel ──────────────────────────────────────────────────────────
+function IconicScalpPanel({ state, trades }: { state: IconicScalpAgentState; trades: IconicScalpTrade[] }) {
+  const isRunning  = state.mode !== 'NOT_RUNNING' && state.mode !== 'STOPPED'
+  const isHalted   = state.mode === 'HALTED'
+  const tradesProgress = Math.min(100, (state.paper_closed / PAPER_MIN_TRADES) * 100)
+  const pfProgress     = Math.min(100, (state.paper_pf_live / PAPER_MIN_PF) * 100)
+  const gateReady      = state.paper_closed >= PAPER_MIN_TRADES && state.paper_pf_live >= PAPER_MIN_PF
+
+  const modeColor = state.live_mode
+    ? 'text-emerald-400 bg-emerald-500/10 ring-emerald-500/30'
+    : isHalted
+      ? 'text-loss bg-loss/10 ring-loss/30'
+      : isRunning
+        ? 'text-amber-400 bg-amber-500/10 ring-amber-500/30'
+        : 'text-text-muted bg-white/[0.03] ring-border'
+
+  return (
+    <div className="space-y-4">
+      {/* Title row */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-lg font-bold text-text-primary tracking-tight">Iconic Scalp Agent</h2>
+          <p className="text-text-tertiary text-xs mt-0.5">NZDUSD M15 · Set1/2 money-spot · partial exit at 1R</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-[11px] font-bold px-2.5 py-1 rounded ring-1 uppercase tracking-wider ${modeColor}`}>
+            {state.live_mode ? '● LIVE' : state.mode}
+          </span>
+          {state.updated_at && (
+            <span className="text-[11px] text-text-muted font-mono">{fmtTime(state.updated_at)}</span>
+          )}
+        </div>
+      </div>
+
+      {!isRunning && (
+        <p className="text-text-tertiary text-xs">
+          Start: <code className="font-mono text-[11px] text-text-secondary">python -m trading_agents.iconic.agent_scalp --paper</code>
+        </p>
+      )}
+
+      {/* Metric row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <MetricCard label="Paper Trades" value={state.paper_closed} hero tone="accent"
+          sub={`${state.paper_pending.length} pending`} />
+        <MetricCard label="PF (live)" value={state.paper_pf_live > 0 ? state.paper_pf_live : state.paper_pf}
+          tone={state.paper_pf_live >= 1.3 ? 'profit' : state.paper_pf_live >= 1.0 ? 'neutral' : 'loss'}
+          sub="profit factor" />
+        <MetricCard label="Win Rate" value={state.paper_win_rate} suffix="%"
+          tone={state.paper_win_rate >= 55 ? 'profit' : 'neutral'}
+          sub={`${state.paper_wins}W · ${state.partial_exits_taken} partial`} />
+        <MetricCard label="Daily DD" value={state.daily_loss_pct} suffix="%"
+          tone={state.daily_loss_pct >= 4 ? 'loss' : 'neutral'}
+          sub={`${Object.values(state.trades_today).reduce((a, b) => a + b, 0)} trades today`} />
+      </div>
+
+      {/* Promotion progress */}
+      {!state.live_mode && (
+        <div className="glass rounded-xl p-4 space-y-3">
+          <p className="eyebrow">Paper-trade gate to LIVE</p>
+          <div className="space-y-2">
+            <div>
+              <div className="flex justify-between text-[10px] text-text-muted mb-1">
+                <span>Trades</span><span>{state.paper_closed}/{PAPER_MIN_TRADES}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                <div className="h-full rounded-full bg-accent/60 transition-all duration-500"
+                     style={{ width: `${tradesProgress}%` }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-[10px] text-text-muted mb-1">
+                <span>Profit Factor</span>
+                <span>{(state.paper_pf_live || state.paper_pf).toFixed(2)}/{PAPER_MIN_PF}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ${gateReady ? 'bg-profit' : 'bg-accent/60'}`}
+                     style={{ width: `${pfProgress}%` }} />
+              </div>
+            </div>
+          </div>
+          {gateReady && (
+            <p className="text-[11px] text-profit font-semibold text-center">Gate passed — promote to LIVE</p>
+          )}
+        </div>
+      )}
+
+      {/* Open positions */}
+      {state.paper_pending.length > 0 && (
+        <div className="glass rounded-xl p-4 space-y-2">
+          <p className="eyebrow mb-2">Open Positions</p>
+          {state.paper_pending.map((pos, i) => (
+            <div key={i} className="flex items-center justify-between text-[11px] font-mono
+                                    bg-white/[0.03] rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Badge variant={pos.side === 'BUY' ? 'buy' : 'sell'}>{pos.side}</Badge>
+                <span className="text-text-primary">{pos.symbol}</span>
+                <span className="text-text-tertiary">@ {fmtPrice(pos.entry)}</span>
+              </div>
+              <div className="flex items-center gap-3 text-text-muted">
+                <span>SL {fmtPrice(pos.stop)}</span>
+                <span>TP {fmtPrice(pos.tp)}</span>
+                {pos.partial_done && (
+                  <span className="text-profit text-[10px] px-1.5 py-0.5 rounded
+                                   bg-profit/10 ring-1 ring-profit/30">1R PARTIAL</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Trade history */}
+      <div className="glass rounded-xl p-4">
+        <p className="eyebrow mb-3">Trade History ({trades.length})</p>
+        {trades.length === 0
+          ? <p className="text-text-tertiary text-sm text-center py-4">No trades yet.</p>
+          : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px] font-mono border-collapse">
+              <thead>
+                <tr className="text-text-muted border-b border-white/[0.06]">
+                  {['Side', 'Entry', 'SL', 'TP', 'PnL', 'Exit', 'Partial', 'Time'].map(h => (
+                    <th key={h} className="text-left px-2 py-1.5 font-medium eyebrow">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {trades.map((t, i) => {
+                  const pnlPos = (t.pnl ?? 0) >= 0
+                  const exitColor = t.exit === 'TP' ? 'text-profit' : t.exit === 'BE_SL' ? 'text-amber-400' : 'text-loss'
+                  return (
+                    <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                      <td className="px-2 py-1.5">
+                        <Badge variant={t.side === 'BUY' ? 'buy' : 'sell'}>{t.side}</Badge>
+                      </td>
+                      <td className="px-2 py-1.5 text-text-secondary">{fmtPrice(t.entry)}</td>
+                      <td className="px-2 py-1.5 text-text-muted">{fmtPrice(t.stop)}</td>
+                      <td className="px-2 py-1.5 text-text-muted">{fmtPrice(t.tp)}</td>
+                      <td className={`px-2 py-1.5 font-bold ${pnlPos ? 'text-profit' : 'text-loss'}`}>
+                        {t.pnl !== undefined ? `${pnlPos ? '+' : ''}${t.pnl.toFixed(5)}` : '—'}
+                      </td>
+                      <td className={`px-2 py-1.5 font-semibold ${exitColor}`}>{t.exit ?? 'open'}</td>
+                      <td className="px-2 py-1.5">
+                        {t.partial_done
+                          ? <span className="text-profit text-[10px]">✓ 1R</span>
+                          : <span className="text-text-muted">—</span>}
+                      </td>
+                      <td className="px-2 py-1.5 text-text-muted">{fmtTime(t.ts_close ?? t.ts_open)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function Scalp() {
   const [state, setState]   = useState<ScalpState>(EMPTY_STATE)
   const [trades, setTrades] = useState<PaperTrade[]>([])
+  const [iconicState, setIconicState] = useState<IconicScalpAgentState>(ICONIC_EMPTY)
+  const [iconicTrades, setIconicTrades] = useState<IconicScalpTrade[]>([])
   const [loading, setLoading] = useState(true)
 
   const refresh = async () => {
     try {
-      const [s, t] = await Promise.all([
+      const [s, t, is, it] = await Promise.all([
         apiFetch('/api/scalp/agent').then(r => r.ok ? r.json() : null),
         apiFetch('/api/scalp/trades?limit=40').then(r => r.ok ? r.json() : null),
+        apiFetch('/api/iconic/scalp/agent').then(r => r.ok ? r.json() : null),
+        apiFetch('/api/iconic/scalp/trades?limit=40').then(r => r.ok ? r.json() : null),
       ])
       if (s) setState(s as ScalpState)
       if (t) setTrades((t as { trades: PaperTrade[] }).trades ?? [])
+      if (is) setIconicState(is as IconicScalpAgentState)
+      if (it) setIconicTrades((it as { trades: IconicScalpTrade[] }).trades ?? [])
     } catch { /* ignore */ }
     finally { setLoading(false) }
   }
@@ -320,6 +528,12 @@ export function Scalp() {
       <Panel title={`Paper Trade Log (${trades.length})`}>
         <TradesTable trades={trades} />
       </Panel>
+
+      {/* Divider */}
+      <div className="border-t border-white/[0.06] pt-2" />
+
+      {/* Iconic Scalp section */}
+      <IconicScalpPanel state={iconicState} trades={iconicTrades} />
     </div>
   )
 }

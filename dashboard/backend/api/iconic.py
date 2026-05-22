@@ -15,6 +15,10 @@ EVENTS_PATH  = BASE_DIR / "logs" / "iconic" / "_iconic_events.jsonl"
 AGENT_PATH   = BASE_DIR / "logs" / "iconic" / "_agent_state.json"
 PAPER_PATH   = BASE_DIR / "logs" / "iconic" / "_paper_trades.jsonl"
 
+# Scalp agent paths (logs/iconic_scalp/)
+SCALP_AGENT_PATH = BASE_DIR / "logs" / "iconic_scalp" / "_agent_state.json"
+SCALP_PAPER_PATH = BASE_DIR / "logs" / "iconic_scalp" / "_paper_trades.jsonl"
+
 
 def _read_json(p: Path, default):
     try:
@@ -92,3 +96,39 @@ def get_iconic_symbol(symbol: str):
         "live_signal": state.get("signals_live", {}).get(sym),
         "updated_at":  state.get("updated_at"),
     }
+
+
+# ── Iconic Scalp endpoints (M15 NZDUSD, partial exit at 1R) ──────────────────
+
+@router.get("/iconic/scalp/agent")
+def get_iconic_scalp_agent():
+    """Iconic Scalp agent state: NZDUSD M15, paper/live mode, PF, partial exits."""
+    state = _read_json(SCALP_AGENT_PATH, {
+        "mode": "NOT_RUNNING", "live_mode": False,
+        "paper_trades": 0, "paper_pf": 0.0,
+        "paper_pending": [], "equity": 0.0,
+        "daily_loss_pct": 0.0, "trades_today": {},
+        "updated_at": None,
+    })
+    closed = [t for t in _read_jsonl(SCALP_PAPER_PATH, 200)
+              if t.get("status") == "closed"]
+    wins        = sum(1 for t in closed if t.get("pnl", 0) > 0)
+    partial_cnt = sum(1 for t in closed if t.get("partial_done"))
+    state["paper_closed"]        = len(closed)
+    state["paper_wins"]          = wins
+    state["paper_win_rate"]      = round(wins / len(closed) * 100, 1) if closed else 0.0
+    state["partial_exits_taken"] = partial_cnt
+    # Profit factor from paper trades (cross-check with state file)
+    wins_pnl   = sum(t["pnl"] for t in closed if t.get("pnl", 0) > 0)
+    losses_pnl = abs(sum(t["pnl"] for t in closed if t.get("pnl", 0) < 0))
+    state["paper_pf_live"] = round(wins_pnl / losses_pnl, 2) if losses_pnl > 0 else 0.0
+    return state
+
+
+@router.get("/iconic/scalp/trades")
+def get_iconic_scalp_trades(limit: int = 50):
+    """Recent Iconic Scalp paper trades, newest first."""
+    trades = _read_jsonl(SCALP_PAPER_PATH, limit * 3)
+    closed = [t for t in trades if t.get("status") == "closed"]
+    closed.sort(key=lambda t: t.get("ts_close", ""), reverse=True)
+    return {"trades": closed[:limit]}

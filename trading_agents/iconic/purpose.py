@@ -99,8 +99,10 @@ class NewsProvider:
 
 
 class PurposeGate:
-    def __init__(self, news_provider: Optional[NewsProvider] = None):
+    def __init__(self, news_provider: Optional[NewsProvider] = None,
+                 open_window_min: int = SESSION_OPEN_WINDOW_MIN):
         self.news = news_provider or NewsProvider()
+        self._open_window_min = open_window_min
 
     def evaluate(self, symbol: str, now: Optional[datetime] = None) -> PurposeResult:
         now = now or datetime.now(timezone.utc)
@@ -117,7 +119,11 @@ class PurposeGate:
 
         # WEAK purpose: near session open or in London↔NY overlap
         # NOT "being in the session" — that is too broad and not Navin's rule.
-        session_ok, sess_label = self._session_purpose(now)
+        session_ok, sess_label = self._session_purpose(now, self._open_window_min)
+        # Asia session opens (Wellington/Tokyo) count as weak purpose for commodity ccys
+        if not session_ok:
+            session_ok, sess_label = self._asia_session_purpose(
+                symbol, now, self._open_window_min)
         if session_ok and not news_ok:
             sources.append(f"{sess_label} (weak — session open/overlap)")
         elif session_ok:
@@ -129,7 +135,8 @@ class PurposeGate:
                              session_ok=session_ok, news_ok=news_ok)
 
     @staticmethod
-    def _session_purpose(now: datetime) -> tuple[bool, str]:
+    def _session_purpose(now: datetime,
+                         window_min: int = SESSION_OPEN_WINDOW_MIN) -> tuple[bool, str]:
         """True near London/NY open window or inside London-NY overlap.
 
         Open times (UTC, DST heuristic months 3-10 = summer):
@@ -139,6 +146,7 @@ class PurposeGate:
         without a session-open event — high institutional participation window.
 
         Being anywhere else "in the session" is NOT purpose per Navin.
+        Scalp mode: pass window_min=60 to restrict to the tighter open window.
         """
         # No session opens on weekends
         if now.weekday() >= 5:
@@ -163,7 +171,43 @@ class PurposeGate:
         for open_h, label in ((london_open_h, "London open"),
                               (ny_open_h,     "New York open")):
             mins_since = now_min - open_h * 60
-            if 0 <= mins_since <= SESSION_OPEN_WINDOW_MIN:
+            if 0 <= mins_since <= window_min:
                 return True, f"{label} +{mins_since:.0f}min"
+
+        return False, ""
+
+    @staticmethod
+    def _asia_session_purpose(symbol: str, now: datetime,
+                              window_min: int) -> tuple[bool, str]:
+        """Wellington/Sydney/Tokyo opens for NZD, AUD, JPY pairs.
+
+        These currencies have primary institutional participation during Asia
+        session, not London/NY. Treating Wellington/Tokyo opens as weak purpose
+        for these pairs matches Navin's 'you need a reason' intent.
+
+        Open times (UTC, DST heuristic months 3-10 = summer):
+          Wellington/Sydney: 22:00 summer / 21:00 winter
+          Tokyo:             00:00 summer / 23:00 winter (previous-day midnight)
+        """
+        from .correlation import split_pair
+        ASIA_CCYS = {"NZD", "AUD", "JPY"}
+        base, quote = split_pair(symbol)
+        if not (base in ASIA_CCYS or quote in ASIA_CCYS):
+            return False, ""
+        if now.weekday() >= 5:
+            return False, ""
+
+        is_summer = 3 <= now.month <= 10
+        wellington_h = 22 if is_summer else 21
+        tokyo_h      = 0  if is_summer else 23   # midnight UTC
+
+        now_min = now.hour * 60 + now.minute
+        for open_h, label in ((wellington_h, "Wellington/Sydney open"),
+                              (tokyo_h,      "Tokyo open")):
+            open_min = open_h * 60
+            # Modulo handles midnight boundary (e.g. now=00:30, open=00:00 → delta=30)
+            delta = (now_min - open_min) % (24 * 60)
+            if 0 <= delta <= window_min:
+                return True, f"{label} +{delta:.0f}min"
 
         return False, ""

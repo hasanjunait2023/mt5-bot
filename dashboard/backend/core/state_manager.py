@@ -42,6 +42,8 @@ class StatePoller(threading.Thread):
         self._perf_log: dict = {}
         self._sys_config: dict = {}
         self._alerted: set = set()      # rising-edge debounce for HQ alerts
+        self._stale_streak: int = 0     # consecutive stale/disconnected polls
+        self._last_good_cfg: dict = {}  # cached config so intermittent read failures don't clear edges
 
     def stop(self):
         self._stop.set()
@@ -93,6 +95,10 @@ class StatePoller(threading.Thread):
         """Push live-trading transitions to the Telegram HQ once per edge."""
         from .notifier import send
 
+        # Cache config — intermittent read failures must not clear edge state
+        if cfg:
+            self._last_good_cfg = cfg
+
         def edge(key: str, active: bool, msg: str, level: str):
             if active and key not in self._alerted:
                 self._alerted.add(key)
@@ -105,21 +111,22 @@ class StatePoller(threading.Thread):
              prev.get("trader_running") and not new.get("trader_running"),
              "🔌 Live trader is *offline* (state stale or stopped).", "WARNING")
 
-        # MT5 link dropped
-        edge("mt5_down",
-             prev.get("mt5_connected") and not new.get("mt5_connected"),
-             "❌ MT5 connection *lost*.", "CRITICAL")
+        # MT5 link dropped — require 2 consecutive down polls to avoid false
+        # alarms from a single stale read during DD-branch sleep
+        if not new.get("mt5_connected"):
+            self._stale_streak += 1
+        else:
+            self._stale_streak = 0
+            self._alerted.discard("mt5_down")   # auto-clear when back online
 
-        # Daily drawdown limit breached
-        acct = new.get("account", {}) or {}
-        dd = float(acct.get("daily_dd_pct", 0) or 0)
-        limit = float(cfg.get("max_daily_loss_pct", 0) or 0)
-        if limit and limit <= 1:        # stored as fraction → percent
-            limit *= 100
-        edge("daily_dd",
-             bool(limit) and dd >= limit,
-             f"🚨 Daily drawdown {dd:.2f}% hit the {limit:.2f}% limit. "
-             f"Equity {acct.get('equity', 0):.2f}.", "CRITICAL")
+        if self._stale_streak >= 2 and "mt5_down" not in self._alerted:
+            self._alerted.add("mt5_down")
+            send("live_trading", "❌ MT5 connection *lost*.", level="CRITICAL",
+                 title="Live Trading")
+
+        # Daily DD alert removed — live trader sends it directly with a
+        # one-shot guard (_daily_dd_alerted flag).  Keeping it here caused
+        # double-alerts and cycling whenever cfg read returned {}.
 
     def _read_live_state(self) -> dict:
         if not LIVE_STATE_PATH.exists():

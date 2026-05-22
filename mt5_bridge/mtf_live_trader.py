@@ -26,6 +26,7 @@ from mtf_strategy import (add_mtf_indicators, align_mtf_to_m1,
                            compute_mtf_signals, compute_sl_tp_arrays)
 
 MAGIC        = 20260100
+TRACKED_MAGICS = {20260100, 20260600, 20260500, 20260200}  # all bot magics
 BARS_M1      = 300
 BARS_M3      = 150
 BARS_M15     = 100
@@ -43,21 +44,31 @@ try:
 except Exception:
     _NVIDIA_ENABLED = False
 
+try:
+    from trading_agents.trade_journal import open_trade as _journal_open, close_trade as _journal_close
+    _JOURNAL_ENABLED = True
+except Exception:
+    _JOURNAL_ENABLED = False
+    def _journal_open(*a, **kw): pass   # type: ignore
+    def _journal_close(*a, **kw): pass  # type: ignore
+
 # ── Telegram alerts ───────────────────────────────────────────────────────────
 try:
-    import urllib.request as _ur, urllib.parse as _up
-    _TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-    _TG_CHAT  = os.getenv("TELEGRAM_CHAT_ID", "")
-    _TG_ON    = bool(_TG_TOKEN and _TG_CHAT)
+    import sys as _sys
+    _ROOT = str(Path(__file__).resolve().parents[1])
+    if _ROOT not in _sys.path:
+        _sys.path.insert(0, _ROOT)
+    from trading_agents import telegram_hq as _tghq
+    _TG_ON = True
 except Exception:
+    _tghq = None  # type: ignore
     _TG_ON = False
 
-def tg_alert(msg: str):
-    if not _TG_ON:
+def tg_alert(msg: str, level: str = "INFO"):
+    if not _TG_ON or _tghq is None:
         return
     try:
-        data = _up.urlencode({"chat_id": _TG_CHAT, "text": msg}).encode("utf-8")
-        _ur.urlopen(f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage", data, timeout=8)
+        _tghq.send("live_trading", msg, level=level, title="Live Trading")
     except Exception:
         pass
 
@@ -294,6 +305,15 @@ def place_order(symbol, signal, sl, rr, risk_pct):
     acc = mt5.account_info()
     log.info(f"  >> {symbol}: {direction} {lots}L @ {entry:.{digits}f} "
              f"SL={sl:.{digits}f} TP={tp:.{digits}f} Equity=${acc.equity:.2f}")
+    try:
+        _journal_open(
+            ticket=res.order, symbol=symbol, direction=direction,
+            entry_price=entry, sl=round(sl, digits), tp=round(tp, digits),
+            volume=lots, source="MTF_EMA", strategies=["MTF EMA Alignment"],
+            agent="mtf_live_trader", backend="mt5_direct",
+        )
+    except Exception:
+        pass
     sl_pips = abs(entry - sl) / sym.point / 10
     tp_pips = abs(tp - entry) / sym.point / 10
     risk_usd = acc.equity * (risk_pct / 100)
@@ -304,6 +324,55 @@ def place_order(symbol, signal, sl, rr, risk_pct):
         f"Risk: ${risk_usd:.2f} | Equity: ${acc.equity:.2f}"
     )
     return True
+
+
+# ── Trade journal close watcher ───────────────────────────────────────────────
+
+def _get_tracked_positions() -> dict[int, dict]:
+    """Return {ticket: {symbol, sl, tp}} for all bot-magic positions."""
+    all_pos = mt5.positions_get()
+    if not all_pos:
+        return {}
+    return {
+        p.ticket: {"symbol": p.symbol, "sl": p.sl, "tp": p.tp,
+                   "entry": p.price_open, "direction": "BUY" if p.type == 0 else "SELL"}
+        for p in all_pos if p.magic in TRACKED_MAGICS
+    }
+
+
+def _detect_and_journal_closes(prev: dict[int, dict]) -> dict[int, dict]:
+    """Compare prev positions vs current. Journal any that closed. Return current."""
+    current = _get_tracked_positions()
+    closed_tickets = set(prev) - set(current)
+    for ticket in closed_tickets:
+        try:
+            info = prev[ticket]
+            deals = mt5.history_deals_get(position=ticket)
+            if not deals:
+                continue
+            # DEAL_ENTRY_OUT = 1
+            close_deal = next((d for d in deals if d.entry == 1), None)
+            if close_deal is None:
+                continue
+            exit_price = close_deal.price
+            pnl        = close_deal.profit + close_deal.swap + close_deal.commission
+            sl, tp     = info["sl"], info["tp"]
+            tol        = abs(tp - info["entry"]) * 0.05  # 5% tolerance
+            if tp > 0 and abs(exit_price - tp) <= tol:
+                outcome = "TP_HIT"
+            elif sl > 0 and abs(exit_price - sl) <= tol:
+                outcome = "SL_HIT"
+            else:
+                outcome = "MANUAL"
+            from datetime import datetime, timezone
+            close_ts = datetime.fromtimestamp(close_deal.time, tz=timezone.utc).isoformat()
+            _journal_close(ticket=ticket, exit_price=exit_price,
+                           pnl=pnl, outcome=outcome, close_time=close_ts)
+            log.info(f"  [Journal] {info['symbol']} #{ticket} closed "
+                     f"{outcome} PnL=${pnl:+.2f}")
+        except Exception as e:
+            log.debug(f"  [Journal] close detection error #{ticket}: {e}")
+    return current
 
 
 # ── Timing ────────────────────────────────────────────────────────────────────
@@ -456,6 +525,11 @@ def main():
     nvidia_alive: Optional[bool] = None
     last_nvidia_hb: float = 0.0
 
+    # Journal close-watcher: snapshot of tracked positions from last iteration
+    prev_positions: dict[int, dict] = _get_tracked_positions()
+    _daily_dd_alerted: bool = False
+    _last_alert_day: Optional[str] = None
+
     log.info(DIV)
     log.info("  MTF EMA Alignment Scalper — LIVE TRADER")
     log.info(f"  Symbols : {', '.join(symbols)}")
@@ -466,7 +540,8 @@ def main():
         f"🤖 MTF LIVE TRADER ONLINE\n"
         f"Pairs: {', '.join(symbols)}\n"
         f"Risk: {args.risk}% | DD limit: {args.dd}% | Max DD: {args.maxdd}%\n"
-        f"Balance: ${initial_balance:.2f}"
+        f"Balance: ${initial_balance:.2f}",
+        level="INFO"
     )
 
     try:
@@ -485,6 +560,10 @@ def main():
                     break
 
             daily.roll_if_new_day(acc.balance)
+            _today = str(daily.date)
+            if _today != _last_alert_day:
+                _daily_dd_alerted = False
+                _last_alert_day = _today
 
             if args.news:
                 from news_filter import fetch_ff_calendar
@@ -497,20 +576,25 @@ def main():
                     f"🚨 MTF BOT HALTED\n"
                     f"Max drawdown {total_dd:.1f}% reached (limit {args.maxdd}%)\n"
                     f"Balance: ${acc.balance:.2f} | Equity: ${acc.equity:.2f}\n"
-                    f"Manual review required."
+                    f"Manual review required.",
+                    level="CRITICAL"
                 )
                 break
 
             daily_dd = daily.daily_loss_pct(acc.equity)
             if daily_dd >= args.dd:
                 log.warning(f"Daily DD {daily_dd:.1f}% — skipping rest of day")
-                tg_alert(
-                    f"⚠️ MTF DAILY LIMIT HIT\n"
-                    f"Daily loss {daily_dd:.1f}% (limit {args.dd}%)\n"
-                    f"No new trades until tomorrow.\n"
-                    f"Balance: ${acc.balance:.2f}"
-                )
+                if not _daily_dd_alerted:
+                    tg_alert(
+                        f"⚠️ MTF DAILY LIMIT HIT\n"
+                        f"Daily loss {daily_dd:.1f}% (limit {args.dd}%)\n"
+                        f"No new trades until tomorrow.\n"
+                        f"Balance: ${acc.balance:.2f}",
+                        level="WARNING"
+                    )
+                    _daily_dd_alerted = True
                 log_status(symbols, daily, initial_balance)
+                write_live_state(symbols, daily, initial_balance, last_signals, nvidia_alive)
                 time.sleep(60)
                 continue
 
@@ -521,6 +605,8 @@ def main():
                 last_nvidia_hb = now_ts
                 status_str = "alive" if nvidia_alive else ("DEAD" if nvidia_alive is False else "n/a")
                 log.info(f"  [NVIDIA HB] API status: {status_str}")
+
+            prev_positions = _detect_and_journal_closes(prev_positions)
 
             log_status(symbols, daily, initial_balance, nvidia_alive)
             write_live_state(symbols, daily, initial_balance, last_signals, nvidia_alive)
@@ -562,11 +648,14 @@ def main():
             log.info(f"  Session end | Start=${initial_balance:.2f} "
                      f"End=${acc.balance:.2f} Net=${pnl:+.2f}")
             log.info(DIV)
-            tg_alert(
-                f"📋 MTF SESSION ENDED\n"
-                f"Start: ${initial_balance:.2f} → End: ${acc.balance:.2f}\n"
-                f"Net: ${pnl:+.2f} ({pnl_pct:+.1f}%)"
-            )
+            total_trades = sum(daily.trades.values()) if hasattr(daily, "trades") else 0
+            if abs(pnl) > 0.01 or total_trades > 0:
+                tg_alert(
+                    f"📋 MTF SESSION ENDED\n"
+                    f"Start: ${initial_balance:.2f} → End: ${acc.balance:.2f}\n"
+                    f"Net: ${pnl:+.2f} ({pnl_pct:+.1f}%) | Trades: {total_trades}",
+                    level="INFO"
+                )
         mt5.shutdown()
         try:
             if STATE_PATH.exists():

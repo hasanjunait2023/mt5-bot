@@ -21,8 +21,6 @@ import logging
 import os
 import sys
 import time
-import urllib.parse
-import urllib.request
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional
@@ -61,18 +59,19 @@ logging.basicConfig(
 log = logging.getLogger("Iconic.Agent")
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
-_TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-_TG_CHAT  = os.getenv("TELEGRAM_CHAT_ID", "")
-_TG_ON    = bool(_TG_TOKEN and _TG_CHAT)
+try:
+    from trading_agents import telegram_hq as _tghq
+    _TG_ON = True
+except Exception:
+    _tghq = None
+    _TG_ON = False
 
 
-def _tg(msg: str) -> None:
-    if not _TG_ON:
+def _tg(msg: str, level: str = "INFO") -> None:
+    if not _TG_ON or _tghq is None:
         return
     try:
-        data = urllib.parse.urlencode({"chat_id": _TG_CHAT, "text": msg}).encode()
-        urllib.request.urlopen(
-            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage", data, timeout=8)
+        _tghq.send("live_trading", msg, level=level, title="Iconic Agent")
     except Exception:
         pass
 
@@ -290,7 +289,7 @@ def _calc_lots(symbol: str, entry: float, stop: float, risk_pct: float) -> float
 
 
 def _place_order(symbol: str, side: str, entry: float, stop: float, tp: float,
-                 risk_pct: float) -> bool:
+                 risk_pct: float) -> Optional[tuple[int, float]]:
     import MetaTrader5 as mt5
     tick = mt5.symbol_info_tick(symbol)
     sym  = mt5.symbol_info(symbol)
@@ -336,10 +335,10 @@ def _place_order(symbol: str, side: str, entry: float, stop: float, tp: float,
         log.info("ORDER PLACED: %s %s %s @ %.5f  SL=%.5f  TP=%.5f  lots=%.2f",
                  side, symbol, res.order, live_entry, stop, tp, lots)
         _tg(f"Iconic {side} {symbol} @ {live_entry:.5f}  SL={stop:.5f}  TP={tp:.5f}  lots={lots}")
-        return True
+        return int(res.order), lots
     code = res.retcode if res else "None"
     log.error("%s: order FAILED retcode=%s", symbol, code)
-    return False
+    return None
 
 
 # ── Currency strength ─────────────────────────────────────────────────────────
@@ -438,7 +437,7 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
             dd_pct = daily.daily_loss_pct(equity)
             if dd_pct >= dd_limit:
                 log.warning("Daily DD %.1f%% >= limit %.1f%% — HALTED", dd_pct, dd_limit)
-                _tg(f"Iconic Agent HALTED — daily DD {dd_pct:.1f}% >= {dd_limit:.1f}%")
+                _tg(f"Iconic Agent HALTED — daily DD {dd_pct:.1f}% >= {dd_limit:.1f}%", level="WARNING")
                 _write_state("HALTED", daily, paper, live_mode, equity)
                 time.sleep(300)
                 continue
@@ -515,16 +514,25 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
                          sig.entry, sig.stop, sig.tp_final)
 
                 if live_mode:
-                    ok = _place_order(sym, sig.side, sig.entry, sig.stop,
-                                      sig.tp_final, risk_pct)
-                    if ok:
+                    result = _place_order(sym, sig.side, sig.entry, sig.stop,
+                                          sig.tp_final, risk_pct)
+                    if result is not None:
+                        ticket, lots = result
                         daily.add_trade(sym)
                         if _JOURNAL:
                             _journal_open(
-                                symbol=sym, side=sig.side, entry=sig.entry,
-                                stop=sig.stop, tp=sig.tp_final,
-                                strategy="Iconic", klass=sig.klass,
-                                magic=MAGIC, comment=f"score={sig.score:.0f}"
+                                ticket=ticket,
+                                symbol=sym,
+                                direction=sig.side,
+                                entry_price=sig.entry,
+                                sl=sig.stop,
+                                tp=sig.tp_final,
+                                volume=lots,
+                                source="Iconic",
+                                strategies=["Iconic", sig.klass],
+                                agent="Iconic.Agent",
+                                confluence_score=sig.score,
+                                rationale=f"class={sig.klass}  score={sig.score:.0f}",
                             )
                 else:
                     paper.open_paper(sym, sig.side, sig.entry, sig.stop,

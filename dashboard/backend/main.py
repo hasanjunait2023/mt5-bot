@@ -29,6 +29,7 @@ from api import desk as desk_api
 from api import system_time as system_time_api
 from api import iconic as iconic_api
 from api import journal as journal_api
+from api import scalp as scalp_api
 
 logging.basicConfig(
     level=logging.INFO,
@@ -122,6 +123,20 @@ app.include_router(desk_api.router,       prefix="/api", dependencies=_protected
 app.include_router(system_time_api.router, prefix="/api", dependencies=_protected)
 app.include_router(iconic_api.router,     prefix="/api", dependencies=_protected)
 app.include_router(journal_api.router,    prefix="/api", dependencies=_protected)
+app.include_router(scalp_api.router,      prefix="/api", dependencies=_protected)
 
 # WebSocket validates the token itself (browsers can't set WS headers).
 app.include_router(ws.router)
+
+# Serve the React production build when it exists.
+# Build it once with: cd dashboard/frontend && npm run build
+_dist = BASE_DIR / "dashboard" / "frontend" / "dist"
+if _dist.exists():
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+
+    app.mount("/assets", StaticFiles(directory=str(_dist / "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str):
+        return FileResponse(str(_dist / "index.html"))

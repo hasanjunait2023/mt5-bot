@@ -79,13 +79,16 @@ except Exception:
 
 # ── Strategy signal functions (from backtest.py) ──────────────────────────────
 from trading_agents.scalp.backtest import (
-    _gs11_opening_range_scalper,
+    _gs01_gold_ema_rsi_stoch,
     _gs07_liquidity_sweep,
+    _gs11_opening_range_scalper,
     TYPICAL_SPREADS,
 )
 
 SYMBOL = "XAUUSD"
-STRATEGIES = ["GS11", "GS07"]
+# GS01 uses M3 bars; GS07/GS11 use M1 bars
+STRATEGIES    = ["GS11", "GS07", "GS01"]
+STRATEGY_TF   = {"GS11": "M1", "GS07": "M1", "GS01": "M3"}
 
 
 # ── Daily state ───────────────────────────────────────────────────────────────
@@ -261,16 +264,21 @@ def _mt5_connect() -> bool:
         return False
 
 
-def _fetch_m1(symbol: str, n: int) -> Optional[dict]:
+def _fetch_bars(symbol: str, tf_str: str, n: int) -> Optional[dict]:
     import MetaTrader5 as mt5
-    rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M1, 0, n)
+    tf_map = {
+        "M1": mt5.TIMEFRAME_M1, "M3": mt5.TIMEFRAME_M3,
+        "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15,
+    }
+    tf = tf_map.get(tf_str, mt5.TIMEFRAME_M1)
+    rates = mt5.copy_rates_from_pos(symbol, tf, 0, n)
     if rates is None or len(rates) < 60:
         return None
     return {
-        "time":        [int(r["time"])  for r in rates],
-        "open":        [float(r["open"]) for r in rates],
-        "high":        [float(r["high"]) for r in rates],
-        "low":         [float(r["low"])  for r in rates],
+        "time":        [int(r["time"])    for r in rates],
+        "open":        [float(r["open"])  for r in rates],
+        "high":        [float(r["high"])  for r in rates],
+        "low":         [float(r["low"])   for r in rates],
         "close":       [float(r["close"]) for r in rates],
         "tick_volume": [float(r.get("tick_volume", 0)) for r in rates],
     }
@@ -391,6 +399,8 @@ def _eval_signal(strat: str, bars: dict, spread: float) -> Optional[dict]:
         return _gs11_opening_range_scalper(bars, t_i, spread)
     if strat == "GS07":
         return _gs07_liquidity_sweep(bars, t_i, spread)
+    if strat == "GS01":
+        return _gs01_gold_ema_rsi_stoch(bars, t_i, spread, symbol=SYMBOL)
     return None
 
 
@@ -413,7 +423,8 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
     live_strats: dict[str, bool] = {s: paper.is_live_ready(s) for s in STRATEGIES}
     _last_bar_time: dict[str, int] = {s: 0 for s in STRATEGIES}
 
-    spread = TYPICAL_SPREADS.get(SYMBOL, 0.30)
+    spread    = TYPICAL_SPREADS.get(SYMBOL, 0.30)
+    _bars_cache: dict[str, Optional[dict]] = {}   # tf_str → bars
 
     log.info("Initial state — paper: %d trades  total PF=%.2f  live=%s",
              paper.trade_count, paper.profit_factor, live_strats)
@@ -439,19 +450,26 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
                 time.sleep(300)
                 continue
 
-            # Fetch M1 bars
-            bars = _fetch_m1(SYMBOL, BARS_M1)
-            if bars is None:
+            # Fetch bars for each required timeframe
+            needed_tfs = set(STRATEGY_TF.values())
+            _bars_cache = {}
+            for tf_str in needed_tfs:
+                b = _fetch_bars(SYMBOL, tf_str, BARS_M1)
+                _bars_cache[tf_str] = b
+
+            # Use M1 bars for primary tick-checking (finest resolution)
+            bars_m1 = _bars_cache.get("M1")
+            if bars_m1 is None:
                 log.warning("No M1 bars for %s — sleeping 60s", SYMBOL)
                 _write_state("SCANNING", daily, paper, live_strats, equity)
                 time.sleep(60)
                 continue
 
-            last_bar_t = bars["time"][-2]  # last complete bar timestamp
+            last_bar_t = bars_m1["time"][-2]
 
-            # Tick paper positions
-            bar_high = bars["high"][-2]
-            bar_low  = bars["low"][-2]
+            # Tick paper positions on M1 high/low
+            bar_high = bars_m1["high"][-2]
+            bar_low  = bars_m1["low"][-2]
             for key in list(paper._pending.keys()):
                 paper.tick_paper(key, bar_high, bar_low)
 
@@ -467,12 +485,18 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
                 time.sleep(POLL_INTERVAL_S)
                 continue
 
-            # Run each strategy if we have a new bar
+            # Run each strategy if we have a new bar (per-TF tracking)
             for strat in STRATEGIES:
-                if last_bar_t <= _last_bar_time[strat]:
-                    continue   # same bar, already processed
+                tf_str = STRATEGY_TF[strat]
+                bars = _bars_cache.get(tf_str)
+                if bars is None:
+                    continue
 
-                _last_bar_time[strat] = last_bar_t
+                strat_bar_t = bars["time"][-2]
+                if strat_bar_t <= _last_bar_time[strat]:
+                    continue   # same bar for this TF, already processed
+
+                _last_bar_time[strat] = strat_bar_t
 
                 sig = _eval_signal(strat, bars, spread)
                 if sig is None:

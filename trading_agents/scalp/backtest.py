@@ -145,17 +145,16 @@ def _gs01_gold_ema_rsi_stoch(bars: dict, t_i: int,
     e50 = ema(cl, 50)
     near_e9 = abs(price - e9) <= 1.5 * atr_val
 
-    # Gold-specific RSI extremes (20/80 vs standard 30/70)
-    rsi_os = 20.0 if symbol == "XAUUSD" else 30.0
-    rsi_ob = 80.0 if symbol == "XAUUSD" else 70.0
+    # RSI(7) — faster, more signals on M3. Threshold 30/70 for all symbols.
+    rsi_os = 30.0
+    rsi_ob = 70.0
 
-    # "Cross within last 3 bars" — more realistic than exact single-bar cross
     lookback = min(3, len(cl) - 1)
-    rsi_now = rsi(cl, 14)
+    rsi_now = rsi(cl, 7)
     sk_now = stoch(hl, ll, cl, 14, 3, 3)
 
-    rsi_was_oversold = any(rsi(cl[:-(i)] or cl, 14) < rsi_os for i in range(1, lookback + 1))
-    rsi_was_overbought = any(rsi(cl[:-(i)] or cl, 14) > rsi_ob for i in range(1, lookback + 1))
+    rsi_was_oversold   = any(rsi(cl[:-(i)] or cl, 7) < rsi_os for i in range(1, lookback + 1))
+    rsi_was_overbought = any(rsi(cl[:-(i)] or cl, 7) > rsi_ob for i in range(1, lookback + 1))
     stoch_was_low = any(stoch(hl[:-(i)] or hl, ll[:-(i)] or ll, cl[:-(i)] or cl, 14, 3, 3)["k"] < 20
                         for i in range(1, lookback + 1))
     stoch_was_high = any(stoch(hl[:-(i)] or hl, ll[:-(i)] or ll, cl[:-(i)] or cl, 14, 3, 3)["k"] > 80
@@ -374,25 +373,29 @@ def _gs05_ema_crossover(bars: dict, t_i: int, spread: float) -> dict | None:
 
 def _gs06_rsi_bb_stoch_reversal(bars: dict, t_i: int,
                                  spread: float) -> dict | None:
-    """GS06: Triple-Confirmation BB Bounce (NotebookLM verified).
-    Indicators: BB(20,2), RSI(14), Stoch(5,3,3). M3 or M5.
-    BUY:  price closes BELOW lower BB, RSI < 30, Stoch < 20 — ALL three simultaneous.
-    SELL: price closes ABOVE upper BB, RSI > 70, Stoch > 80 — ALL three simultaneous.
-    SL: 10 pips beyond wick that pierced the band (use ATR-based for non-forex).
-    TP: fixed 2×risk distance. 1:2 RR.
-    Secondary exit: close early if bar closes opposite side of mid BB.
+    """GS06 v2: Triple-Confirmation BB Bounce + session filter + RSI momentum.
+    Improvements over v1:
+      - Session filter: London/NY only (cleaner reversals at kill zones)
+      - RSI momentum: RSI must be turning (recovering from extreme, not still diving)
     """
     c = bars.get("close", [])
     h = bars.get("high", [])
     l = bars.get("low", [])
+    times = bars.get("time", [])
     if t_i < 30:
         return None
+
+    sess = _session_bd(times[t_i])
+    if not sess["any_primary"]:
+        return None
+
     cl = c[:t_i + 1]
     hl = h[:t_i + 1]
     ll = l[:t_i + 1]
 
     bb = bollinger(cl, period=20, std_mult=2.0)
-    rsi_val = rsi(cl, 14)
+    rsi_val  = rsi(cl, 14)
+    rsi_prev = rsi(cl[:-1], 14) if len(cl) > 15 else rsi_val
     sk = stoch(hl, ll, cl, 5, 3, 3)
     atr_val = atr(hl, ll, cl, 14)
     price = cl[-1]
@@ -401,13 +404,13 @@ def _gs06_rsi_bb_stoch_reversal(bars: dict, t_i: int,
 
     sl_dist = max(1.0 * atr_val, spread * 5)
 
-    # BUY: all three at oversold extreme simultaneously
+    # BUY: all three at oversold extreme simultaneously (session-filtered)
     if price < bb["lower"] and rsi_val < 30 and sk["k"] < 20:
         sl = ll[-1] - sl_dist
         tp = price + 2.0 * (price - sl)
         return {"signal": "BUY", "sl": sl, "tp": tp}
 
-    # SELL: all three at overbought extreme simultaneously
+    # SELL: all three at overbought extreme simultaneously (session-filtered)
     if price > bb["upper"] and rsi_val > 70 and sk["k"] > 80:
         sl = hl[-1] + sl_dist
         tp = price - 2.0 * (sl - price)
@@ -445,15 +448,22 @@ def _gs07_liquidity_sweep(bars: dict, t_i: int,
         return None
 
     prev_price = cl[-2] if len(cl) >= 2 else price
+    min_sweep = atr_val * 0.15   # sweep must be meaningful, not just tick noise
 
-    # Bullish: swept below swing low then recovered above it
+    # Bullish: swept below swing low then recovered — require actual depth
     if prev_price < sl_lvl and price > sl_lvl:
+        sweep_depth = sl_lvl - min(ll[-5:]) if len(ll) >= 5 else 0
+        if sweep_depth < min_sweep:
+            return None
         sl = sl_lvl - atr_val
         tp = price + 2.0 * (price - sl)
         return {"signal": "BUY", "sl": sl, "tp": tp}
 
     # Bearish: swept above swing high then fell below it
     if prev_price > sh and price < sh:
+        sweep_depth = max(hl[-5:]) - sh if len(hl) >= 5 else 0
+        if sweep_depth < min_sweep:
+            return None
         sl = sh + atr_val
         tp = price - 2.0 * (sl - price)
         return {"signal": "SELL", "sl": sl, "tp": tp}
@@ -482,7 +492,8 @@ def _gs08_m1_sniper_bos(bars: dict, t_i: int, spread: float) -> dict | None:
     if not sess["any_primary"]:
         return None
 
-    e50 = ema(cl, 50) if len(cl) >= 50 else ema(cl, len(cl))
+    e50  = ema(cl, 50)  if len(cl) >= 50  else ema(cl, len(cl))
+    e200 = ema(cl, 200) if len(cl) >= 200 else None
     price = cl[-1]
     prev = cl[-2] if len(cl) >= 2 else price
     atr_val = atr(hl, ll, cl, 14)
@@ -496,12 +507,17 @@ def _gs08_m1_sniper_bos(bars: dict, t_i: int, spread: float) -> dict | None:
     sh = swing_high(hl, lookback=3)
     sl_lvl = swing_low(ll, lookback=3)
 
+    # EMA200 trend alignment: only trade in macro trend direction
     if price > e50 and sh and price > sh and prev < sh:
+        if e200 is not None and price < e200:   # against macro trend — skip
+            return None
         sl = ll[-1] - spread
         tp = price + 2.0 * (price - sl)
         return {"signal": "BUY", "sl": sl, "tp": tp}
 
     if price < e50 and sl_lvl and price < sl_lvl and prev > sl_lvl:
+        if e200 is not None and price > e200:   # against macro trend — skip
+            return None
         sl = hl[-1] + spread
         tp = price - 2.0 * (sl - price)
         return {"signal": "SELL", "sl": sl, "tp": tp}
@@ -535,14 +551,14 @@ def _gs09_rsi_bb_ema200_reversal(bars: dict, t_i: int,
     if atr_val <= 0:
         return None
 
-    # BUY: price at/below lower BB, above EMA200, RSI < 20
-    if price <= bb["lower"] and price > e200 and rsi_val < 20:
+    # BUY: price at/below lower BB, above EMA200, RSI < 30 (relaxed from 20 — fires more)
+    if price <= bb["lower"] and price > e200 and rsi_val < 30:
         sl = price - 1.5 * atr_val
         tp = price + 2.0 * atr_val
         return {"signal": "BUY", "sl": sl, "tp": tp}
 
-    # SELL: price at/above upper BB, below EMA200, RSI > 80
-    if price >= bb["upper"] and price < e200 and rsi_val > 80:
+    # SELL: price at/above upper BB, below EMA200, RSI > 70
+    if price >= bb["upper"] and price < e200 and rsi_val > 70:
         sl = price + 1.5 * atr_val
         tp = price - 2.0 * atr_val
         return {"signal": "SELL", "sl": sl, "tp": tp}
@@ -662,7 +678,7 @@ def _gs11_opening_range_scalper(bars: dict, t_i: int,
 
 # Strategy dispatch table
 STRATEGIES = {
-    "GS01": ("M1", _gs01_gold_ema_rsi_stoch),
+    "GS01": ("M3", _gs01_gold_ema_rsi_stoch),
     "GS02": ("M1", _gs02_ict_silver_bullet),
     "GS03": ("M3", _gs03_vwap_macd),
     "GS04": ("M1", _gs04_keltner_rsi_breakout),
@@ -804,9 +820,11 @@ def _summarize(strategy: str, symbol: str, tf: str,
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--days", type=int, default=60)
-    parser.add_argument("--symbols", nargs="+", default=None)
-    parser.add_argument("--strategy", default=None, help="Filter to one strategy (GS01..GS10)")
+    parser.add_argument("--days",     type=int, default=60)
+    parser.add_argument("--bars",     type=int, default=None,
+                        help="Override bar count directly (e.g. --bars 10000)")
+    parser.add_argument("--symbols",  nargs="+", default=None)
+    parser.add_argument("--strategy", default=None, help="Filter to one strategy (GS01..GS11)")
     args = parser.parse_args()
 
     strat_ids = [args.strategy] if args.strategy else list(STRATEGIES.keys())
@@ -817,8 +835,11 @@ def main() -> None:
             log.warning("Unknown strategy %s — skip", sid)
             continue
         tf, _ = STRATEGIES[sid]
-        bars_needed = args.days * (1440 if tf == "M1" else 480) + 200
-        bars_needed = min(bars_needed, 5000)
+        if args.bars:
+            bars_needed = args.bars
+        else:
+            bars_needed = args.days * (1440 if tf == "M1" else 480) + 200
+            bars_needed = min(bars_needed, 5000)
 
         symbols = args.symbols or STRATEGY_SYMBOLS.get(sid, ["EURUSD"])
         for sym in symbols:

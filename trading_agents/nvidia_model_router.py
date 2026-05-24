@@ -13,6 +13,7 @@ Tier map:
 """
 
 import os
+import re
 import time
 import logging
 from typing import Any, Dict, Optional
@@ -124,7 +125,16 @@ def _chat(model: str, system: str, user: str, max_tokens: int,
         max_tokens=max_tokens,
         timeout=timeout,
     )
-    content = resp.choices[0].message.content
+    msg = resp.choices[0].message
+    # Strip any <think>...</think> reasoning the model inlines into content.
+    content = re.sub(r"<think>.*?</think>", "",
+                     getattr(msg, "content", None) or "", flags=re.S).strip()
+    # Nemotron-style reasoning models leave content empty and put the answer in
+    # reasoning_content. Recover it so the NVIDIA fallback never silently fails.
+    if not content:
+        rc = re.sub(r"^<think>.*?</think>\s*", "",
+                    getattr(msg, "reasoning_content", None) or "", flags=re.S).strip()
+        content = rc or (getattr(msg, "reasoning_content", None) or "").strip()
     if not content:
         raise ValueError(f"Model {model} returned empty content")
     return content.strip()

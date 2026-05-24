@@ -186,6 +186,11 @@ class Service:
         self.id = spec["id"]
         self.name = spec.get("name", self.id)
         self.cmd = [str(c) for c in spec["cmd"]]
+        # Services declare "python" generically; launch them with the SAME
+        # interpreter running the orchestrator (the venv python, which has the
+        # deps). On Linux there is often no bare "python", only "python3".
+        if self.cmd and self.cmd[0] in ("python", "python3"):
+            self.cmd[0] = sys.executable
         self.cwd = BASE_DIR / spec["cwd"] if spec.get("cwd") else BASE_DIR
         self.health = spec.get("health", {"type": "process"})
         r = {**defaults.get("restart", {}), **spec.get("restart", {})}

@@ -40,8 +40,8 @@ services:
   - id: dashboard
     name: Dashboard backend (hub/signals/alpha)
     group: core
-    profiles: [vps]
-    cmd: [python, -m, uvicorn, "main:app", --host, "0.0.0.0", --port, "8000"]
+    profiles: [vps, linux]
+    cmd: [python, -m, uvicorn, "main:app", --host, "0.0.0.0", --port, "8010"]
     cwd: dashboard/backend
     health: {type: tcp, port: 8000}
     depends_on: [bridge]
@@ -135,7 +135,7 @@ services:
   - id: maic_bot
     name: Maic CEO Telegram Bot
     group: core
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, telegram_bot.py]
     health: {type: process}
     depends_on: [bridge]
@@ -159,14 +159,14 @@ services:
   - id: supervisor
     name: Supervisor (12h system audit)
     group: core
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.supervisor_agent, --interval, "12"]
     health: {type: process}
 
   - id: strategy_scout
     name: Strategy Scout (24h discovery)
     group: core
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.strategy_scout.strategy_scout, --loop, --interval, "24"]
     health: {type: process}
 
@@ -203,6 +203,6 @@ services:
   - id: daily_digest
     name: Daily Digest
     group: core
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.daily_digest, --loop]
     health: {type: process}

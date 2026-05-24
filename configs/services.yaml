@@ -1,0 +1,208 @@
+# ── Central service registry ──────────────────────────────────────────────────
+# Single source of truth for every process the MT5 bot runs.
+# The orchestrator (trading_agents/orchestrator.py) reads this, starts each
+# enabled service in dependency order, health-checks it, and auto-restarts on
+# death. This REPLACES the old competing launchers (bot_launcher.ps1, start_bot.ps1,
+# start_jtcc_agents.ps1, register_startup_tasks.ps1).
+#
+# health.type:
+#   http   → GET url, healthy if status < 400          (infra with an endpoint)
+#   tcp    → connect to port, healthy if it accepts     (servers without /health)
+#   file   → state file mtime younger than max_age secs (agents that write state)
+#   process→ just "is the child process alive"          (fire-and-loop agents)
+#
+# group: logical subsystem — mt5 | tv | core. Lets us reason about the two
+#   subsystems (MT5 trading vs TradingView) independently. (Informational +
+#   future per-group control.)
+# profiles: which deployment(s) run this service. The orchestrator keeps a
+#   service only if DEPLOYMENT_MODE (default "vps") is in its profiles
+#   (default ["vps"]). So the VPS runs everything; a machine started with
+#   DEPLOYMENT_MODE=local runs only services tagged with "local" (none by
+#   default → local PC stays a dev/standby box, no live agents).
+
+defaults:
+  restart:
+    enabled: true
+    max_retries: 5          # consecutive failures before giving up + alerting
+    backoff_seconds: 15
+  health_interval: 30       # seconds between health sweeps
+
+services:
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+  - id: bridge
+    name: MT5 Bridge (api_server)
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, mt5_bridge.api_server, --port, "8090"]
+    health: {type: http, url: "http://localhost:8090/health"}
+    critical: true
+
+  - id: dashboard
+    name: Dashboard backend (hub/signals/alpha)
+    group: core
+    profiles: [vps]
+    cmd: [python, -m, uvicorn, "main:app", --host, "0.0.0.0", --port, "8000"]
+    cwd: dashboard/backend
+    health: {type: tcp, port: 8000}
+    depends_on: [bridge]
+
+  # ── MT5 system — Trading agents (health = their state file staying fresh) ────
+  - id: mtf_live
+    name: MTF Live Trader
+    group: mt5
+    profiles: [vps]
+    cmd: [python, "mt5_bridge/mtf_live_trader.py", --pairs,
+          CADJPY, EURJPY, USDJPY, GBPAUD, BTCUSD, AUDNZD, USDCAD, EURUSD, AUDCHF,
+          NZDUSD, EURNZD, NZDJPY, AUDCAD, GBPJPY, AUDUSD, AUDJPY, GBPUSD, XAUUSD,
+          --risk, "1.0", --dd, "20.0", --maxdd, "50.0", --maxtd, "6"]
+    # Cold start is slow: loop sleeps to next bar (~60s) then runs a synchronous
+    # NVIDIA heartbeat (retries up to ~150s) before its first state write. Give it
+    # room so the supervisor doesn't restart it mid-startup.
+    # Writes once per loop, BEFORE scanning 18 symbols x 3 TFs. The first scan on a
+    # cold MT5 connection downloads history per symbol and can take minutes, so writes
+    # are sparse early. 600s max_age tolerates that without a false restart loop.
+    health: {type: file, path: "mt5_bridge/_live_state.json", max_age: 600, grace: 300}
+    depends_on: [bridge]
+
+  - id: jtcc
+    name: JTCC ICT/SMC
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.jtcc.main]
+    health: {type: file, path: "logs/jtcc/_jtcc_state.json", max_age: 300}
+    depends_on: [bridge]
+
+  - id: jtcc_guardian
+    name: JTCC Guardian
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.jtcc.guardian, --interval, "60"]
+    health: {type: file, path: "logs/jtcc/_guardian_state.json", max_age: 300}
+    depends_on: [jtcc]
+
+  - id: jtcc_coach
+    name: JTCC Coach
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.jtcc.coach, --loop, --interval, "6"]
+    health: {type: process}
+    depends_on: [jtcc]
+
+  - id: jtcc_digest
+    name: JTCC Digest
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.jtcc.digest, --loop]
+    health: {type: process}
+
+  - id: iconic
+    name: Iconic Scalp
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.iconic.agent, --risk, "1.0", --dd, "6.0"]
+    health: {type: file, path: "logs/iconic/_agent_state.json", max_age: 600}
+    depends_on: [bridge]
+
+  - id: scalp_gs11
+    name: Gold Scalp (GS11/GS07)
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.scalp.agent, --risk, "1.0", --dd, "5.0"]
+    health: {type: file, path: "logs/scalp/_agent_state.json", max_age: 600}
+    depends_on: [bridge]
+
+  # ── Strategy Factory (YouTube → research → codegen → backtest → demo soak) ────
+  - id: factory_runner
+    name: Strategy Factory Runner
+    group: core
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.factory.runner, --loop, --interval, "45"]
+    health: {type: file, path: "logs/factory/_runner_state.json", max_age: 300}
+    depends_on: [bridge]
+
+  - id: factory_paper
+    name: Strategy Factory Paper Soak
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.factory.paper_runner]
+    health: {type: file, path: "logs/factory/_soak_state.json", max_age: 600}
+    depends_on: [bridge]
+
+  # ── CEO / control ────────────────────────────────────────────────────────────
+  # Single Telegram inbound poller for the whole system (telegram_bot.py). Running
+  # a second poller on the same token (e.g. maic_telegram_bot.py) anywhere causes
+  # a getUpdates 409 — keep this the ONLY one.
+  - id: maic_bot
+    name: Maic CEO Telegram Bot
+    group: core
+    profiles: [vps]
+    cmd: [python, telegram_bot.py]
+    health: {type: process}
+    depends_on: [bridge]
+
+  # ── Management / improvement loop (were idle — now supervised) ───────────────
+  - id: ea_guardian
+    name: EA Guardian (anomaly watchdog)
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.ea_agents.ea_guardian]
+    health: {type: process}
+    depends_on: [bridge]
+
+  - id: ea_coach
+    name: EA Coach (6h improvement)
+    group: mt5
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.ea_agents.ea_coach, --loop]
+    health: {type: process}
+
+  - id: supervisor
+    name: Supervisor (12h system audit)
+    group: core
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.supervisor_agent, --interval, "12"]
+    health: {type: process}
+
+  - id: strategy_scout
+    name: Strategy Scout (24h discovery)
+    group: core
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.strategy_scout.strategy_scout, --loop, --interval, "24"]
+    health: {type: process}
+
+  # ── TV system — TradingView chart analysis agents ────────────────────────────
+  # Drive the tradingview-mcp desktop directly (CDP). Need TradingView running +
+  # logged in. Health = state-file freshness (agents heartbeat every ~120s while
+  # idle between scheduled runs).
+  - id: tv_intraday
+    name: TV Intraday Analyst (day-trade)
+    group: tv
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.tv_desk.intraday_analyst, --loop]
+    health: {type: file, path: "logs/intraday_analyst/_state.json", max_age: 400, grace: 120}
+
+  - id: tv_scalper
+    name: TV Session Scalper
+    group: tv
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.tv_desk.session_scalper, --loop]
+    health: {type: file, path: "logs/session_scalper/_state.json", max_age: 400, grace: 120}
+
+  # Keeps the VPS TradingView session alive. TradingView paid plans allow ONE
+  # active session; logging in elsewhere bumps the VPS → chart shows "Reconnect".
+  # This detects that and reconnects, unless paused (so the user can use TV on
+  # their own device). See trading_agents/tv_desk/connection_watchdog.py.
+  - id: tv_connection_watchdog
+    name: TV Connection Watchdog
+    group: tv
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.tv_desk.connection_watchdog, --loop, --interval, "45"]
+    health: {type: file, path: "logs/tv_watchdog/_state.json", max_age: 180, grace: 120}
+
+  # ── Reporting ────────────────────────────────────────────────────────────────
+  - id: daily_digest
+    name: Daily Digest
+    group: core
+    profiles: [vps]
+    cmd: [python, -m, trading_agents.daily_digest, --loop]
+    health: {type: process}

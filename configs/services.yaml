@@ -203,6 +203,6 @@ services:
   - id: daily_digest
     name: Daily Digest
     group: core
-    profiles: [vps, linux]
+    profiles: [vps]
     cmd: [python, -m, trading_agents.daily_digest, --loop]
     health: {type: process}

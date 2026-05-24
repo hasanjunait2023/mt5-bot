@@ -18,6 +18,7 @@ supabase>=2.0.0
 
 # AI Agent
 anthropic>=0.25.0
+openai>=1.30.0           # NVIDIA NIM fallback client (nvidia_model_router)
 
 # Utilities
 requests>=2.31.0

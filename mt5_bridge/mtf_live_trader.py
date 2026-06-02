@@ -18,7 +18,11 @@ from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from mt5_bridge import bridge_client as mt5
+# Sibling import: this file runs as a script (`python mt5_bridge/mtf_live_trader.py`),
+# so sys.path[0] is the mt5_bridge/ dir. `from mt5_bridge import bridge_client` would
+# resolve to the sibling mt5_bridge.py module (Windows-only MetaTrader5) instead of
+# the package — import the shim directly, like the other sibling imports below.
+import bridge_client as mt5
 
 from config import (MTF_BEST_PAIRS, MTF_DEFAULT_PARAMS, MTF_DEFAULT_FILTERS,
                     MTF_SYMBOL_PARAMS, MTF_SYMBOL_FILTERS)

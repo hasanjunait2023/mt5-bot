@@ -10,7 +10,7 @@ import argparse
 import time
 from datetime import datetime, timedelta
 
-import MetaTrader5 as mt5
+import bridge_client as mt5   # HTTP-bridge shim (sibling import). Legacy data layer (fetch_ohlcv/get_pip_size) now goes via the bridge; real MetaTrader5 is Windows-only.
 import pandas as pd
 import numpy as np
 

@@ -14,7 +14,7 @@ Strategy:
 """
 import numpy as np
 import pandas as pd
-import MetaTrader5 as mt5
+import bridge_client as mt5   # HTTP-bridge shim (sibling import; only TIMEFRAME_* used here). Real MetaTrader5 is Windows-only.
 from typing import Dict, Tuple, Optional, List
 from datetime import timezone
 

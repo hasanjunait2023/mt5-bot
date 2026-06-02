@@ -209,6 +209,17 @@ services:
     cmd: [python, -m, trading_agents.tv_desk.connection_watchdog, --loop, --interval, "45"]
     health: {type: file, path: "logs/tv_watchdog/_state.json", max_age: 180, grace: 120}
 
+  # Keeps MT5 "Algo Trading" enabled — it resets to OFF on every terminal
+  # restart/crash, and while OFF all orders are rejected (retcode 10027). Polls
+  # the bridge trade_allowed flag and sends Ctrl+E to the MT5 window when needed.
+  - id: autotrading_guard
+    name: AutoTrading Guard
+    group: mt5
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.autotrading_guard, --loop, --interval, "60"]
+    health: {type: file, path: "logs/autotrading_guard/_state.json", max_age: 240, grace: 120}
+    depends_on: [bridge]
+
   # ── Reporting ────────────────────────────────────────────────────────────────
   - id: daily_digest
     name: Daily Digest

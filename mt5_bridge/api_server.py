@@ -128,8 +128,19 @@ def health(x_api_key: Optional[str] = Header(None)):
     _check_auth(x_api_key)
     with _cache_lock:
         cached_entries = len(_bar_cache)
-    return {"status": "ok" if _ensure_mt5() else "mt5_down",
+    ok = _ensure_mt5()
+    # trade_allowed mirrors the terminal's "Algo Trading" toggle — when it's OFF
+    # every order is rejected with retcode 10027, so surface it for the guard.
+    trade_allowed = None
+    if ok:
+        try:
+            ti = mt5.terminal_info()
+            trade_allowed = bool(ti.trade_allowed) if ti else None
+        except Exception:
+            trade_allowed = None
+    return {"status": "ok" if ok else "mt5_down",
             "mt5_initialized": _initialized,
+            "trade_allowed": trade_allowed,
             "bar_cache_entries": cached_entries}
 
 

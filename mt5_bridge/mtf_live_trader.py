@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-import MetaTrader5 as mt5
+from mt5_bridge import bridge_client as mt5
 
 from config import (MTF_BEST_PAIRS, MTF_DEFAULT_PARAMS, MTF_DEFAULT_FILTERS,
                     MTF_SYMBOL_PARAMS, MTF_SYMBOL_FILTERS)

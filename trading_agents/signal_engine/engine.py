@@ -33,7 +33,7 @@ import numpy as np
 import pandas as pd
 
 try:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
 except Exception:                       # noqa: BLE001
     mt5 = None                          # allows import on machines without MT5
 

@@ -54,7 +54,9 @@ services:
   - id: mtf_live
     name: MTF Live Trader
     group: mt5
-    profiles: [vps]
+    # Refactored to talk to MT5 via the HTTP bridge (mt5_bridge.bridge_client
+    # shim), so it runs on native Linux python — no direct MetaTrader5 import.
+    profiles: [vps]   # TODO: add 'linux' once VPS swap exists (bridge-HTTP ready, RAM-gated)
     cmd: [python, "mt5_bridge/mtf_live_trader.py", --pairs,
           CADJPY, EURJPY, USDJPY, GBPAUD, BTCUSD, AUDNZD, USDCAD, EURUSD, AUDCHF,
           NZDUSD, EURNZD, NZDJPY, AUDCAD, GBPJPY, AUDUSD, AUDJPY, GBPUSD, XAUUSD,
@@ -104,7 +106,8 @@ services:
   - id: iconic
     name: Iconic Scalp
     group: mt5
-    profiles: [vps]
+    # Refactored to bridge HTTP (mt5_bridge.bridge_client shim) — native Linux.
+    profiles: [vps]   # TODO: add 'linux' once VPS swap exists (bridge-HTTP ready, RAM-gated)
     cmd: [python, -m, trading_agents.iconic.agent, --risk, "1.0", --dd, "6.0"]
     health: {type: file, path: "logs/iconic/_agent_state.json", max_age: 600}
     depends_on: [bridge]
@@ -112,7 +115,8 @@ services:
   - id: scalp_gs11
     name: Gold Scalp (GS11/GS07)
     group: mt5
-    profiles: [vps]
+    # Refactored to bridge HTTP (mt5_bridge.bridge_client shim) — native Linux.
+    profiles: [vps]   # TODO: add 'linux' once VPS swap exists (bridge-HTTP ready, RAM-gated)
     cmd: [python, -m, trading_agents.scalp.agent, --risk, "1.0", --dd, "5.0"]
     health: {type: file, path: "logs/scalp/_agent_state.json", max_age: 600}
     depends_on: [bridge]

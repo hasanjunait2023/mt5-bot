@@ -234,7 +234,7 @@ class PaperTracker:
 # ── MT5 helpers ───────────────────────────────────────────────────────────────
 def _mt5_connect() -> bool:
     try:
-        import MetaTrader5 as mt5
+        from mt5_bridge import bridge_client as mt5
         if mt5.initialize():
             acc = mt5.account_info()
             if acc:
@@ -249,7 +249,7 @@ def _mt5_connect() -> bool:
 
 
 def _fetch_bars_mt5(symbol: str, tf, n: int) -> pd.DataFrame:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
     rates = mt5.copy_rates_from_pos(symbol, tf, 0, n)
     if rates is None or len(rates) < 50:
         return pd.DataFrame()
@@ -264,13 +264,13 @@ def _fetch_bars_mt5(symbol: str, tf, n: int) -> pd.DataFrame:
 
 
 def _has_open_position(symbol: str) -> bool:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
     pos = mt5.positions_get(symbol=symbol)
     return pos is not None and any(p.magic == MAGIC for p in pos)
 
 
 def _calc_lots(symbol: str, entry: float, stop: float, risk_pct: float) -> float:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
     acc = mt5.account_info()
     sym = mt5.symbol_info(symbol)
     if acc is None or sym is None:
@@ -290,7 +290,7 @@ def _calc_lots(symbol: str, entry: float, stop: float, risk_pct: float) -> float
 
 def _place_order(symbol: str, side: str, entry: float, stop: float, tp: float,
                  risk_pct: float) -> Optional[tuple[int, float]]:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
     tick = mt5.symbol_info_tick(symbol)
     sym  = mt5.symbol_info(symbol)
     if tick is None or sym is None:
@@ -398,7 +398,7 @@ def _write_state(mode: str, daily: DailyState, paper: PaperTracker,
 
 def run(symbols: list[str], risk_pct: float, dd_limit: float,
         force_paper: bool) -> None:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
 
     log.info("=== Iconic Trader Agent starting ===")
     log.info("Symbols: %s | risk=%.1f%% | DD=%.1f%% | paper=%s",

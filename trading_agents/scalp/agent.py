@@ -82,21 +82,51 @@ from trading_agents.scalp.backtest import (
     _gs01_gold_ema_rsi_stoch,
     _gs07_liquidity_sweep,
     _gs11_opening_range_scalper,
+    _gs12_ict_simple,
+    GS12_PARAMS,
     TYPICAL_SPREADS,
 )
 
 SYMBOL = "XAUUSD"
-# GS01 uses M3 bars; GS07/GS11 use M1 bars
-STRATEGIES    = ["GS11", "GS07", "GS01"]
-STRATEGY_TF   = {"GS11": "M1", "GS07": "M1", "GS01": "M3"}
+# GS01 uses M3 bars; GS07/GS11 use M1 bars; GS12 timeframe set from its config
+STRATEGIES    = ["GS11", "GS07", "GS01", "GS12"]
+STRATEGY_TF   = {"GS11": "M1", "GS07": "M1", "GS01": "M3", "GS12": "M3"}
+
+
+def _load_gs12_config() -> None:
+    """Apply the latest optimized GS12 params + timeframe, if a config exists.
+
+    Reads the newest configs/ea_params_GS12_*.json (written by optimize_gs12.py),
+    mutates the shared GS12_PARAMS in place, and sets GS12's timeframe. No-op when
+    no config is present — GS12 then runs on its defaults (paper-gated regardless).
+    """
+    try:
+        cfgs = sorted((BASE_DIR / "configs").glob("ea_params_GS12_*.json"))
+        if not cfgs:
+            log.info("No GS12 config found — using defaults")
+            return
+        cfg = json.loads(cfgs[-1].read_text(encoding="utf-8"))
+        GS12_PARAMS.update(cfg.get("params", {}))
+        tf = cfg.get("timeframe")
+        if tf in ("M1", "M3"):
+            STRATEGY_TF["GS12"] = tf
+        v = cfg.get("validation", {})
+        log.info("GS12 config loaded: %s %s | OOS PF=%s full PF=%s | params=%s",
+                 cfg.get("symbol"), STRATEGY_TF["GS12"],
+                 v.get("oos_pf"), v.get("full_pf"), cfg.get("params"))
+    except Exception:
+        log.exception("GS12 config load failed — using defaults")
 
 
 # ── Daily state ───────────────────────────────────────────────────────────────
 class DailyState:
-    def __init__(self, start_balance: float, date, trades: int):
+    def __init__(self, start_balance: float, date, trades: int,
+                 live_trades: int = 0, halted: bool = False):
         self.date = date
         self.start_balance = start_balance
         self.trades = trades
+        self.live_trades = live_trades
+        self.halted = halted
 
     @classmethod
     def load(cls, current_balance: float) -> "DailyState":
@@ -105,17 +135,24 @@ class DailyState:
             try:
                 d = json.loads(DAILY_PATH.read_text())
                 if d.get("date") == str(today):
-                    return cls(d["start_balance"], today, d.get("trades", 0))
+                    return cls(
+                        d["start_balance"], today,
+                        d.get("trades", 0),
+                        d.get("live_trades", 0),
+                        d.get("halted", False),
+                    )
             except Exception:
                 pass
-        inst = cls(current_balance, today, 0)
+        inst = cls(current_balance, today, 0, 0, False)
         inst.save()
         return inst
 
     def save(self) -> None:
-        DAILY_PATH.write_text(json.dumps(
-            {"date": str(self.date), "start_balance": self.start_balance,
-             "trades": self.trades}))
+        DAILY_PATH.write_text(json.dumps({
+            "date": str(self.date), "start_balance": self.start_balance,
+            "trades": self.trades, "live_trades": self.live_trades,
+            "halted": self.halted,
+        }))
 
     def roll_if_new_day(self, balance: float) -> None:
         today = datetime.now(timezone.utc).date()
@@ -123,6 +160,8 @@ class DailyState:
             self.date = today
             self.start_balance = balance
             self.trades = 0
+            self.live_trades = 0
+            self.halted = False
             self.save()
 
     def daily_loss_pct(self, equity: float) -> float:
@@ -130,9 +169,18 @@ class DailyState:
             return 0.0
         return max((self.start_balance - equity) / self.start_balance * 100, 0.0)
 
-    def add_trade(self) -> None:
-        self.trades += 1
+    def set_halted(self) -> None:
+        self.halted = True
         self.save()
+
+    def add_trade(self, live: bool = False) -> None:
+        self.trades += 1
+        if live:
+            self.live_trades += 1
+        self.save()
+
+    def live_trades_today(self) -> int:
+        return self.live_trades
 
     def trades_today(self) -> int:
         return self.trades
@@ -250,7 +298,7 @@ class PaperTracker:
 # ── MT5 helpers ───────────────────────────────────────────────────────────────
 def _mt5_connect() -> bool:
     try:
-        import MetaTrader5 as mt5
+        from mt5_bridge import bridge_client as mt5
         if mt5.initialize():
             acc = mt5.account_info()
             if acc:
@@ -265,7 +313,7 @@ def _mt5_connect() -> bool:
 
 
 def _fetch_bars(symbol: str, tf_str: str, n: int) -> Optional[dict]:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
     tf_map = {
         "M1": mt5.TIMEFRAME_M1, "M3": mt5.TIMEFRAME_M3,
         "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15,
@@ -280,18 +328,18 @@ def _fetch_bars(symbol: str, tf_str: str, n: int) -> Optional[dict]:
         "high":        [float(r["high"])  for r in rates],
         "low":         [float(r["low"])   for r in rates],
         "close":       [float(r["close"]) for r in rates],
-        "tick_volume": [float(r.get("tick_volume", 0)) for r in rates],
+        "tick_volume": [float(r["tick_volume"]) for r in rates],
     }
 
 
 def _has_open_position(symbol: str) -> bool:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
     pos = mt5.positions_get(symbol=symbol)
     return pos is not None and any(p.magic == MAGIC for p in pos)
 
 
 def _calc_lots(symbol: str, entry: float, stop: float, risk_pct: float) -> float:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
     acc = mt5.account_info()
     sym = mt5.symbol_info(symbol)
     if acc is None or sym is None:
@@ -311,7 +359,7 @@ def _calc_lots(symbol: str, entry: float, stop: float, risk_pct: float) -> float
 
 def _place_order(symbol: str, side: str, entry: float, stop: float, tp: float,
                  risk_pct: float, strat: str) -> Optional[tuple[int, float]]:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
     tick = mt5.symbol_info_tick(symbol)
     sym  = mt5.symbol_info(symbol)
     if tick is None or sym is None:
@@ -401,16 +449,19 @@ def _eval_signal(strat: str, bars: dict, spread: float) -> Optional[dict]:
         return _gs07_liquidity_sweep(bars, t_i, spread)
     if strat == "GS01":
         return _gs01_gold_ema_rsi_stoch(bars, t_i, spread, symbol=SYMBOL)
+    if strat == "GS12":
+        return _gs12_ict_simple(bars, t_i, spread, symbol=SYMBOL)
     return None
 
 
 # ── Main loop ─────────────────────────────────────────────────────────────────
 def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
-    import MetaTrader5 as mt5
+    from mt5_bridge import bridge_client as mt5
 
     log.info("=== Gold Scalp Agent starting ===")
-    log.info("Symbol: %s | strategies: %s | risk=%.1f%% | DD=%.1f%% | paper=%s",
-             SYMBOL, STRATEGIES, risk_pct, dd_limit, force_paper)
+    _load_gs12_config()
+    log.info("Symbol: %s | strategies: %s | TFs: %s | risk=%.1f%% | DD=%.1f%% | paper=%s",
+             SYMBOL, STRATEGIES, STRATEGY_TF, risk_pct, dd_limit, force_paper)
 
     if not _mt5_connect():
         log.error("Cannot connect to MT5 — aborting")
@@ -441,11 +492,14 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
             equity = acc.equity
             daily.roll_if_new_day(acc.balance)
 
-            # Daily DD guard
+            # Daily DD guard — persistent: once halted stays halted until day rollover
             dd_pct = daily.daily_loss_pct(equity)
-            if dd_pct >= dd_limit:
-                log.warning("Daily DD %.1f%% >= limit %.1f%% — HALTED", dd_pct, dd_limit)
+            if not daily.halted and dd_pct >= dd_limit:
+                log.warning("Daily DD %.1f%% >= limit %.1f%% — HALTED for rest of day",
+                            dd_pct, dd_limit)
                 _tg(f"Scalp Agent HALTED — daily DD {dd_pct:.1f}%", level="WARNING")
+                daily.set_halted()
+            if daily.halted:
                 _write_state("HALTED", daily, paper, live_strats, equity)
                 time.sleep(300)
                 continue
@@ -479,8 +533,8 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
                     live_strats[s] = True
                     log.info("%s PROMOTED TO LIVE MODE", s)
 
-            # Daily trade limit guard
-            if daily.trades_today() >= MAX_TRADES_PER_DAY:
+            # Daily trade limit guard — live trades only
+            if daily.live_trades_today() >= MAX_TRADES_PER_DAY:
                 _write_state("SCANNING", daily, paper, live_strats, equity)
                 time.sleep(POLL_INTERVAL_S)
                 continue
@@ -523,7 +577,7 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
                     result = _place_order(SYMBOL, side, entry, sl, tp_val, risk_pct, strat)
                     if result is not None:
                         ticket, lots = result
-                        daily.add_trade()
+                        daily.add_trade(live=True)
                         if _JOURNAL:
                             _journal_open(
                                 ticket=ticket, symbol=SYMBOL, direction=side,
@@ -534,7 +588,7 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
                             )
                 else:
                     paper.open_paper(SYMBOL, strat, side, entry, sl, tp_val)
-                    daily.add_trade()
+                    daily.add_trade(live=False)
 
             _write_state("SCANNING", daily, paper, live_strats, equity)
             time.sleep(POLL_INTERVAL_S)

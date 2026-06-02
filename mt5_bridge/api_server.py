@@ -23,6 +23,7 @@ import argparse
 import logging
 import os
 import threading
+import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -50,6 +51,41 @@ TF_MAP = {
 
 _mt5_lock = threading.Lock()
 _initialized = False
+
+# Bar cache: key=(symbol, timeframe, limit) → (timestamp, payload)
+# TTL per timeframe keeps stale-data risk < one bar behind.
+_bar_cache: dict[tuple, tuple[float, dict]] = {}
+_cache_lock = threading.Lock()
+_TF_TTL = {
+    "M1": 30, "1min": 30,
+    "M2": 60, "2min": 60,
+    "M3": 90, "3min": 90,
+    "M5": 150, "5min": 150,
+    "M15": 300, "15min": 300,
+    "M30": 600, "30min": 600,
+    "H1": 1800, "1hour": 1800,
+    "H4": 7200, "4hour": 7200,
+    "D1": 21600, "1day": 21600, "daily": 21600,
+}
+
+
+def _cache_get(key: tuple) -> Optional[dict]:
+    with _cache_lock:
+        entry = _bar_cache.get(key)
+        if entry is None:
+            return None
+        ts, payload = entry
+        tf = key[1]
+        ttl = _TF_TTL.get(tf, 60)
+        if time.time() - ts > ttl:
+            del _bar_cache[key]
+            return None
+        return payload
+
+
+def _cache_set(key: tuple, payload: dict) -> None:
+    with _cache_lock:
+        _bar_cache[key] = (time.time(), payload)
 
 
 def _ensure_mt5() -> bool:
@@ -90,8 +126,21 @@ app = FastAPI(title="MT5 FastAPI Bridge", version="1.0", lifespan=lifespan)
 @app.get("/health")
 def health(x_api_key: Optional[str] = Header(None)):
     _check_auth(x_api_key)
+    with _cache_lock:
+        cached_entries = len(_bar_cache)
     return {"status": "ok" if _ensure_mt5() else "mt5_down",
-            "mt5_initialized": _initialized}
+            "mt5_initialized": _initialized,
+            "bar_cache_entries": cached_entries}
+
+
+@app.post("/cache/clear")
+def cache_clear(x_api_key: Optional[str] = Header(None)):
+    _check_auth(x_api_key)
+    with _cache_lock:
+        count = len(_bar_cache)
+        _bar_cache.clear()
+    log.info("Bar cache cleared (%d entries)", count)
+    return {"cleared": count}
 
 
 @app.get("/account/info")
@@ -118,16 +167,22 @@ def bars(
     x_api_key: Optional[str] = Header(None),
 ):
     _check_auth(x_api_key)
-    if not _ensure_mt5():
-        raise HTTPException(503, "MT5 not connected")
     tf = TF_MAP.get(timeframe)
     if tf is None:
         raise HTTPException(400, f"Invalid timeframe: {timeframe}. Valid: {list(TF_MAP.keys())}")
+
+    cache_key = (symbol.upper(), timeframe, limit)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    if not _ensure_mt5():
+        raise HTTPException(503, "MT5 not connected")
     mt5.symbol_select(symbol, True)
     rates = mt5.copy_rates_from_pos(symbol, tf, 0, limit)
     if rates is None or len(rates) == 0:
         raise HTTPException(404, f"No bars for {symbol}: {mt5.last_error()}")
-    return {
+    payload = {
         "symbol": symbol, "timeframe": timeframe, "count": len(rates),
         "open":   [float(r["open"])   for r in rates],
         "high":   [float(r["high"])   for r in rates],
@@ -136,6 +191,8 @@ def bars(
         "volume": [int(r["tick_volume"]) for r in rates],
         "time":   [int(r["time"])     for r in rates],
     }
+    _cache_set(cache_key, payload)
+    return payload
 
 
 @app.get("/tick/{symbol}")
@@ -155,7 +212,54 @@ def tick(symbol: str, x_api_key: Optional[str] = Header(None)):
         "time": t.time, "digits": info.digits,
         "point": info.point, "min_lot": info.volume_min,
         "max_lot": info.volume_max, "lot_step": info.volume_step,
+        # Full symbol contract spec — needed by agents that size lots from tick
+        # value (scalp/iconic/mtf). Kept here so a single /tick round-trip gives
+        # both the live quote and the sizing inputs.
+        "volume_min": info.volume_min, "volume_max": info.volume_max,
+        "volume_step": info.volume_step,
+        "trade_tick_size": info.trade_tick_size,
+        "trade_tick_value": info.trade_tick_value,
+        "trade_contract_size": info.trade_contract_size,
     }
+
+
+@app.get("/symbol/{symbol}")
+def symbol_spec(symbol: str, x_api_key: Optional[str] = Header(None)):
+    """Static-ish contract spec (no live quote). Mirrors mt5.symbol_info()."""
+    _check_auth(x_api_key)
+    if not _ensure_mt5():
+        raise HTTPException(503, "MT5 not connected")
+    mt5.symbol_select(symbol, True)
+    info = mt5.symbol_info(symbol)
+    if info is None:
+        raise HTTPException(404, f"No symbol_info for {symbol}: {mt5.last_error()}")
+    return {
+        "symbol": symbol, "digits": info.digits, "point": info.point,
+        "volume_min": info.volume_min, "volume_max": info.volume_max,
+        "volume_step": info.volume_step,
+        "trade_tick_size": info.trade_tick_size,
+        "trade_tick_value": info.trade_tick_value,
+        "trade_contract_size": info.trade_contract_size,
+        "spread": info.spread,
+    }
+
+
+@app.get("/history/deals/{ticket}")
+def history_deals(ticket: int, x_api_key: Optional[str] = Header(None)):
+    """Deals for a closed position ticket. Mirrors mt5.history_deals_get(position=)."""
+    _check_auth(x_api_key)
+    if not _ensure_mt5():
+        raise HTTPException(503, "MT5 not connected")
+    deals = mt5.history_deals_get(position=ticket)
+    if deals is None:
+        return {"deals": []}
+    return {"deals": [
+        {"ticket": d.ticket, "order": d.order, "time": d.time, "type": d.type,
+         "entry": d.entry, "symbol": d.symbol, "volume": d.volume,
+         "price": d.price, "profit": d.profit, "commission": d.commission,
+         "swap": d.swap, "magic": d.magic, "comment": d.comment}
+        for d in deals
+    ]}
 
 
 @app.get("/positions/open")
@@ -171,7 +275,7 @@ def positions_open(
         return {"positions": []}
     result = []
     for p in positions:
-        if magic and p.magic != magic:
+        if magic is not None and p.magic != magic:
             continue
         result.append({
             "ticket": p.ticket, "symbol": p.symbol,
@@ -270,7 +374,7 @@ def trade_close_all(magic: Optional[int] = None, x_api_key: Optional[str] = Head
     positions = mt5.positions_get() or []
     closed, failed = [], []
     for p in positions:
-        if magic and p.magic != magic:
+        if magic is not None and p.magic != magic:
             continue
         tick = mt5.symbol_info_tick(p.symbol)
         if tick is None:

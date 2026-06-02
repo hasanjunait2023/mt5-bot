@@ -56,7 +56,7 @@ services:
     group: mt5
     # Refactored to talk to MT5 via the HTTP bridge (mt5_bridge.bridge_client
     # shim), so it runs on native Linux python — no direct MetaTrader5 import.
-    profiles: [vps]   # TODO: add 'linux' once VPS swap exists (bridge-HTTP ready, RAM-gated)
+    profiles: [vps, linux]   # enabled after 4G swap added 2026-06-02 (bridge-HTTP shim)
     cmd: [python, "mt5_bridge/mtf_live_trader.py", --pairs,
           CADJPY, EURJPY, USDJPY, GBPAUD, BTCUSD, AUDNZD, USDCAD, EURUSD, AUDCHF,
           NZDUSD, EURNZD, NZDJPY, AUDCAD, GBPJPY, AUDUSD, AUDJPY, GBPUSD, XAUUSD,
@@ -107,7 +107,7 @@ services:
     name: Iconic Scalp
     group: mt5
     # Refactored to bridge HTTP (mt5_bridge.bridge_client shim) — native Linux.
-    profiles: [vps]   # TODO: add 'linux' once VPS swap exists (bridge-HTTP ready, RAM-gated)
+    profiles: [vps, linux]   # enabled after 4G swap added 2026-06-02 (bridge-HTTP shim)
     cmd: [python, -m, trading_agents.iconic.agent, --risk, "1.0", --dd, "6.0"]
     health: {type: file, path: "logs/iconic/_agent_state.json", max_age: 600}
     depends_on: [bridge]
@@ -116,7 +116,7 @@ services:
     name: Gold Scalp (GS11/GS07)
     group: mt5
     # Refactored to bridge HTTP (mt5_bridge.bridge_client shim) — native Linux.
-    profiles: [vps]   # TODO: add 'linux' once VPS swap exists (bridge-HTTP ready, RAM-gated)
+    profiles: [vps, linux]   # enabled after 4G swap added 2026-06-02 (bridge-HTTP shim)
     cmd: [python, -m, trading_agents.scalp.agent, --risk, "1.0", --dd, "5.0"]
     health: {type: file, path: "logs/scalp/_agent_state.json", max_age: 600}
     depends_on: [bridge]
@@ -187,14 +187,14 @@ services:
   - id: tv_intraday
     name: TV Intraday Analyst (day-trade)
     group: tv
-    profiles: [vps]
+    profiles: [vps, linux]   # enabled 2026-06-03 (TV snap+CDP+MCP on VPS)
     cmd: [python, -m, trading_agents.tv_desk.intraday_analyst, --loop]
     health: {type: file, path: "logs/intraday_analyst/_state.json", max_age: 400, grace: 120}
 
   - id: tv_scalper
     name: TV Session Scalper
     group: tv
-    profiles: [vps]
+    profiles: [vps, linux]   # enabled 2026-06-03 (TV snap+CDP+MCP on VPS)
     cmd: [python, -m, trading_agents.tv_desk.session_scalper, --loop]
     health: {type: file, path: "logs/session_scalper/_state.json", max_age: 400, grace: 120}
 
@@ -205,7 +205,7 @@ services:
   - id: tv_connection_watchdog
     name: TV Connection Watchdog
     group: tv
-    profiles: [vps]
+    profiles: [vps, linux]   # enabled 2026-06-03 (TV snap+CDP+MCP on VPS)
     cmd: [python, -m, trading_agents.tv_desk.connection_watchdog, --loop, --interval, "45"]
     health: {type: file, path: "logs/tv_watchdog/_state.json", max_age: 180, grace: 120}
 

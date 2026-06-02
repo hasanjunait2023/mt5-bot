@@ -299,6 +299,28 @@ class TradeOpen(BaseModel):
     deviation: int = 20
 
 
+def _send_with_filling(request: dict, symbol: str):
+    """Send an order, retrying across filling modes on retcode 10030 (Unsupported
+    filling mode). Brokers differ per symbol (IOC/FOK/RETURN); order the attempts
+    by the symbol's declared filling_mode bitmask. Centralised here because all
+    agents now route order_send through the bridge via the shim."""
+    info = mt5.symbol_info(symbol)
+    fm = int(getattr(info, "filling_mode", 0) or 0) if info else 0
+    if fm & 1:      # SYMBOL_FILLING_FOK
+        fills = [mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_RETURN]
+    elif fm & 2:    # SYMBOL_FILLING_IOC
+        fills = [mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_RETURN]
+    else:
+        fills = [mt5.ORDER_FILLING_RETURN, mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK]
+    result = None
+    for i, f in enumerate(fills):
+        request["type_filling"] = f
+        result = mt5.order_send(request)
+        if result is not None and result.retcode != 10030:
+            break
+    return result
+
+
 @app.post("/trade/open")
 def trade_open(req: TradeOpen, x_api_key: Optional[str] = Header(None)):
     _check_auth(x_api_key)
@@ -317,9 +339,9 @@ def trade_open(req: TradeOpen, x_api_key: Optional[str] = Header(None)):
         "action": mt5.TRADE_ACTION_DEAL, "symbol": req.symbol, "volume": req.lot,
         "type": order_type, "price": price, "sl": req.sl, "tp": req.tp,
         "deviation": req.deviation, "magic": req.magic, "comment": req.comment,
-        "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC,
+        "type_time": mt5.ORDER_TIME_GTC,
     }
-    result = mt5.order_send(request)
+    result = _send_with_filling(request, req.symbol)
     if result is None:
         raise HTTPException(503, f"order_send returned None: {mt5.last_error()}")
 
@@ -355,9 +377,9 @@ def trade_close(req: TradeClose, x_api_key: Optional[str] = Header(None)):
         "action": mt5.TRADE_ACTION_DEAL, "symbol": pos.symbol, "volume": pos.volume,
         "type": close_type, "position": pos.ticket, "price": price,
         "deviation": 20, "magic": pos.magic, "comment": "JTCC_close",
-        "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC,
+        "type_time": mt5.ORDER_TIME_GTC,
     }
-    result = mt5.order_send(request)
+    result = _send_with_filling(request, pos.symbol)
     if result is None:
         raise HTTPException(503, f"order_send None: {mt5.last_error()}")
     return {
@@ -382,12 +404,12 @@ def trade_close_all(magic: Optional[int] = None, x_api_key: Optional[str] = Head
             continue
         close_type = mt5.ORDER_TYPE_SELL if p.type == mt5.POSITION_TYPE_BUY else mt5.ORDER_TYPE_BUY
         price = tick.bid if close_type == mt5.ORDER_TYPE_SELL else tick.ask
-        result = mt5.order_send({
+        result = _send_with_filling({
             "action": mt5.TRADE_ACTION_DEAL, "symbol": p.symbol, "volume": p.volume,
             "type": close_type, "position": p.ticket, "price": price,
             "deviation": 20, "magic": p.magic, "comment": "JTCC_close_all",
-            "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC,
-        })
+            "type_time": mt5.ORDER_TIME_GTC,
+        }, p.symbol)
         if result and result.retcode == mt5.TRADE_RETCODE_DONE:
             closed.append(p.ticket)
         else:

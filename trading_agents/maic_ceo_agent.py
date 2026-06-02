@@ -316,7 +316,10 @@ def _call_nvidia(history: list, user_message: str) -> str:
     if not api_key:
         return None
 
-    client = OpenAI(base_url=NVIDIA_BASE_URL, api_key=api_key)
+    # max_retries=0: the OpenAI client otherwise auto-retries a slow reasoning
+    # model several times, stacking 100s+ delays (Maic appeared to "hang" and
+    # never reply). Fail fast instead and fall through to the backup model.
+    client = OpenAI(base_url=NVIDIA_BASE_URL, api_key=api_key, max_retries=0)
 
     # Build multi-turn messages with history
     messages = [{"role": "system", "content": MAIC_SYSTEM_PROMPT}]
@@ -331,8 +334,8 @@ def _call_nvidia(history: list, user_message: str) -> str:
                 model=model,
                 messages=messages,
                 temperature=0.3,
-                max_tokens=4096,
-                timeout=120,
+                max_tokens=1500,   # chat replies are short; 4096 made reasoning models crawl
+                timeout=90,
             )
             msg = resp.choices[0].message
             content = (getattr(msg, "content", None) or "").strip()
@@ -375,8 +378,32 @@ def _find_claude() -> str:
     return "claude"  # last resort — let subprocess raise FileNotFoundError
 
 
+def _call_claude_sdk(full_prompt: str) -> str | None:
+    """Try the Anthropic SDK (needs ANTHROPIC_API_KEY). Fast path — preferred on
+    the headless VPS where the claude CLI isn't installed. Returns text or None."""
+    if not os.getenv("ANTHROPIC_API_KEY", "").strip():
+        return None
+    try:
+        import anthropic
+        client = anthropic.Anthropic()
+        resp = client.messages.create(
+            model="claude-opus-4-8",
+            max_tokens=1500,
+            system=MAIC_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": full_prompt}],
+        )
+        text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "").strip()
+        return text or None
+    except Exception as e:
+        log.warning(f"[Maic] Claude SDK failed ({str(e)[:100]}) — trying CLI/NVIDIA")
+        return None
+
+
 def _call_claude(full_prompt: str) -> str | None:
-    """Try Claude CLI. Returns response text or None on any failure."""
+    """Claude via SDK (API key) → CLI → None (caller then uses NVIDIA)."""
+    sdk = _call_claude_sdk(full_prompt)
+    if sdk:
+        return sdk
     try:
         stdin_payload = f"[SYSTEM CONTEXT]\n{MAIC_SYSTEM_PROMPT}\n\n[CONVERSATION]\n{full_prompt}"
         result = subprocess.run(
@@ -408,7 +435,10 @@ def _call_claude(full_prompt: str) -> str | None:
 
 
 def _call_claude_followup(followup_payload: str) -> str | None:
-    """Claude CLI call for delegation followup. Returns text or None."""
+    """Claude (SDK → CLI) call for delegation followup. Returns text or None."""
+    sdk = _call_claude_sdk(followup_payload)
+    if sdk:
+        return sdk
     try:
         result = subprocess.run(
             [_find_claude(), "-p", "--model", "claude-opus-4-8", "--no-session-persistence"],

@@ -32,8 +32,12 @@ services:
   - id: bridge
     name: MT5 Bridge (api_server)
     group: mt5
-    profiles: [vps]
-    cmd: [python, -m, mt5_bridge.api_server, --port, "8090"]
+    # MetaTrader5 PyPI package is Windows-only. Linux VPS launches the bridge
+    # via wine-staging python (wrapper script sets WINEPREFIX/DISPLAY/PYTHONPATH).
+    # The same module-name still works on a Windows VPS — keep both profiles so
+    # the [vps] entry doesn't lose supervision if the host ever flips back.
+    profiles: [vps, linux]
+    cmd: [bash, scripts/launch_bridge_wine.sh]
     health: {type: http, url: "http://localhost:8090/health"}
     critical: true
 
@@ -67,7 +71,9 @@ services:
   - id: jtcc
     name: JTCC ICT/SMC
     group: mt5
-    profiles: [vps]
+    # JTCC talks to MT5 over HTTP (jtcc/execution/mt5_client.py → :8090), so it
+    # runs on native Linux python — no wine needed here.
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.jtcc.main]
     health: {type: file, path: "logs/jtcc/_jtcc_state.json", max_age: 300}
     depends_on: [bridge]
@@ -75,7 +81,7 @@ services:
   - id: jtcc_guardian
     name: JTCC Guardian
     group: mt5
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.jtcc.guardian, --interval, "60"]
     health: {type: file, path: "logs/jtcc/_guardian_state.json", max_age: 300}
     depends_on: [jtcc]
@@ -83,7 +89,7 @@ services:
   - id: jtcc_coach
     name: JTCC Coach
     group: mt5
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.jtcc.coach, --loop, --interval, "6"]
     health: {type: process}
     depends_on: [jtcc]
@@ -91,7 +97,7 @@ services:
   - id: jtcc_digest
     name: JTCC Digest
     group: mt5
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.jtcc.digest, --loop]
     health: {type: process}
 
@@ -115,7 +121,7 @@ services:
   - id: factory_runner
     name: Strategy Factory Runner
     group: core
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.factory.runner, --loop, --interval, "45"]
     health: {type: file, path: "logs/factory/_runner_state.json", max_age: 300}
     depends_on: [bridge]
@@ -123,7 +129,7 @@ services:
   - id: factory_paper
     name: Strategy Factory Paper Soak
     group: mt5
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.factory.paper_runner]
     health: {type: file, path: "logs/factory/_soak_state.json", max_age: 600}
     depends_on: [bridge]
@@ -144,7 +150,7 @@ services:
   - id: ea_guardian
     name: EA Guardian (anomaly watchdog)
     group: mt5
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.ea_agents.ea_guardian]
     health: {type: process}
     depends_on: [bridge]
@@ -152,7 +158,7 @@ services:
   - id: ea_coach
     name: EA Coach (6h improvement)
     group: mt5
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.ea_agents.ea_coach, --loop]
     health: {type: process}
 
@@ -203,6 +209,6 @@ services:
   - id: daily_digest
     name: Daily Digest
     group: core
-    profiles: [vps]
+    profiles: [vps, linux]
     cmd: [python, -m, trading_agents.daily_digest, --loop]
     health: {type: process}

@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import sys
+import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
@@ -298,9 +299,40 @@ def collect_ideas(limit: int | None = None, only_source: str | None = None) -> l
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
-    src = None
+    src      = None
+    interval = 24.0  # hours between scout cycles
+    loop     = "--loop" in sys.argv
+
     if "--source" in sys.argv:
         src = sys.argv[sys.argv.index("--source") + 1]
-    result = collect_ideas(only_source=src)
-    print(json.dumps(result, indent=2))
-    print(f"\n{len(result)} idea(s) collected.")
+    if "--interval" in sys.argv:
+        interval = float(sys.argv[sys.argv.index("--interval") + 1])
+
+    def _run_cycle() -> list:
+        result = collect_ideas(only_source=src)
+        log.info("%d idea(s) collected", len(result))
+        try:
+            sys.path.insert(0, str(BASE_DIR / "trading_agents"))
+            from telegram_hq import send as tg_send
+            if result:
+                ideas_txt = "\n".join(f"• {i.get('description', '?')[:80]}" for i in result[:5])
+                tg_send("strategy_scout", f"*Scout: {len(result)} new idea(s):*\n{ideas_txt}", level="INFO")
+            else:
+                tg_send("strategy_scout", "Scout cycle complete — no new ideas this round.", level="INFO")
+        except Exception:
+            pass
+        return result
+
+    if loop:
+        log.info("Strategy Scout loop started — every %.1fh", interval)
+        while True:
+            try:
+                _run_cycle()
+            except Exception:
+                log.exception("scout cycle failed — sleeping until next interval")
+            log.info("Next scout run in %.1fh", interval)
+            time.sleep(interval * 3600)
+    else:
+        result = _run_cycle()
+        print(json.dumps(result, indent=2))
+        print(f"\n{len(result)} idea(s) collected.")

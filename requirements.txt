@@ -1,5 +1,5 @@
 # ── Core MT5 & Data ──────────────────────────────────────────────────────────
-MetaTrader5>=5.0.45
+MetaTrader5>=5.0.45 ; sys_platform == "win32"   # Windows-only PyPI; on Linux VPS this lib is installed inside wine-staging python (see scripts/launch_bridge_wine.sh)
 pandas>=2.0.0
 numpy>=1.24.0
 matplotlib>=3.7.0
@@ -31,3 +31,9 @@ requests>=2.31.0
 
 # ── Telegram Bot ─────────────────────────────────────────────────────────────
 python-telegram-bot>=21.0
+
+# ── Strategy Factory (YouTube ingestion) ─────────────────────────────────────
+# yt-dlp: video metadata + auto-subtitle transcript + capped download for the
+# Whisper/Vision research pass. ffmpeg (system) + faster-whisper (optional) power
+# the full video analysis; the factory degrades gracefully without them.
+yt-dlp>=2024.1.0

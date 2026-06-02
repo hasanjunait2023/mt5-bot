@@ -62,7 +62,7 @@ mtf_timeframes:
 # Smart pre-gating: only calls LLM when ICT-relevant conditions exist
 ict_specialist:
   enabled: true
-  model: claude-opus-4-7
+  model: claude-opus-4-8
   nvidia_tier: HEAVY                # fallback when Claude unavailable
   max_calls_per_day: 30              # separate budget from Master Agent's 15
   max_tokens: 400
@@ -71,7 +71,7 @@ ict_specialist:
 master_agent:
   min_strategies_required: 1    # each validated strategy is a standalone edge (was 3 — too high for pruned diverse-TF set, blocked all trades)
   min_confluence_score: 6.0
-  model: claude-opus-4-7
+  model: claude-opus-4-8
   max_tokens: 600
   thinking: false                # fast path, no extended thinking
   # Fallback chain when Claude fails (rate limit / auth / network):

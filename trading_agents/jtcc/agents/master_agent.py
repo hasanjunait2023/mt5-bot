@@ -95,7 +95,7 @@ class MasterAgent:
     """Layer 3 — Single Claude API call per valid signal set. NVIDIA fallback on failure."""
 
     def __init__(self, min_strategies: int = 3, min_confidence: float = 6.0,
-                 model: str = "claude-opus-4-7", max_tokens: int = 600,
+                 model: str = "claude-opus-4-8", max_tokens: int = 600,
                  nvidia_tier: str = "HEAVY", alert_on_fallback: bool = True,
                  alert_cooldown_min: int = 15) -> None:
         self.min_strategies = min_strategies

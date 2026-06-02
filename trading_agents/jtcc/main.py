@@ -99,7 +99,7 @@ class JTCC:
         self.master = MasterAgent(
             min_strategies=master_cfg.get("min_strategies_required", 3),
             min_confidence=master_cfg.get("min_confluence_score", 6.0),
-            model=master_cfg.get("model", "claude-opus-4-7"),
+            model=master_cfg.get("model", "claude-opus-4-8"),
             max_tokens=master_cfg.get("max_tokens", 600),
             nvidia_tier=master_cfg.get("nvidia_tier", "HEAVY"),
             alert_on_fallback=master_cfg.get("alert_on_fallback", True),
@@ -108,7 +108,7 @@ class JTCC:
         # ICT 2022 LLM specialist — votes alongside YAML strategies on M15
         ict_cfg = config.get("ict_specialist", {})
         self.ict_specialist = ICTSpecialist(
-            model=ict_cfg.get("model", master_cfg.get("model", "claude-opus-4-7")),
+            model=ict_cfg.get("model", master_cfg.get("model", "claude-opus-4-8")),
             nvidia_tier=ict_cfg.get("nvidia_tier", "HEAVY"),
             max_calls_per_day=ict_cfg.get("max_calls_per_day", 30),
             max_tokens=ict_cfg.get("max_tokens", 400),

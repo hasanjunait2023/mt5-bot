@@ -86,7 +86,7 @@ class ICTSpecialist:
 
     def __init__(
         self,
-        model: str = "claude-opus-4-7",
+        model: str = "claude-opus-4-8",
         nvidia_tier: str = "HEAVY",
         max_calls_per_day: int = 30,
         max_tokens: int = 400,

@@ -22,6 +22,7 @@ Run continuously (VPS): `python scripts/pending_tracker.py --loop --interval 300
 | 4 | Scaling (risk-increasing): live pyramiding / equity-tier risk ladder / win-streak risk-up | 2026-06-03 | only if backtest-proven; pyramiding flagged "proven impossible" on current symbols |
 | 5 | VPS restart: bridge + Iconic + Scalp — load close-reconciler (`a0daf09`) + demo-execution (`3bef3a4`); then check `/reconciler/status` | 2026-06-03 | do on next VPS visit; code committed, needs restart to take effect |
 | 6 | Signal systems → demo execution: signal_engine / alpha_desk / factory_paper have no executor; need separate Exness demo accounts (decide count) + per-system routing | 2026-06-03 | 1 account = margin conflict with the 4 live agents; bigger infra task, awaiting account count |
+| 7 | Secrets/SSH cross-session sharing — adopt **sops + age** encrypted-in-repo (recommended). Keys exist: `~/.ssh/vps_trader`, `~/.ssh/vps_controller` | 2026-06-04 | scaffold ready; needs go-ahead to encrypt+commit on the key-holding box (real secrets → GitHub, encrypted) |
 
 > Add a row when you say "keep this pending". Remove it when done.
 

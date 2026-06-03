@@ -93,17 +93,26 @@ OPEN if unset** — verify they're set on the VPS `.env`.
 
 ## SSH access (fixes "one session has the key, another doesn't")
 
-Add this once to each machine's `~/.ssh/config` so `ssh mt5vps` works everywhere:
+Two keys exist: `~/.ssh/vps_controller` (root) and `~/.ssh/vps_trader` (the
+`trader` user that runs the stack). Add these aliases once to each machine's
+`~/.ssh/config` so `ssh mt5vps` / `ssh mt5trader` work everywhere:
 
 ```
 Host mt5vps
     HostName 72.62.228.196
     User root
-    IdentityFile ~/.ssh/mt5vps_key
+    IdentityFile ~/.ssh/vps_controller
+
+Host mt5trader
+    HostName 72.62.228.196
+    User trader
+    IdentityFile ~/.ssh/vps_trader
 ```
 
-The private key (`~/.ssh/mt5vps_key`) must be present on the machine. How it gets
-there across sessions/machines is the **secrets mechanism** — see below.
+The private keys must be present on the machine. They already exist on the
+primary box; getting them onto every machine/session is the **secrets
+mechanism** — see below. (This is exactly why one session can SSH and another
+can't: the key lives in one machine's `~/.ssh`, not a shared store.)
 
 ## Secrets — where they live, NOT what they are
 

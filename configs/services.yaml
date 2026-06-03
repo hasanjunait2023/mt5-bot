@@ -173,12 +173,19 @@ services:
     cmd: [python, -m, trading_agents.supervisor_agent, --interval, "12"]
     health: {type: process}
 
-  - id: strategy_scout
-    name: Strategy Scout (24h discovery)
+  # Full autonomous growth loop: collect ideas (Scout) → backtest (StrategyResearcher)
+  # → rank vs PF/consistency thresholds → pitch winners to Maic CEO + auto-write a
+  # JTCC YAML stub → observe downstream EA build/validate. Persists the funnel to
+  # _scout_state.json. This REPLACES the bare strategy_scout loop, which only
+  # brainstormed ideas to Telegram and discarded them (no backtest/persist).
+  - id: growth_pipeline
+    name: Strategy Growth Pipeline (discover→backtest→pitch)
     group: core
     profiles: [vps, linux]
-    cmd: [python, -m, trading_agents.strategy_scout.strategy_scout, --loop, --interval, "24"]
-    health: {type: process}
+    cmd: [python, -m, trading_agents.strategy_scout.growth_pipeline, --interval, "8"]
+    # 8h cycle; max_age 9h (32400s) tolerates a full cycle + LLM/backtest latency.
+    health: {type: file, path: "trading_agents/strategy_scout/_scout_state.json", max_age: 32400, grace: 600}
+    depends_on: [bridge]
 
   # ── TV system — TradingView chart analysis agents ────────────────────────────
   # Drive the tradingview-mcp desktop directly (CDP). Need TradingView running +
@@ -220,10 +227,57 @@ services:
     health: {type: file, path: "logs/autotrading_guard/_state.json", max_age: 240, grace: 120}
     depends_on: [bridge]
 
+  # ── Analytics / improvement intelligence ────────────────────────────────────
+  # Builds the strategy scorecard (verdict + per-strategy P&L + failure/strength +
+  # improvement queue) from the live journal every 15 min → logs/_strategy_scorecard.json.
+  # Consumed by the CEO agent, the dashboard Strategy Performance page, EOD review,
+  # and the Phase 5 improvement loop. Runs loss_analyzer + win_analyzer internally.
+  - id: analytics
+    name: Strategy Scorecard / Analytics
+    group: core
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.strategy_scorecard, --loop, --interval, "15"]
+    health: {type: file, path: "logs/_strategy_scorecard.json", max_age: 1200, grace: 180}
+    depends_on: [bridge]
+
   # ── Reporting ────────────────────────────────────────────────────────────────
   - id: daily_digest
     name: Daily Digest
     group: core
     profiles: [vps, linux]
     cmd: [python, -m, trading_agents.daily_digest, --loop]
+    health: {type: process}
+
+  # EOD diagnostic review — per-strategy scorecard + LLM improvement proposals to
+  # Telegram, daily after NY close.
+  - id: eod_review
+    name: EOD Strategy Review
+    group: core
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.eod_review, --loop]
+    health: {type: file, path: "logs/eod_review/_state.json", max_age: 100000, grace: 300}
+    depends_on: [bridge, analytics]
+
+  # Improvement loop (Phase 5 north star) — for each LOSING strategy in the
+  # scorecard's improvement_queue: diagnose (mistakes + wins) + research → propose a
+  # bounded change → Telegram for HUMAN approval (apply stays manual + promotion_gate).
+  # Never kills/demotes; iterates toward profitability. Every 6h.
+  - id: improvement_loop
+    name: Strategy Improvement Loop
+    group: core
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.improvement_loop, --loop, --interval, "360"]
+    health: {type: file, path: "logs/_improvement/_state.json", max_age: 30000, grace: 300}
+    depends_on: [analytics]
+
+  # ── Meta-monitoring ──────────────────────────────────────────────────────────
+  # Watches every file-health agent above: if a state file goes stale past its
+  # max_age (work no longer progressing), it records the agent to
+  # logs/_stalled_agents.json and the "Stalled agents" section of PENDING.md.
+  # Pure monitoring — never touches trading. See scripts/pending_tracker.py.
+  - id: pending_tracker
+    name: Pending / Stalled-agent Tracker
+    group: core
+    profiles: [vps, linux]
+    cmd: [python, scripts/pending_tracker.py, --loop, --interval, "300"]
     health: {type: process}

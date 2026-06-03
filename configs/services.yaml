@@ -248,6 +248,17 @@ services:
     cmd: [python, -m, trading_agents.daily_digest, --loop]
     health: {type: process}
 
+  # EOD daily trade report — at 23:00 BD (17:00 UTC) sends a Telegram digest of
+  # every trade today (per agent + strategy), wins/losses, WHY each loss, and the
+  # day's overall result. Built from the cross-agent trade_journal.
+  - id: daily_trade_report
+    name: EOD Daily Trade Report (23:00 BD)
+    group: core
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.daily_trade_report, --loop]
+    health: {type: file, path: "logs/daily_trade_report/_state.json", max_age: 100000, grace: 300}
+    depends_on: [bridge]
+
   # EOD diagnostic review — per-strategy scorecard + LLM improvement proposals to
   # Telegram, daily after NY close.
   - id: eod_review

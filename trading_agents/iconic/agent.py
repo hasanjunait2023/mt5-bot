@@ -166,9 +166,13 @@ class PaperTracker:
         return len(self._closed)
 
     def is_live_ready(self) -> bool:
+        # The connected account is a DEMO account — execute there from the first
+        # trade to gather real fill data (use --paper for the old software-sim
+        # gate). Demo→real promotion is a separate, later gate driven by the
+        # trade journal's demo stats, not this in-memory paper tracker.
         if self.force_paper:
             return False
-        return self.trade_count >= PAPER_MIN_TRADES and self.profit_factor >= PAPER_MIN_PF
+        return True
 
     def open_paper(self, symbol: str, side: str, entry: float,
                    stop: float, tp: float, klass: str) -> None:

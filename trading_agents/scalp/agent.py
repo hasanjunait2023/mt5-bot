@@ -233,11 +233,12 @@ class PaperTracker:
         return round(wins / len(trades) * 100, 1)
 
     def is_live_ready(self, strat: str) -> bool:
+        # Connected account is DEMO — execute every strategy on it from the start
+        # to gather real fill data (use --paper for the old software-sim gate).
+        # Demo→real promotion is a separate, later gate driven by journal stats.
         if self.force_paper:
             return False
-        n = self.strat_count(strat)
-        pf = self.strat_pf(strat)
-        return n >= PAPER_MIN_TRADES and pf >= PAPER_MIN_PF
+        return True
 
     def _key(self, symbol: str, strat: str) -> str:
         return f"{symbol}:{strat}"

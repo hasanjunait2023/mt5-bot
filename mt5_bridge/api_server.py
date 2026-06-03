@@ -22,9 +22,11 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import sys
 import threading
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import MetaTrader5 as mt5
@@ -36,6 +38,23 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
 log = logging.getLogger("mt5_bridge.api")
+
+# Trade journal + magic registry live in trading_agents/. The bridge needs the
+# repo root on sys.path (set via PYTHONPATH in the wine launcher, but insert
+# defensively for script-mode runs too).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+try:
+    from trading_agents import trade_journal as _journal
+    from trading_agents import magic_registry as _magic
+except Exception as _imp_err:  # pragma: no cover - import guard
+    _journal = None
+    _magic = None
+    log.warning("reconciler disabled — journal import failed: %s", _imp_err)
+
+# Close-reconciler state (exposed via /reconciler/status for the dashboard stamp).
+_reconcile_state: dict = {"last_run": None, "closed_total": 0, "last_closed": 0, "enabled": True}
 
 TF_MAP = {
     "1min": mt5.TIMEFRAME_M1, "M1": mt5.TIMEFRAME_M1,
@@ -124,9 +143,73 @@ def _check_auth(x_api_key: Optional[str]) -> None:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 
+def _reconcile_once() -> int:
+    """Find journal-OPEN tickets that are no longer live positions, fetch their
+    closing deals from MT5, and append a close event. Idempotent (close_trade
+    skips already-closed). Returns number of closes journaled this cycle."""
+    if _journal is None or not _ensure_mt5():
+        return 0
+    open_tickets = _journal.get_open_tickets()
+    if not open_tickets:
+        return 0
+    with _mt5_lock:
+        acct = mt5.account_info()
+        positions = mt5.positions_get() or []
+    login = int(acct.login) if acct else None
+    is_demo = (acct.trade_mode == mt5.ACCOUNT_TRADE_MODE_DEMO) if acct else None
+    live_open = {p.ticket for p in positions}
+
+    _OUT = {mt5.DEAL_ENTRY_OUT, mt5.DEAL_ENTRY_INOUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)}
+    closed_n = 0
+    for tk in open_tickets:
+        if tk in live_open:
+            continue  # still open
+        with _mt5_lock:
+            deals = mt5.history_deals_get(position=tk)
+        if not deals:
+            continue  # not yet settled into history — retry next cycle
+        out_deals = [d for d in deals if d.entry in _OUT]
+        if not out_deals:
+            continue  # entry deal only so far
+        pnl = sum(d.profit + d.swap + d.commission for d in deals)
+        last_out = max(out_deals, key=lambda d: d.time)
+        close_time = datetime.fromtimestamp(max(d.time for d in deals), tz=timezone.utc).isoformat()
+        reason = getattr(last_out, "reason", None)
+        if reason == getattr(mt5, "DEAL_REASON_TP", -98):
+            outcome = "TP_HIT"
+        elif reason == getattr(mt5, "DEAL_REASON_SL", -99):
+            outcome = "SL_HIT"
+        else:
+            outcome = "CLOSED"
+        if _journal.close_trade(tk, last_out.price, round(pnl, 2), outcome,
+                                close_time=close_time, account_login=login, demo=is_demo):
+            closed_n += 1
+    return closed_n
+
+
+def _reconciler_loop() -> None:
+    interval = int(os.getenv("BRIDGE_RECONCILE_INTERVAL", "30"))
+    log.info("close-reconciler started (interval=%ss)", interval)
+    while True:
+        try:
+            n = _reconcile_once()
+            _reconcile_state["last_run"] = datetime.now(timezone.utc).isoformat()
+            _reconcile_state["last_closed"] = n
+            _reconcile_state["closed_total"] += n
+            if n:
+                log.info("reconciler: journaled %d close(s)", n)
+        except Exception as e:  # never let the loop die
+            log.warning("reconciler cycle error: %s", e)
+        time.sleep(interval)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _ensure_mt5()
+    if _journal is not None and os.getenv("BRIDGE_RECONCILE_ENABLED", "1") in ("1", "true", "yes"):
+        threading.Thread(target=_reconciler_loop, daemon=True, name="reconciler").start()
+    else:
+        _reconcile_state["enabled"] = False
     yield
     if _initialized:
         with _mt5_lock:
@@ -188,7 +271,7 @@ def account_info(x_api_key: Optional[str] = Header(None)):
 def bars(
     symbol: str,
     timeframe: str = Query("5min"),
-    limit: int = Query(200, ge=1, le=5000),
+    limit: int = Query(200, ge=1, le=200000),  # high cap: backtests pull months of M1/M5 in one call
     x_api_key: Optional[str] = Header(None),
 ):
     _check_auth(x_api_key)
@@ -285,6 +368,44 @@ def history_deals(ticket: int, x_api_key: Optional[str] = Header(None)):
          "swap": d.swap, "magic": d.magic, "comment": d.comment}
         for d in deals
     ]}
+
+
+def _deal_to_dict(d) -> dict:
+    return {
+        "ticket": d.ticket, "order": d.order, "position_id": d.position_id,
+        "time": d.time, "type": d.type, "entry": d.entry, "reason": getattr(d, "reason", None),
+        "symbol": d.symbol, "volume": d.volume, "price": d.price,
+        "profit": d.profit, "commission": d.commission, "swap": d.swap,
+        "magic": d.magic, "comment": d.comment,
+    }
+
+
+@app.get("/history/deals")
+def history_deals_range(
+    from_: Optional[int] = Query(None, alias="from"),
+    to: Optional[int] = None,
+    x_api_key: Optional[str] = Header(None),
+):
+    """All deals in a unix-time range. Mirrors mt5.history_deals_get(from, to).
+    Used by the close-reconciler backfill. `from`/`to` are unix seconds; default =
+    last 90 days → now."""
+    _check_auth(x_api_key)
+    if not _ensure_mt5():
+        raise HTTPException(503, "MT5 not connected")
+    now = datetime.now(timezone.utc)
+    dt_to = datetime.fromtimestamp(to, tz=timezone.utc) if to else now
+    dt_from = datetime.fromtimestamp(from_, tz=timezone.utc) if from_ else now - timedelta(days=90)
+    with _mt5_lock:
+        deals = mt5.history_deals_get(dt_from, dt_to)
+    if deals is None:
+        return {"deals": [], "count": 0}
+    return {"deals": [_deal_to_dict(d) for d in deals], "count": len(deals)}
+
+
+@app.get("/reconciler/status")
+def reconciler_status(x_api_key: Optional[str] = Header(None)):
+    _check_auth(x_api_key)
+    return dict(_reconcile_state)
 
 
 @app.get("/positions/open")

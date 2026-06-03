@@ -92,7 +92,21 @@ def _ensure_mt5() -> bool:
     global _initialized
     with _mt5_lock:
         if _initialized:
-            return True
+            # `_initialized` only records that we called initialize() once — the
+            # link to the terminal/broker can still drop silently. Verify it's
+            # actually live and self-heal if it dropped, so the bridge (and every
+            # endpoint that gates on this) recovers without a process restart.
+            try:
+                if mt5.account_info() is not None:
+                    return True
+            except Exception:
+                pass
+            log.warning("MT5 link lost (was marked connected) — re-initializing")
+            try:
+                mt5.shutdown()
+            except Exception:
+                pass
+            _initialized = False
         if mt5.initialize():
             _initialized = True
             info = mt5.account_info()

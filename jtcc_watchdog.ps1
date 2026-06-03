@@ -33,10 +33,23 @@ function Test-ProcessAlive {
 function Invoke-WatchdogCheck {
     Write-Log "=== check start ==="
 
-    # 1. MT5 terminal must be running (bridge depends on it)
+    # 1. MT5 terminal must be running (bridge depends on it). Relaunch if dead -
+    #    terminal auto-logs into the last account, so the bridge reconnects on its
+    #    next _ensure_mt5() once it's back up.
     $mt5 = Get-Process -Name "terminal64" -ErrorAction SilentlyContinue
     if (-not $mt5) {
-        Write-Log "WARNING: MT5 terminal64.exe NOT running - bridge cannot connect."
+        $mt5Exe = if ($env:MT5_TERMINAL_PATH) { $env:MT5_TERMINAL_PATH } `
+                  else { "C:\Program Files\MetaTrader 5\terminal64.exe" }
+        if (Test-Path $mt5Exe) {
+            Write-Log "MT5 terminal64.exe DOWN - relaunching: $mt5Exe"
+            Start-Process -FilePath $mt5Exe
+            Start-Sleep -Seconds 20   # let it boot + auto-login before bridge reconnect
+            Write-Log "MT5 terminal relaunch issued."
+        } else {
+            Write-Log "WARNING: terminal64.exe NOT running and exe missing at $mt5Exe - cannot relaunch."
+        }
+    } else {
+        Write-Log "MT5 terminal OK."
     }
 
     # 2. MT5 FastAPI bridge (port 8090) - retry 3x before declaring down

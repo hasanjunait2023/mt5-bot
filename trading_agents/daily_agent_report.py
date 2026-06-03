@@ -190,6 +190,11 @@ def build_report() -> str:
 def send_report() -> None:
     msg = build_report()
     try:
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(BASE_DIR / ".env")
+        except Exception:
+            pass
         from trading_agents import telegram_hq
         telegram_hq.send("ceo", msg, title="Daily Agent Report")
         print("agent report sent")

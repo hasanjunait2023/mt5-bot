@@ -1,3 +1,11 @@
+## Operations
+
+For anything operational — VPS access/deploy, account info, service list, restart
+procedures, ports, where state/logs live, secrets location — read
+`docs/OPS_RUNBOOK.md` first. It is the single source of operational truth shared
+across all sessions. If an operational fact changes, update it there so the next
+session inherits it.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

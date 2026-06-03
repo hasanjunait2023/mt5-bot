@@ -121,6 +121,19 @@ services:
     health: {type: file, path: "logs/scalp/_agent_state.json", max_age: 600}
     depends_on: [bridge]
 
+  - id: gsvp
+    name: GS-VP Volume Profile (M15)
+    group: mt5
+    # Adaptive volume-profile (breakout-retest + VA-reversion). Trades the demo
+    # account via the bridge HTTP shim (no MetaTrader5 import). Demo → real orders;
+    # a non-demo account would fail-closed to simulate without --allow-real.
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.scalp.gsvp_agent,
+          --symbols, GBPUSD, EURUSD, XAUUSD, BTCUSD, XAGUSD,
+          --risk, "1.0", --dd, "6.0"]
+    health: {type: file, path: "logs/scalp/_gsvp_agent_state.json", max_age: 600, grace: 120}
+    depends_on: [bridge]
+
   # ── Strategy Factory (YouTube → research → codegen → backtest → demo soak) ────
   - id: factory_runner
     name: Strategy Factory Runner

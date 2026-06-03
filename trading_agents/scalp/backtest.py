@@ -42,6 +42,8 @@ from trading_agents.scalp.indicators import (
     ema, rsi, stoch, bollinger, keltner, atr, ema_cross, ema_above,
     swing_high, swing_low, has_bullish_fvg, has_bearish_fvg,
     _ema_arr, vwap_session,
+    detect_liquidity_sweep, find_fvg_zones, find_inverse_fvg,
+    detect_trendline_break, session_volume_profile,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
@@ -71,6 +73,8 @@ STRATEGY_SYMBOLS: dict[str, list[str]] = {
     "GS09": ["EURUSD", "GBPUSD", "USDJPY"],
     "GS10": ["EURUSD", "GBPUSD", "USDJPY", "USDCAD"],
     "GS11": ["XAUUSD", "EURUSD", "GBPUSD"],
+    "GS12": ["XAUUSD"],
+    "GSVP": ["BTCUSD", "XAUUSD", "XAGUSD", "EURUSD", "GBPUSD"],
 }
 
 
@@ -676,7 +680,235 @@ def _gs11_opening_range_scalper(bars: dict, t_i: int,
     return None
 
 
+# GS12 tunable params — mutated in-place by optimize_gs12.py before each run.
+GS12_PARAMS: dict[str, Any] = {
+    "sweep_lookback": 5,        # fractal lookback for the swept swing
+    "min_depth_atr": 0.15,      # wick must pierce the level by >= this many ATR
+    "conf_window": 8,           # sweep must be within last N bars (recency)
+    "trend_swing_lookback": 3,  # swing lookback for trendline anchors
+    "fit_swings": 2,            # how many swings define the trendline
+    "rr": 2.0,                  # reward:risk
+    "sl_buffer_atr": 0.5,       # SL beyond the sweep wick by this many ATR
+    "use_ifvg_only": True,      # True: require a true inverse-FVG in direction
+    "session_filter": False,    # London/NY kill-zones only
+    "htf_bias": False,          # require EMA(htf_ema) trend alignment
+    "htf_ema": 200,             # length of the trend-bias EMA (HTF proxy)
+    "min_displacement_atr": 0.0,  # require break bar body >= this*ATR (ICT displacement)
+    "atr_period": 14,
+}
+
+
+def _gs12_ict_simple(bars: dict, t_i: int,
+                     spread: float, symbol: str = "XAUUSD") -> dict | None:
+    """GS12: "Stupid-Simple" ICT triad — Liquidity Sweep -> Inverse FVG -> Trendline Break.
+
+    From the supplied strategy document. Three confirmations in sequence:
+      1) Liquidity sweep: stop-hunt beyond a prior swing low (bull) / high (bear),
+         price closing back through the level (depth-filtered to skip tick noise).
+      2) Inverse FVG (or fresh FVG) in the reversal direction — the sentiment shift.
+      3) Trendline / market-structure break confirming the prior trend ended.
+    Direction-matched: all three must agree. SL beyond the sweep wick, TP at RR.
+    Tunable via GS12_PARAMS.
+    """
+    P = GS12_PARAMS
+    c = bars.get("close", [])
+    h = bars.get("high", [])
+    l = bars.get("low", [])
+    o = bars.get("open", [])
+    times = bars.get("time", [])
+    if t_i < 60:
+        return None
+    cl, hl, ll, ol = c[:t_i + 1], h[:t_i + 1], l[:t_i + 1], o[:t_i + 1]
+
+    if P["session_filter"] and not _session_bd(times[t_i])["any_primary"]:
+        return None
+
+    atr_val = atr(hl, ll, cl, P["atr_period"])
+    if atr_val <= 0:
+        return None
+    price = cl[-1]
+
+    # ICT displacement: the confirming bar must be a strong-bodied candle.
+    min_disp = float(P.get("min_displacement_atr", 0.0))
+    if min_disp > 0 and abs(cl[-1] - ol[-1]) < min_disp * atr_val:
+        return None
+    htf_len = int(P.get("htf_ema", 200))
+
+    recent = min(int(P["conf_window"]), 8)
+    sweep = detect_liquidity_sweep(hl, ll, cl, lookback=int(P["sweep_lookback"]),
+                                   min_depth_atr=float(P["min_depth_atr"]),
+                                   atr_val=atr_val, recent=recent)
+    if not sweep:
+        return None
+
+    tb = detect_trendline_break(hl, ll, cl,
+                                swing_lookback=int(P["trend_swing_lookback"]),
+                                fit_swings=int(P["fit_swings"]))
+    ifvgs = find_inverse_fvg(ol, hl, ll, cl, lookback=16,
+                             active_within=int(P["conf_window"]))
+    fvgs = find_fvg_zones(ol, hl, ll, cl, lookback=12) if not P["use_ifvg_only"] else []
+
+    # ── Bullish setup: swept sell-side liquidity, up-break, bull IFVG/FVG ──
+    if sweep["side"] == "BULL" and tb == 1:
+        has_dir = any(z["flipped_side"] == "BULL" for z in ifvgs) \
+            or any(z["type"] == "BULL" for z in fvgs)
+        if has_dir and (not P["htf_bias"] or price > ema(cl, htf_len)):
+            wick_low = min(ll[-recent:])
+            sl = wick_low - P["sl_buffer_atr"] * atr_val
+            risk = price - sl
+            if risk > 0:
+                tp = price + P["rr"] * risk
+                return {"signal": "BUY", "sl": sl, "tp": tp}
+
+    # ── Bearish setup: swept buy-side liquidity, down-break, bear IFVG/FVG ──
+    if sweep["side"] == "BEAR" and tb == -1:
+        has_dir = any(z["flipped_side"] == "BEAR" for z in ifvgs) \
+            or any(z["type"] == "BEAR" for z in fvgs)
+        if has_dir and (not P["htf_bias"] or price < ema(cl, htf_len)):
+            wick_high = max(hl[-recent:])
+            sl = wick_high + P["sl_buffer_atr"] * atr_val
+            risk = sl - price
+            if risk > 0:
+                tp = price - P["rr"] * risk
+                return {"signal": "SELL", "sl": sl, "tp": tp}
+
+    return None
+
+
 # Strategy dispatch table
+# ── GS-VP: Adaptive Volume-Profile (regime-aware) ────────────────────────────
+#
+# VP levels from the prior completed Daily session (built from the M15 series by
+# session_volume_profile). Each bar: classify regime, run the matching playbook,
+# then apply a TIERED VOLUME-TRUST gate (MT5 spot/metals carry only tick volume —
+# real traded volume exists only on crypto, so FX must lean on price-action):
+#   - primary    (BTCUSD): real volume — a VP level + M15 rejection can trigger.
+#   - confirm    (XAU/XAG): tick-vol proxy — also require momentum or an aligned sweep.
+#   - confluence (EUR/GBP): tick-vol only — VP only locates the level; an aligned
+#                           liquidity sweep MUST trigger.
+# Playbooks: A = VA-reversion (balance, TP=POC magnet), B = breakout-retest
+# (imbalance, TP=2R), C = naked-POC magnet folded into A's POC target.
+
+_VP_TIER = {
+    "BTCUSD": "primary",
+    "XAUUSD": "confirm", "XAGUSD": "confirm",
+    "EURUSD": "confluence", "GBPUSD": "confluence",
+}
+_VP_BINS = {"BTCUSD": 50, "XAUUSD": 50, "XAGUSD": 40, "EURUSD": 50, "GBPUSD": 50}
+_VP_SL_ATR = {"BTCUSD": 1.0, "XAUUSD": 0.8, "XAGUSD": 0.9, "EURUSD": 0.7, "GBPUSD": 0.7}
+_VP_BAL_FRAC = 0.75   # VA width <= this * prior-day range  → "balanced"
+_VP_NEAR_ATR = 0.20   # touch tolerance around a VP level, in ATR
+_VP_MIN_RR = 1.0      # skip trades whose reward/risk is below this
+
+
+def _gsvp_adaptive(bars: dict, t_i: int,
+                   spread: float, symbol: str = "BTCUSD") -> dict | None:
+    """GS-VP: regime-adaptive volume-profile strategy (M15 entries)."""
+    c = bars.get("close", [])
+    h = bars.get("high", [])
+    l = bars.get("low", [])
+    o = bars.get("open", [])
+    v = bars.get("volume", [])
+    times = bars.get("time", [])
+    if t_i < 60 or not v:
+        return None
+    # Trailing window keeps every per-bar computation O(W), so a 2-year M15
+    # walk-forward stays O(n) instead of O(n²). ~300 M15 bars ≈ 3 sessions,
+    # enough for the prior-day profile + ATR/EMA context.
+    n = t_i + 1
+    s = max(0, n - 300)
+    cl, hl, ll = c[s:n], h[s:n], l[s:n]
+    tw, vw = times[s:n], v[s:n]
+    has_open = bool(o)
+
+    tier = _VP_TIER.get(symbol, "confluence")
+    # Session filter: FX/metals trade only in London/NY kill-zones; crypto 24/7.
+    if symbol != "BTCUSD" and not _session_bd(times[t_i])["any_primary"]:
+        return None
+
+    atr15 = atr(hl, ll, cl, 14)
+    if atr15 <= 0:
+        return None
+
+    vp = session_volume_profile(tw, hl, ll, vw, as_of_idx=len(tw) - 1,
+                                bins=_VP_BINS.get(symbol, 50))
+    if not vp or vp["total_vol"] <= 0:
+        return None
+    poc, vah, val = vp["poc"], vp["vah"], vp["val"]
+    rng = vp["day_high"] - vp["day_low"]
+    if rng <= 0 or vah <= val:
+        return None
+
+    price = cl[-1]
+    prev = cl[-2]
+    popen = o[t_i] if has_open else prev
+    # HTF trend bias (M15 EMA50 vs EMA200). Breakouts need a GENUINE trend
+    # (gap >= 0.3 ATR), else the break is chop and the retest fails.
+    ema_fast, ema_slow = ema(cl, 50), ema(cl, 200)
+    trend_gap = ema_fast - ema_slow
+    up_str = trend_gap >= 0.3 * atr15
+    dn_str = trend_gap <= -0.3 * atr15
+    # Candle anatomy → wick-rejection confirmation (a real rejection, not a touch).
+    bar_rng = max(hl[-1] - ll[-1], 1e-12)
+    lower_wick = min(price, popen) - ll[-1]
+    upper_wick = hl[-1] - max(price, popen)
+    bull_rej = price > popen and lower_wick >= 0.4 * bar_rng   # rejected the lows
+    bear_rej = price < popen and upper_wick >= 0.4 * bar_rng   # rejected the highs
+    flat = abs(ema_fast - ema_slow) <= 0.5 * atr15             # no strong trend
+    tol = _VP_NEAR_ATR * atr15
+    sl_atr = _VP_SL_ATR.get(symbol, 0.8)
+
+    sweep = detect_liquidity_sweep(hl, ll, cl, lookback=5, min_depth_atr=0.15,
+                                   atr_val=atr15, recent=3)
+
+    def _confirm(side: str) -> bool:
+        aligned = bool(sweep and (
+            (side == "BUY" and sweep["side"] == "BULL") or
+            (side == "SELL" and sweep["side"] == "BEAR")))
+        if tier == "primary":
+            return True
+        if tier == "confirm":
+            strong = (hl[-1] - ll[-1]) >= 0.6 * atr15
+            return strong or aligned
+        return aligned   # confluence-only (FX): sweep must trigger
+
+    def _mk(side: str, sl: float, tp: float, pb: str = "") -> dict | None:
+        risk, rew = abs(price - sl), abs(tp - price)
+        if risk <= 0 or rew / risk < _VP_MIN_RR:
+            return None
+        return {"signal": side, "sl": sl, "tp": tp, "_pb": pb}
+
+    # Regime: close-and-hold (2 bars) outside prior value area = imbalance/trend.
+    held_above = price > vah and prev > vah
+    held_below = price < val and prev < val
+
+    # Playbook B — breakout-retest (imbalance): genuine trend + rejection at the
+    # retest of the broken edge, not a runaway-extended chase (<= 1.2 ATR away).
+    # "Not runaway-extended" retest helps high-vol trenders (crypto/metals) but
+    # starves the already-rare FX setups, so apply it only to non-FX tiers.
+    near_break = tier == "confluence"
+    if held_above:
+        ext_ok = near_break or price <= vah + 1.2 * atr15
+        if up_str and ll[-1] <= vah + tol and ext_ok and bull_rej and _confirm("BUY"):
+            sl = vah - sl_atr * atr15
+            return _mk("BUY", sl, price + 2.0 * (price - sl), "B")
+        return None
+    if held_below:
+        ext_ok = near_break or price >= val - 1.2 * atr15
+        if dn_str and hl[-1] >= val - tol and ext_ok and bear_rej and _confirm("SELL"):
+            sl = val + sl_atr * atr15
+            return _mk("SELL", sl, price - 2.0 * (sl - price), "B")
+        return None
+
+    # Playbook A — VA-reversion: only in a FLAT, balanced market, fade edge to POC.
+    if flat and (vah - val) <= _VP_BAL_FRAC * rng and val <= price <= vah:
+        if ll[-1] <= val + tol and price < poc and bull_rej and _confirm("BUY"):
+            return _mk("BUY", val - sl_atr * atr15, poc, "A")
+        if hl[-1] >= vah - tol and price > poc and bear_rej and _confirm("SELL"):
+            return _mk("SELL", vah + sl_atr * atr15, poc, "A")
+    return None
+
+
 STRATEGIES = {
     "GS01": ("M3", _gs01_gold_ema_rsi_stoch),
     "GS02": ("M1", _gs02_ict_silver_bullet),
@@ -689,7 +921,17 @@ STRATEGIES = {
     "GS09": ("M3", _gs09_rsi_bb_ema200_reversal),
     "GS10": ("M3", _gs10_ema_triple_trend),
     "GS11": ("M1", _gs11_opening_range_scalper),
+    "GS12": ("M3", _gs12_ict_simple),
+    "GSVP": ("M15", _gsvp_adaptive),
 }
+
+# Register factory-generated strategies (GS50+). AST-validated + isolated; a bad
+# generated module is logged and skipped, never fatal to the hand-written core.
+try:
+    from trading_agents.factory import generated_loader as _gen_loader
+    _gen_loader.register_into(STRATEGIES, STRATEGY_SYMBOLS)
+except Exception as _gen_e:  # noqa: BLE001
+    log.warning("generated-strategy loader unavailable: %s", _gen_e)
 
 
 # ── Backtest engine ──────────────────────────────────────────────────────────

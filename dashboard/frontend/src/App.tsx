@@ -21,6 +21,7 @@ const Desk         = lazy(() => import('./pages/Desk').then(m => ({ default: m.D
 const Iconic       = lazy(() => import('./pages/Iconic').then(m => ({ default: m.Iconic })))
 const Journal      = lazy(() => import('./pages/Journal').then(m => ({ default: m.Journal })))
 const Scalp        = lazy(() => import('./pages/Scalp').then(m => ({ default: m.Scalp })))
+const VolumeProfile = lazy(() => import('./pages/VolumeProfile').then(m => ({ default: m.VolumeProfile })))
 const StrategyPerf = lazy(() => import('./pages/StrategyPerformance'))
 const Pending      = lazy(() => import('./pages/Pending').then(m => ({ default: m.Pending })))
 
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="iconic"    element={<Suspense fallback={<PageLoader />}><Iconic /></Suspense>} />
             <Route path="journal"   element={<Suspense fallback={<PageLoader />}><Journal /></Suspense>} />
             <Route path="scalp"    element={<Suspense fallback={<PageLoader />}><Scalp /></Suspense>} />
+            <Route path="vp"       element={<Suspense fallback={<PageLoader />}><VolumeProfile /></Suspense>} />
             <Route path="strategy"  element={<Suspense fallback={<PageLoader />}><StrategyPerf /></Suspense>} />
             <Route path="pending"   element={<Suspense fallback={<PageLoader />}><Pending /></Suspense>} />
           </Route>

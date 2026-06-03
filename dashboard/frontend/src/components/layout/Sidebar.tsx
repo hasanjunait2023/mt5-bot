@@ -19,6 +19,7 @@ const NAV: { to: string; label: string; icon: IconName }[] = [
   { to: '/desk',      label: 'Alpha Desk',       icon: 'reports' },
   { to: '/iconic',    label: 'Iconic Trader',    icon: 'bots' },
   { to: '/scalp',     label: 'Gold Scalp',       icon: 'bots' },
+  { to: '/vp',        label: 'Volume Profile',   icon: 'reports' },
   { to: '/journal',   label: 'Trade Journal',    icon: 'history' },
   { to: '/telegram',  label: 'Telegram HQ',     icon: 'telegram' },
   { to: '/settings',  label: 'Settings',        icon: 'settings' },

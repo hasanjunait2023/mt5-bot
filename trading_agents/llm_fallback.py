@@ -54,7 +54,20 @@ def _claude_cli_call(system: str, user: str, max_tokens: int,
     """
     cli = shutil.which("claude")
     if cli is None:
-        raise RuntimeError("claude CLI not found in PATH")
+        # Agents often run under a service/non-login shell whose PATH lacks the
+        # per-user install dir (~/.local/bin), so which() misses a CLI that IS
+        # installed. Probe the standard locations before giving up.
+        for cand in (
+            os.path.expanduser("~/.local/bin/claude"),
+            "/usr/local/bin/claude",
+            "/usr/bin/claude",
+            os.path.expanduser("~/.npm-global/bin/claude"),
+        ):
+            if os.path.isfile(cand) and os.access(cand, os.X_OK):
+                cli = cand
+                break
+    if cli is None:
+        raise RuntimeError("claude CLI not found in PATH or standard locations")
 
     model_arg = _CLI_MODEL_ALIAS.get(model, model)
     cmd = [

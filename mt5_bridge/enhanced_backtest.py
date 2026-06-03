@@ -12,7 +12,7 @@ from typing import Dict, List, Tuple, Optional, Any
 import json
 import os
 
-import MetaTrader5 as mt5
+import bridge_client as mt5  # HTTP-bridge shim — only TIMEFRAME_* used here; runs on Linux VPS too
 from mt5_bridge import connect, disconnect, fetch_ohlcv, get_pip_size, check_symbol
 from config import SYMBOL_CONFIG, DEFAULT_PARAMS
 from backtest import (
@@ -41,19 +41,41 @@ class WalkForwardAnalyzer:
         """Split data into walk-forward windows."""
         windows = []
         total_bars = len(df)
-        bars_per_month = 30 * 24 * 60  # Approximate M1 bars per month
+        # Derive bars/month from the data's own time span. The old fixed 30*24*60
+        # assumed a 24/7 market and over-counted forex M1 (weekend gaps) ~2.6x, so
+        # 3 months of real bars (~49.6k) never filled a 2+1-month window → 0 windows.
+        bars_per_month = 30 * 24 * 60  # fallback
+        try:
+            ts = df["time"] if "time" in df.columns else df.index.to_series()
+            ts = pd.to_datetime(ts, unit="s", errors="coerce") if pd.api.types.is_numeric_dtype(ts) else pd.to_datetime(ts, errors="coerce")
+            span_days = (ts.iloc[-1] - ts.iloc[0]).total_seconds() / 86400.0
+            if span_days and span_days > 0:
+                bars_per_month = max(int(total_bars / (span_days / 30.0)), 1)
+        except Exception:
+            pass
+
+        train_bars = self.training_months * bars_per_month
+        test_bars = self.testing_months * bars_per_month
+
+        # Brokers often expose only ~2-3 months of M1 history, too shallow for a
+        # 2+1-month window. Rather than return 0 windows (which makes every backtest
+        # score 0 and rejects everything), scale the window down to fit while keeping
+        # the train:test ratio, so we still get a real out-of-sample evaluation.
+        if train_bars + test_bars > total_bars and total_bars > 0:
+            scale = (total_bars * 0.97) / (train_bars + test_bars)
+            train_bars = max(int(train_bars * scale), 1)
+            test_bars = max(int(test_bars * scale), 1)
 
         start_idx = 0
-        while start_idx + (self.training_months * bars_per_month) + (self.testing_months * bars_per_month) <= total_bars:
-            # Calculate bar indices
-            train_end = start_idx + (self.training_months * bars_per_month)
-            test_end = train_end + (self.testing_months * bars_per_month)
+        while start_idx + train_bars + test_bars <= total_bars:
+            train_end = start_idx + train_bars
+            test_end = train_end + test_bars
 
             train_df = df.iloc[start_idx:train_end].copy()
             test_df = df.iloc[train_end:test_end].copy()
 
             windows.append((train_df, test_df))
-            start_idx = train_end  # Move forward by training period
+            start_idx += test_bars  # roll forward by the test period (standard walk-forward step)
 
         return windows
 

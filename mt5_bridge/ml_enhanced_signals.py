@@ -6,7 +6,7 @@ using machine learning to filter false positives and enhance signal quality.
 import argparse
 import numpy as np
 import pandas as pd
-import MetaTrader5 as mt5
+import bridge_client as mt5  # HTTP-bridge shim — only TIMEFRAME_* used here; runs on Linux VPS too
 from typing import Dict, List, Tuple, Optional, Any
 import warnings
 warnings.filterwarnings('ignore')

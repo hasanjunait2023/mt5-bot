@@ -4,7 +4,7 @@
   "target_symbols": ["EURUSD", "XAUUSD", "GBPUSD", "USDJPY"],
   "sources": {
     "rss": true,
-    "firecrawl": true,
+    "firecrawl": false,
     "news": true,
     "claude_brainstorm": true,
     "gap_fill": true

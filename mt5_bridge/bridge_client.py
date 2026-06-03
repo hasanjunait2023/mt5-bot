@@ -164,6 +164,7 @@ def symbol_info(symbol: str):
         trade_tick_value=d.get("trade_tick_value", 1.0),
         trade_contract_size=d.get("trade_contract_size", 100000.0),
         spread=d.get("spread", 0), filling_mode=0,
+        visible=d.get("visible", True),
     )
 
 

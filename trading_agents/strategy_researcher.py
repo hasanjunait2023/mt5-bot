@@ -12,13 +12,21 @@ from typing import Dict, List, Tuple, Optional, Any
 import itertools
 import copy
 import os
+import sys
 
-import MetaTrader5 as mt5
+# mt5_bridge/ is a namespace package (no __init__.py). Import its modules as
+# siblings — put the dir on sys.path[0], then use bare names. Use the bridge_client
+# HTTP shim instead of MetaTrader5 so this runs on the Linux VPS too.
+_BRIDGE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mt5_bridge")
+if _BRIDGE_DIR not in sys.path:
+    sys.path.insert(0, _BRIDGE_DIR)
+
+import bridge_client as mt5
 from mt5_bridge import connect, disconnect, fetch_ohlcv, get_pip_size, check_symbol
 from config import SYMBOL_CONFIG, DEFAULT_PARAMS
-from mt5_bridge.enhanced_backtest import WalkForwardAnalyzer
-from mt5_bridge.parameter_optimizer import ParameterOptimizer
-from mt5_bridge.ml_enhanced_signals import MLCSignalFilter, ml_enhanced_compute_signals
+from enhanced_backtest import WalkForwardAnalyzer
+from parameter_optimizer import ParameterOptimizer
+from ml_enhanced_signals import MLCSignalFilter, ml_enhanced_compute_signals
 from backtest import (
     add_indicators, compute_signals, simulate_trades, compute_metrics
 )

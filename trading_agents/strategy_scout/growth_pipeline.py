@@ -90,16 +90,25 @@ def _backtest(idea: dict, symbols: list[str], months: int) -> dict | None:
         if not res:
             continue
         metrics = res.get("metrics", {})
-        pf = metrics.get("profit_factor", 0) or 0
+        # Walk-forward aggregates keys as avg_* (avg_profit_factor, avg_win_rate_pct,
+        # …); the plain backtest uses bare keys (profit_factor, win_rate_pct, …).
+        # Read both so the score is populated regardless of which path ran.
+        def _m(*keys):
+            for k in keys:
+                v = metrics.get(k)
+                if v is not None:
+                    return v
+            return 0
+        pf = _m("profit_factor", "avg_profit_factor") or 0
         wf = res.get("walk_forward_details", {})
-        consistency = wf.get("consistency", res.get("aggregate_metrics", {}).get("consistency_score", 0)) or 0
+        consistency = wf.get("consistency", _m("consistency_score")) or 0
         scored = {
             "symbol": sym,
             "profit_factor": round(pf, 2),
-            "win_rate": round(metrics.get("win_rate_pct", 0), 1),
-            "max_dd": round(metrics.get("max_drawdown_pct", 0), 1),
+            "win_rate": round(_m("win_rate_pct", "avg_win_rate_pct"), 1),
+            "max_dd": round(_m("max_drawdown_pct", "avg_max_drawdown_pct"), 1),
             "consistency": round(consistency, 2),
-            "net_pnl": round(metrics.get("net_pnl", 0), 2),
+            "net_pnl": round(_m("net_pnl", "avg_net_pnl"), 2),
         }
         if best is None or scored["profit_factor"] > best["profit_factor"]:
             best = scored

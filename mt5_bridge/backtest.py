@@ -11,7 +11,7 @@ import argparse
 import sys
 from datetime import datetime, timedelta
 
-import MetaTrader5 as mt5
+import bridge_client as mt5  # HTTP-bridge shim — only TIMEFRAME_* used here; runs on Linux VPS too
 import pandas as pd
 import numpy as np
 

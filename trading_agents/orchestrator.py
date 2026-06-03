@@ -46,7 +46,15 @@ def _now() -> datetime:
 
 
 def _log(msg: str) -> None:
-    print(f"{_now().isoformat()}  {msg}", flush=True)
+    line = f"{_now().isoformat()}  {msg}"
+    # Windows consoles default to cp1252, which can't encode emoji (e.g. ❌ in
+    # alerts) and would raise UnicodeEncodeError — crashing the whole supervisor.
+    # Degrade unencodable chars instead of dying.
+    try:
+        print(line, flush=True)
+    except UnicodeEncodeError:
+        enc = getattr(sys.stdout, "encoding", None) or "ascii"
+        print(line.encode(enc, "replace").decode(enc, "replace"), flush=True)
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

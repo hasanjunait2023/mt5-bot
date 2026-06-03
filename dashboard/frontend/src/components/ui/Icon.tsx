@@ -6,7 +6,7 @@ interface Props {
 
 export type IconName =
   | 'overview' | 'positions' | 'history' | 'bots'
-  | 'reports' | 'logs' | 'eas' | 'settings' | 'system' | 'telegram'
+  | 'reports' | 'logs' | 'eas' | 'settings' | 'system' | 'telegram' | 'hub'
 
 const PATHS: Record<IconName, JSX.Element> = {
   overview: (
@@ -64,6 +64,14 @@ const PATHS: Record<IconName, JSX.Element> = {
       <circle cx="5" cy="18" r="2" />
       <circle cx="19" cy="18" r="2" />
       <path d="M7 6h4M13 6h4M7 18h4M13 18h4M5 8v3M19 8v3M5 13v3M19 13v3M10.5 11l-3-3M13.5 11l3-3M10.5 13l-3 3M13.5 13l3 3" />
+    </>
+  ),
+  hub: (
+    <>
+      <rect x="3" y="3" width="8" height="8" rx="1.5" />
+      <rect x="13" y="3" width="8" height="8" rx="1.5" />
+      <rect x="3" y="13" width="8" height="8" rx="1.5" />
+      <rect x="13" y="13" width="8" height="8" rx="1.5" />
     </>
   ),
   telegram: (

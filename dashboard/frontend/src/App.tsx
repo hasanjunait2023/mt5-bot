@@ -21,6 +21,8 @@ const Desk         = lazy(() => import('./pages/Desk').then(m => ({ default: m.D
 const Iconic       = lazy(() => import('./pages/Iconic').then(m => ({ default: m.Iconic })))
 const Journal      = lazy(() => import('./pages/Journal').then(m => ({ default: m.Journal })))
 const Scalp        = lazy(() => import('./pages/Scalp').then(m => ({ default: m.Scalp })))
+const StrategyPerf = lazy(() => import('./pages/StrategyPerformance'))
+const Pending      = lazy(() => import('./pages/Pending').then(m => ({ default: m.Pending })))
 
 function PageLoader() {
   return <div className="min-h-[60vh] grid place-items-center text-text-muted text-sm animate-pulse">Loading…</div>
@@ -50,6 +52,8 @@ export default function App() {
             <Route path="iconic"    element={<Suspense fallback={<PageLoader />}><Iconic /></Suspense>} />
             <Route path="journal"   element={<Suspense fallback={<PageLoader />}><Journal /></Suspense>} />
             <Route path="scalp"    element={<Suspense fallback={<PageLoader />}><Scalp /></Suspense>} />
+            <Route path="strategy"  element={<Suspense fallback={<PageLoader />}><StrategyPerf /></Suspense>} />
+            <Route path="pending"   element={<Suspense fallback={<PageLoader />}><Pending /></Suspense>} />
           </Route>
         </Routes>
       </TradingProvider>

@@ -4,10 +4,12 @@ import { Icon, type IconName } from '../ui/Icon'
 
 const NAV: { to: string; label: string; icon: IconName }[] = [
   { to: '/',          label: 'Overview',        icon: 'overview' },
+  { to: '/strategy',  label: 'Strategy Perf',   icon: 'reports' },
   { to: '/positions', label: 'Positions',       icon: 'positions' },
   { to: '/history',   label: 'History',         icon: 'history' },
   { to: '/bots',      label: 'Bots & Agents',   icon: 'bots' },
   { to: '/system',    label: 'System Agents',   icon: 'system' },
+  { to: '/pending',   label: 'Pending & Stalled', icon: 'logs' },
   { to: '/reports',   label: 'Reports',         icon: 'reports' },
   { to: '/logs',      label: 'Logs',            icon: 'logs' },
   { to: '/eas',       label: 'Expert Advisors', icon: 'eas' },

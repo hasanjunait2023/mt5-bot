@@ -56,6 +56,8 @@ const PAPER_MIN_PF = 1.3
 const STRAT_LABEL: Record<string, string> = {
   GS11: 'Opening Range',
   GS07: 'Liquidity Sweep',
+  GS01: 'EMA + RSI + Stoch',
+  GS12: 'ICT: Sweep → IFVG → Trendline Break',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -30,6 +30,8 @@ SCOUT_STATE     = BASE_DIR / "trading_agents" / "strategy_scout" / "_scout_state
 LLM_METRICS     = BASE_DIR / "logs" / "agent_metrics.jsonl"
 INCIDENTS       = BASE_DIR / "logs" / "_incidents.json"
 KILL_FLAG       = BASE_DIR / "mt5_bridge" / "_kill_switch.json"
+STALLED_JSON    = BASE_DIR / "logs" / "_stalled_agents.json"
+PENDING_MD      = BASE_DIR / "PENDING.md"
 
 # Overview hits a dozen files + two globs; the frontend polls it every 10s per
 # open tab. A short TTL cache keeps repeated polls off the disk.
@@ -248,6 +250,40 @@ def system_agents_llm():
         })
     out.sort(key=lambda x: (-x["fallback_pct"], -x["calls"]))
     return {"agents": out, "total_calls": sum(a["calls"] for a in out)}
+
+
+@router.get("/system-agents/pending")
+def system_agents_pending():
+    """Pending board for the dashboard: auto-detected stalled agents
+    (logs/_stalled_agents.json, written by scripts/pending_tracker.py) plus the
+    hand-curated 'Pending tasks' table parsed out of PENDING.md."""
+    stalled = _read(STALLED_JSON) or {}
+
+    tasks = []
+    try:
+        if PENDING_MD.exists():
+            in_section = False
+            for ln in PENDING_MD.read_text(encoding="utf-8").splitlines():
+                if ln.startswith("## Pending tasks"):
+                    in_section = True
+                    continue
+                if in_section and ln.startswith("## "):
+                    break
+                if in_section and ln.lstrip().startswith("|"):
+                    cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+                    if len(cells) >= 4 and cells[0].isdigit():
+                        tasks.append({"id": cells[0], "task": cells[1],
+                                      "deferred": cells[2], "note": cells[3]})
+    except Exception:
+        pass
+
+    return {
+        "stalled": stalled.get("stalled", []),
+        "stalled_count": stalled.get("count", 0),
+        "scanned_at": stalled.get("scanned_at"),
+        "scan_age_minutes": _age_minutes(STALLED_JSON),
+        "pending_tasks": tasks,
+    }
 
 
 @router.get("/system-agents/incidents")

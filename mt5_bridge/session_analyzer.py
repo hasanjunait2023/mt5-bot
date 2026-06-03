@@ -8,6 +8,7 @@ import sys
 import json
 import numpy as np
 import pandas as pd
+import MetaTrader5 as mt5
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional, Any
 import warnings

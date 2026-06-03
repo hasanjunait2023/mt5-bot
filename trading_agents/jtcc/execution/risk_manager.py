@@ -61,8 +61,11 @@ def can_trade(symbol: str, max_per_symbol: int = 2, max_total: int = 3) -> tuple
             ks = json.loads(KILL_SWITCH.read_text())
             if ks.get("active"):
                 return False, "Kill-switch active — manual reset required"
-        except Exception:
-            pass
+        except Exception as e:
+            # A kill-switch file exists but can't be parsed. Fail SAFE: block
+            # trading rather than silently resume. A corrupt switch is still a switch.
+            log.error("Kill-switch file unreadable (%s) — failing safe, blocking trades", e)
+            return False, "Kill-switch file unreadable — failing safe"
 
     state = _read_state()
     positions = state.get("positions", [])

@@ -10,8 +10,12 @@ import numpy as np
 import pandas as pd
 from itertools import product
 from typing import Dict, List, Tuple, Any, Optional
+import importlib.util
 import warnings
 warnings.filterwarnings('ignore')
+
+# Optional ML surrogate model; gate sklearn-dependent paths on availability.
+SKLEARN_AVAILABLE = importlib.util.find_spec("sklearn") is not None
 
 from mt5_bridge import connect, disconnect, fetch_ohlcv, get_pip_size, check_symbol
 from config import SYMBOL_CONFIG, DEFAULT_PARAMS, OPTIMIZER_GRID

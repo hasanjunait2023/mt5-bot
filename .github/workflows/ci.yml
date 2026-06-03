@@ -1,0 +1,31 @@
+name: CI
+
+# Pre-merge feedback. Runs on PRs and on non-master branch pushes.
+# master pushes are gated by the `test` job inside deploy-vps.yml instead,
+# so production never deploys on a red test suite.
+on:
+  pull_request:
+  push:
+    branches-ignore: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dev tooling
+        run: pip install -r requirements-dev.txt --quiet
+
+      - name: Lint (real-bug subset)
+        run: ruff check trading_agents mt5_bridge backtest dashboard/backend telegram_bot.py
+
+      - name: Byte-compile (parse check)
+        run: python -m compileall -q trading_agents backtest dashboard/backend telegram_bot.py
+
+      - name: Tests
+        run: python -m pytest

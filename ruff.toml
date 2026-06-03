@@ -1,0 +1,23 @@
+# Lint config. Deliberately scoped to REAL BUGS, not style — the codebase
+# predates linting and a full style sweep would drown CI in noise. This subset
+# fails only on things that are actually broken:
+#   E9  syntax errors
+#   F63 invalid comparisons (e.g. `is` on literals)
+#   F7  misplaced statements (break outside loop, etc.)
+#   F82 undefined names
+# Widen `select` later once the code is clean.
+line-length = 120
+
+extend-exclude = [
+    ".venv",
+    "**/site-packages/**",
+    "node_modules",
+    ".claude",
+    "graphify-out",
+    "mt5_bridge/tradingview-mcp",
+    "supabase",
+    "dashboard/frontend",
+]
+
+[lint]
+select = ["E9", "F63", "F7", "F82"]

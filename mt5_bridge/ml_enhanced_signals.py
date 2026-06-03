@@ -3,8 +3,10 @@ ML-enhanced signal generation system that improves the existing scalping strateg
 using machine learning to filter false positives and enhance signal quality.
 """
 
+import argparse
 import numpy as np
 import pandas as pd
+import MetaTrader5 as mt5
 from typing import Dict, List, Tuple, Optional, Any
 import warnings
 warnings.filterwarnings('ignore')

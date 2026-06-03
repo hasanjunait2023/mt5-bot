@@ -306,7 +306,7 @@ def run_once() -> dict:
                 yaml_path = _write_jtcc_yaml_stub(idea, score)
                 rec["jtcc_yaml"] = str(yaml_path) if yaml_path else None
             except Exception as e:
-                log.warning("JTCC YAML write failed for %s: %s", idea_id, e)
+                log.warning("JTCC YAML write failed for %s: %s", iid, e)
 
             _notify(
                 f"*Scout → CEO*: pitched new strategy\n"

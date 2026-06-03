@@ -22,8 +22,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# CPP strategy + hybrid confirmation agent live under trading_agents/
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "trading_agents"))
+# CPP strategy + hybrid confirmation agent live under ../trading_agents/
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "trading_agents"))
 from strategies import confluence_pullback as cpp          # noqa: E402
 from trade_confirmation_agent import TradeConfirmationAgent  # noqa: E402
 
@@ -1728,7 +1728,7 @@ td{{padding:6px;border-bottom:1px solid #eee}} h1{{color:#1a237e}}
 
 
 CPP_SYMBOLS = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY"]
-CPP_PARAMS_FILE = os.path.join(os.path.dirname(__file__), "cpp_params.json")
+CPP_PARAMS_FILE = os.path.join(os.path.dirname(__file__), "..", "cpp_params.json")
 
 
 def load_cpp_params() -> dict:

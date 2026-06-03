@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 import MetaTrader5 as mt5
 
-OUT_PATH = Path(__file__).parent / "mt5_bridge" / "_ea_performance.json"
+OUT_PATH = Path(__file__).parent.parent / "mt5_bridge" / "_ea_performance.json"
 
 # magic -> (label, group). Keep in sync with the EAs actually deployed.
 EA_MAGICS = {

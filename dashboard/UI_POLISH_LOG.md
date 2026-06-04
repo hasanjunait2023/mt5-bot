@@ -19,7 +19,7 @@ Scalp · VolumeProfile · Journal · TelegramHQ · Settings · Hub · Factory ·
 <!-- agent maintains: page → last-polished date + one-line of what was done -->
 | Page | Last polished | Notes |
 |------|---------------|-------|
-| _seed_ | — | no runs yet |
+| _shared: Table_ | 2026-06-04 | Premium empty-state (glyph badge + composed message) — lifts every data table |
 
 ## Backlog (highest-value first — agent may add/reorder)
 <!-- Concrete, scoped improvement ideas. Agent picks the top viable one if it has
@@ -30,6 +30,13 @@ Scalp · VolumeProfile · Journal · TelegramHQ · Settings · Hub · Factory ·
 
 ## Run log (newest first)
 <!-- agent appends one block per run -->
+
+### 2026-06-04 13:20 UTC — Table (shared primitive)
+- Change: Replaced the bare muted "No data" text in the shared `Table` empty cell with a composed empty state — an outlined glyph badge (soft glass circle) above the message in clearer `text-secondary` hierarchy, with a gentle `reveal` fade. Propagates to every data table (Positions, History, EAs, BotsAgents, Journal, Reports, SystemAgents).
+- Why premium: Polished empty states are a signature of premium fintech UIs; a bare centered string reads as unfinished. Icon-in-circle + restrained copy is the established pattern (backlog item #1: empty-state polish). Uses only existing tokens (border, bg-white/[0.03], text-muted/secondary, reveal, font-sans) — no new deps.
+- Build: pass (local `npx vite build` + VPS `npx vite build` 31.66s) · Visual: verified on identical preview build — desktop Positions ("No open positions"), desktop History ("No trades found"), and mobile Positions all render correctly, centered, responsive, no regression · Deployed: :8010 (live serves new bundle `index-CVDjXt8b.js`) · Commit: fef45e6
+- Note: live logged-in canary screenshot was blocked by local headless-browser daemon instability on Windows (daemon dropped mid-session); verification relied on the byte-identical preview build + confirmed live bundle hash + clean live page load.
+
 <!--
 ### YYYY-MM-DD HH:MM UTC — <Page/Component>
 - Change: <one line>

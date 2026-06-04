@@ -33,8 +33,20 @@ export function Table<T>({ columns, data, keyFn, emptyText = 'No data' }: Props<
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-3 py-12 text-center text-text-muted">
-                {emptyText}
+              <td colSpan={columns.length} className="px-3 py-14 text-center">
+                <div className="reveal flex flex-col items-center gap-3">
+                  <div className="grid h-11 w-11 place-items-center rounded-full border border-border bg-white/[0.03] text-text-muted">
+                    <svg
+                      width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="1.5"
+                      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                    >
+                      <rect x="3" y="5" width="18" height="14" rx="2" />
+                      <path d="M3 10h18M9 10v9" />
+                    </svg>
+                  </div>
+                  <p className="font-sans text-sm text-text-secondary">{emptyText}</p>
+                </div>
               </td>
             </tr>
           ) : (

@@ -17,13 +17,17 @@ import numpy as np
 import pandas as pd
 
 BRIDGE = "http://localhost:8090"
-LIMIT = 5000
+LIMIT = 50000
 
 PIP = {"USDJPY": 0.01, "AUDUSD": 0.0001, "GBPUSD": 0.0001, "AUDJPY": 0.01,
-       "NZDJPY": 0.01, "NZDUSD": 0.0001, "XAUUSD": 0.1}
+       "NZDJPY": 0.01, "NZDUSD": 0.0001, "XAUUSD": 0.1,
+       "EURUSD": 0.0001, "USDCHF": 0.0001, "USDCAD": 0.0001, "EURJPY": 0.01,
+       "GBPJPY": 0.01, "EURGBP": 0.0001}
 # round-trip cost in PRICE units (spread + slippage, conservative)
 COST = {"USDJPY": 0.020, "AUDUSD": 0.00018, "GBPUSD": 0.00020, "AUDJPY": 0.028,
-        "NZDJPY": 0.038, "NZDUSD": 0.00024, "XAUUSD": 0.45}
+        "NZDJPY": 0.038, "NZDUSD": 0.00024, "XAUUSD": 0.45,
+        "EURUSD": 0.00015, "USDCHF": 0.00022, "USDCAD": 0.00025, "EURJPY": 0.025,
+        "GBPJPY": 0.035, "EURGBP": 0.00022}
 
 
 # ── data ───────────────────────────────────────────────────────────────────────
@@ -237,7 +241,9 @@ def s5_gold(df, sym):
 
 
 STRATS = {
-    "S1_fade":     (s1_fade,     ["USDJPY", "AUDUSD"]),
+    "S1_fade":     (s1_fade,     ["USDJPY", "AUDUSD", "EURUSD", "GBPUSD", "USDCHF",
+                                  "USDCAD", "AUDJPY", "NZDJPY", "EURJPY", "GBPJPY",
+                                  "NZDUSD", "EURGBP"]),
     "S2_ict_sweep":(s2_ict_sweep,["USDJPY", "AUDUSD", "NZDUSD", "AUDJPY", "NZDJPY", "XAUUSD"]),
     "S3_pipstorm": (s3_pipstorm, ["GBPUSD"]),
     "S4_orb":      (s4_orb,      ["USDJPY", "AUDJPY", "NZDJPY", "AUDUSD", "NZDUSD"]),
@@ -267,8 +273,12 @@ def line(label, st):
 def main():
     print(f"ASIAN-SESSION MULTI-STRATEGY SCREEN — M15 {LIMIT} bars (~72d), real cost")
     print("⭐ = PF≥1.3 & n≥20\n")
+    import sys
+    only = sys.argv[1] if len(sys.argv) > 1 else None
     cache = {}
     for name, (fn, syms) in STRATS.items():
+        if only and name != only:
+            continue
         print(name)
         agg = []
         for sym in syms:

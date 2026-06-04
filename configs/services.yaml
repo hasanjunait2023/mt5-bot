@@ -134,6 +134,18 @@ services:
     health: {type: file, path: "logs/scalp/_gsvp_agent_state.json", max_age: 600, grace: 120}
     depends_on: [bridge]
 
+  - id: asia_fade
+    name: Asia Desk (Asian Range Fade)
+    group: mt5
+    # Asian-session mean reversion on JPY pairs. Validated 2.1yr M15 real-cost:
+    # USDJPY PF 1.60/oos 1.46, AUDJPY 1.47/oos 1.40 (non-JPY had no edge).
+    # Trades 02:00-07:00 UTC, flattens before London. See trading_agents/asia_desk/.
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.asia_desk.agent,
+          --pairs, USDJPY, AUDJPY, --risk, "0.5"]
+    health: {type: file, path: "logs/asia_desk/_state.json", max_age: 1200, grace: 120}
+    depends_on: [bridge]
+
   # ── Strategy Factory (YouTube → research → codegen → backtest → demo soak) ────
   - id: factory_runner
     name: Strategy Factory Runner

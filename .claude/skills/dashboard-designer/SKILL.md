@@ -58,16 +58,15 @@ highest-value improvement and ship it cleanly.
 - `cd dashboard/frontend && npx vite build`. Must pass. If it fails on YOUR code,
   fix; if you can't quickly, `git checkout --` your edits and pick smaller scope.
 
-### 5. Visual verify (before/after)
-- Use the `browse` skill. Target the live dashboard at `http://72.62.228.196:8010`.
-  It requires login — read `DASHBOARD_PASSWORD` from the repo `.env` and sign in.
-  Capture the target page BEFORE deploy (current live) as the "before".
-- Then run `npx vite preview --port 4174` serving your new `dist/`, and screenshot
-  the same route as "after" (API calls may be empty — judge layout/hierarchy/
-  spacing/typography/motion; don't fail on missing data). If preview API is empty
-  and you need real data, rely on the post-deploy screenshot in step 7 instead.
-- Compare. Confirm: clearly better, nothing broken, responsive (check a mobile
-  width too). If not better → revert and stop (log "skipped — no improvement").
+### 5. Visual verify (before/after) — BEST-EFFORT, TIME-BOXED
+- This step must NOT block. Give it a hard ~3-minute budget total. If the browser
+  or login doesn't cooperate quickly, SKIP it and rely on the build-gate (step 4)
+  plus the post-deploy curl (step 7). A hung verify is what broke the first run.
+- If attempting: use `browse` against `http://72.62.228.196:8010` (login with
+  `DASHBOARD_PASSWORD` from `.env`) for a "before", and `npx vite preview --port
+  4174` of your new `dist/` for an "after" (empty API data is fine — judge layout/
+  hierarchy/spacing/typography/motion/responsive). Confirm clearly better + nothing
+  broken. If worse → revert and stop (log "skipped — no improvement").
 
 ### 6. Deploy to the live VPS (:8010)
 The dashboard you're improving runs from `/home/trader/mt5-bot` on the VPS, served
@@ -89,8 +88,10 @@ to confirm the new bundle is served.
   reverted build, and log a failure.
 
 ### 8. Commit, push, log
-- Commit only `dashboard/frontend/**` + `dashboard/UI_POLISH_LOG.md`:
-  `git add dashboard/frontend dashboard/UI_POLISH_LOG.md`
+- `git add` ONLY the exact files you edited this run, listed explicitly by path,
+  plus `dashboard/UI_POLISH_LOG.md`. NEVER `git add dashboard/frontend` or any
+  directory — that would sweep in unrelated edits. (The runner already guarantees
+  a clean starting tree, but stay explicit anyway.)
   Message: `feat(dashboard-ui): <page/component> — <one-line improvement>`
   End with the Co-Authored-By trailer (see CLAUDE.md). Then `git push origin master`.
 - Append a run block to `dashboard/UI_POLISH_LOG.md` (page, change, why-premium,

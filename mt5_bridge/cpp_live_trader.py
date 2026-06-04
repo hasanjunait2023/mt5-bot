@@ -45,7 +45,7 @@ TF_H1       = mt5.TIMEFRAME_H1
 STATE_PATH  = Path(__file__).parent / "_cpp_state.json"
 DAILY_PATH  = Path(__file__).parent / "_cpp_daily.json"
 LOG_PATH    = Path(__file__).parent / "_cpp_log.txt"
-PARAMS_FILE = Path(__file__).parent.parent / "cpp_params.json"
+PARAMS_FILE = Path(__file__).parent.parent / "configs" / "cpp_params.json"
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s",

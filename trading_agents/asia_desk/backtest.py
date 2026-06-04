@@ -327,6 +327,142 @@ def s5b_gold_v2(df, sym):
     return sorted(setups, key=lambda s: s["idx"])
 
 
+# ── candidate strategies (distinct signals, all ATR-stop) ──────────────────────
+def _session_vwap(g):
+    tp = (g["high"] + g["low"] + g["close"]) / 3.0
+    return (tp * g["volume"]).cumsum() / g["volume"].cumsum().replace(0, np.nan)
+
+
+def stoch_k(df, n=14):
+    ll = df["low"].rolling(n).min(); hh = df["high"].rolling(n).max()
+    return 100 * (df["close"] - ll) / (hh - ll).replace(0, np.nan)
+
+
+def v_vwap(df, sym):
+    """V1 — VWAP reversion. Fade >1.5*ATR from session VWAP back to VWAP."""
+    df = df.copy(); df["atr"] = atr(df)
+    setups = []
+    for _, g in df.groupby("date"):
+        vw = _session_vwap(g)
+        for idx, r in g.iterrows():
+            if not (2 <= r["hour"] < 7):
+                continue
+            a = r["atr"]; v = vw.get(idx, np.nan)
+            if a != a or a <= 0 or v != v:
+                continue
+            dev = r["close"] - v
+            if dev < -1.5 * a:
+                setups.append({"idx": idx, "dir": 1, "sl": r["close"] - 1.5 * a, "tp": v, "exit_hour": 7})
+            elif dev > 1.5 * a:
+                setups.append({"idx": idx, "dir": -1, "sl": r["close"] + 1.5 * a, "tp": v, "exit_hour": 7})
+    return sorted(setups, key=lambda s: s["idx"])
+
+
+def v_stoch(df, sym):
+    """V2 — Stochastic fade. Cross up out of <20 → long; down out of >80 → short. TP 1.5R."""
+    df = df.copy(); df["atr"] = atr(df); df["k"] = stoch_k(df)
+    rows = df.reset_index(drop=True); setups = []
+    for i in range(15, len(rows) - 1):
+        r = rows.iloc[i]; p = rows.iloc[i - 1]
+        if not (0 <= r["hour"] < 6):
+            continue
+        a = r["atr"]
+        if a != a or a <= 0 or r["k"] != r["k"] or p["k"] != p["k"]:
+            continue
+        if p["k"] < 20 and r["k"] >= 20:
+            sl = r["close"] - a; setups.append({"idx": i, "dir": 1, "sl": sl, "tp": r["close"] + 1.5 * (r["close"] - sl), "exit_hour": 7})
+        elif p["k"] > 80 and r["k"] <= 80:
+            sl = r["close"] + a; setups.append({"idx": i, "dir": -1, "sl": sl, "tp": r["close"] - 1.5 * (sl - r["close"]), "exit_hour": 7})
+    return setups
+
+
+def v_bb(df, sym):
+    """V3 — Bollinger(20,2) fade to mid, ATR stop, RSI 30-70 filter."""
+    df = df.copy(); df["atr"] = atr(df); df["rsi"] = rsi(df["close"])
+    mid = df["close"].rolling(20).mean(); sd = df["close"].rolling(20).std()
+    df["mid"] = mid; df["up"] = mid + 2 * sd; df["lo"] = mid - 2 * sd
+    rows = df.reset_index(drop=True); setups = []
+    for i in range(20, len(rows) - 1):
+        r = rows.iloc[i]
+        if not (2 <= r["hour"] < 7) or not (30 <= r["rsi"] <= 70):
+            continue
+        a = r["atr"]
+        if a != a or a <= 0 or r["mid"] != r["mid"]:
+            continue
+        if r["close"] < r["lo"]:
+            setups.append({"idx": i, "dir": 1, "sl": r["close"] - a, "tp": r["mid"], "exit_hour": 7})
+        elif r["close"] > r["up"]:
+            setups.append({"idx": i, "dir": -1, "sl": r["close"] + a, "tp": r["mid"], "exit_hour": 7})
+    return setups
+
+
+def v_rsi2(df, sym):
+    """V4 — RSI(2) extreme reversion. <10 long / >90 short, TP at SMA5, ATR stop."""
+    df = df.copy(); df["atr"] = atr(df); df["r2"] = rsi(df["close"], 2); df["sma5"] = df["close"].rolling(5).mean()
+    rows = df.reset_index(drop=True); setups = []
+    for i in range(5, len(rows) - 1):
+        r = rows.iloc[i]
+        if not (0 <= r["hour"] < 6):
+            continue
+        a = r["atr"]
+        if a != a or a <= 0 or r["r2"] != r["r2"] or r["sma5"] != r["sma5"]:
+            continue
+        if r["r2"] < 10:
+            setups.append({"idx": i, "dir": 1, "sl": r["close"] - a, "tp": max(r["sma5"], r["close"] + 0.5 * a), "exit_hour": 7})
+        elif r["r2"] > 90:
+            setups.append({"idx": i, "dir": -1, "sl": r["close"] + a, "tp": min(r["sma5"], r["close"] - 0.5 * a), "exit_hour": 7})
+    return setups
+
+
+def v_nightscalp(df, sym):
+    """V6 — 'night scalper' inverted-RR (claimed 75-85% WR). Range-edge touch entry,
+    SMALL TP (0.7*ATR) + WIDE stop (2.0*ATR). High hit-rate, small wins, big losses —
+    tests whether the inverted-RR range-scalp profile is actually profitable."""
+    df = df.copy(); df["atr"] = atr(df); df["rsi"] = rsi(df["close"])
+    setups = []
+    for _, g in df.groupby("date"):
+        rng = _day_range(g, 0, 2)
+        if not rng:
+            continue
+        hi, lo = rng
+        win = g[(g["hour"] >= 2) & (g["hour"] < 7)]
+        for idx, r in win.iterrows():
+            a = r["atr"]
+            if a != a or a <= 0 or not (30 <= r["rsi"] <= 70):
+                continue
+            if r["low"] <= lo:
+                setups.append({"idx": idx, "dir": 1, "sl": r["close"] - 2.0 * a, "tp": r["close"] + 0.7 * a, "exit_hour": 7})
+            elif r["high"] >= hi:
+                setups.append({"idx": idx, "dir": -1, "sl": r["close"] + 2.0 * a, "tp": r["close"] - 0.7 * a, "exit_hour": 7})
+    return sorted(setups, key=lambda s: s["idx"])
+
+
+def v_pdhl(df, sym):
+    """V5 — fade Previous-Day High/Low during Asia. Touch PDH→short, PDL→long,
+    target the prior-day midpoint, ATR stop. Distinct structural level vs the 00-02 range."""
+    df = df.copy(); df["atr"] = atr(df)
+    daily = df.groupby("date").agg(h=("high", "max"), l=("low", "min"))
+    daily["pdh"] = daily["h"].shift(1); daily["pdl"] = daily["l"].shift(1)
+    daily["pmid"] = (daily["pdh"] + daily["pdl"]) / 2.0
+    setups = []
+    for d, g in df.groupby("date"):
+        if d not in daily.index:
+            continue
+        pdh, pdl, pmid = daily.loc[d, "pdh"], daily.loc[d, "pdl"], daily.loc[d, "pmid"]
+        if pdh != pdh or pdl != pdl:
+            continue
+        win = g[(g["hour"] >= 0) & (g["hour"] < 7)]
+        for idx, r in win.iterrows():
+            a = r["atr"]
+            if a != a or a <= 0:
+                continue
+            if r["high"] >= pdh:
+                setups.append({"idx": idx, "dir": -1, "sl": pdh + 1.0 * a, "tp": pmid, "exit_hour": 7}); break
+            if r["low"] <= pdl:
+                setups.append({"idx": idx, "dir": 1, "sl": pdl - 1.0 * a, "tp": pmid, "exit_hour": 7}); break
+    return sorted(setups, key=lambda s: s["idx"])
+
+
 STRATS = {
     "S1_fade":     (s1_fade,     ["USDJPY", "AUDUSD", "EURUSD", "GBPUSD", "USDCHF",
                                   "USDCAD", "AUDJPY", "NZDJPY", "EURJPY", "GBPJPY",
@@ -341,6 +477,12 @@ STRATS = {
     "S1_metals_btc": (s1_fade,   ["XAUUSD", "XAGUSD", "BTCUSD"]),
     "S1c_fade_atr": (s1c_fade_atr, ["USDJPY", "AUDJPY", "XAUUSD", "XAGUSD", "BTCUSD",
                                     "EURJPY", "GBPJPY"]),
+    "V1_vwap":  (v_vwap,  ["USDJPY", "AUDJPY", "XAUUSD", "BTCUSD", "EURJPY"]),
+    "V2_stoch": (v_stoch, ["USDJPY", "AUDJPY", "XAUUSD", "BTCUSD", "EURJPY"]),
+    "V3_bb":    (v_bb,    ["USDJPY", "AUDJPY", "XAUUSD", "BTCUSD", "EURJPY"]),
+    "V4_rsi2":  (v_rsi2,  ["USDJPY", "AUDJPY", "XAUUSD", "BTCUSD", "EURJPY"]),
+    "V5_pdhl":  (v_pdhl,  ["USDJPY", "AUDJPY", "XAUUSD", "BTCUSD", "EURJPY", "XAGUSD"]),
+    "V6_nightscalp": (v_nightscalp, ["USDJPY", "AUDJPY", "XAUUSD", "BTCUSD", "EURJPY", "XAGUSD"]),
 }
 
 

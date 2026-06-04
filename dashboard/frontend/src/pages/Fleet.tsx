@@ -6,6 +6,8 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { MetricCard } from '../components/ui/MetricCard'
 import { StatusDot } from '../components/ui/StatusDot'
 import { Badge } from '../components/ui/Badge'
+import { WinLossDonut } from '../components/charts/WinLossDonut'
+import { PnLBarChart } from '../components/charts/PnLBarChart'
 
 // ── Types (mirror dashboard/backend/api/fleet.py) ─────────────────────────────
 interface Position { symbol: string; type: string; volume: number; profit: number }
@@ -106,6 +108,9 @@ function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: st
   const stale = a.health !== 'live'
   const inTrade = a.open_count > 0
   const tone: TradeTone = a.open_pnl > 0 ? 'profit' : a.open_pnl < 0 ? 'loss' : 'accent'
+  // Live open positions split by current floating result.
+  const openWin = a.positions.filter(p => p.profit > 0).length
+  const openLoss = a.positions.filter(p => p.profit < 0).length
   return (
     <div
       className={clsx('glass glass-hover reveal relative overflow-hidden p-5 flex flex-col gap-4 transition-all',
@@ -141,6 +146,22 @@ function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: st
         </div>
       </div>
 
+      {/* Won / Lost split for the period — the quickest read of behaviour */}
+      <div className="grid grid-cols-2 gap-2 -mt-1">
+        <div className="flex items-center justify-between rounded-lg bg-profit/[0.06] ring-1 ring-profit/25 px-3 py-2">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-profit/90">
+            <span className="text-[12px] leading-none">▲</span> Won
+          </span>
+          <span className="font-mono font-bold text-lg leading-none text-profit font-tabular">{a.stats.wins}</span>
+        </div>
+        <div className="flex items-center justify-between rounded-lg bg-loss/[0.06] ring-1 ring-loss/25 px-3 py-2">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-loss/90">
+            <span className="text-[12px] leading-none">▼</span> Lost
+          </span>
+          <span className="font-mono font-bold text-lg leading-none text-loss font-tabular">{a.stats.losses}</span>
+        </div>
+      </div>
+
       {a.strategies.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <p className="eyebrow">Strategies ({a.strategies.length})</p>
@@ -156,7 +177,14 @@ function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: st
       {a.open_count > 0 && (
         <div className="rounded-lg bg-white/[0.025] ring-1 ring-border p-3 flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <p className="eyebrow">Open now · floating</p>
+            <div className="flex items-center gap-2">
+              <p className="eyebrow">Open now</p>
+              <span className="font-mono text-[10px] tracking-tight">
+                <span className="text-profit">{openWin}↑</span>
+                <span className="text-text-muted"> · </span>
+                <span className="text-loss">{openLoss}↓</span>
+              </span>
+            </div>
             <span className={clsx('font-mono text-sm font-semibold', pnlCls(a.open_pnl))}>${money(a.open_pnl)}</span>
           </div>
           {a.positions.map((p, idx) => (
@@ -239,6 +267,7 @@ export function Fleet() {
   const t = useMemo(() => {
     const closed = view.reduce((s, a) => s + a.stats.closed, 0)
     const wins = view.reduce((s, a) => s + a.stats.wins, 0)
+    const losses = view.reduce((s, a) => s + a.stats.losses, 0)
     return {
       live: view.filter(a => a.health === 'live').length,
       agents: view.length,
@@ -246,9 +275,19 @@ export function Fleet() {
       floating: view.reduce((s, a) => s + a.open_pnl, 0),
       open: view.reduce((s, a) => s + a.open_count, 0),
       opened: view.reduce((s, a) => s + a.stats.opened, 0),
+      wins, losses,
       closed, winRate: closed ? Math.round(wins / closed * 100) : null,
     }
   }, [view])
+
+  // Per-agent realized P&L for the period (chart) — only agents that traded.
+  const pnlByAgent = useMemo(
+    () => view
+      .filter(a => a.stats.closed > 0 || a.stats.realized_pnl !== 0)
+      .map(a => ({ label: a.name, value: Number(a.stats.realized_pnl.toFixed(2)) }))
+      .sort((a, b) => b.value - a.value),
+    [view],
+  )
 
   const pLabel = data?.period_label ?? 'Today'
 
@@ -301,6 +340,29 @@ export function Fleet() {
           tone={t.live === t.agents && t.agents > 0 ? 'profit' : t.live === 0 ? 'loss' : 'warning'} sub="live / shown" />
         <MetricCard label="Equity" value={data?.account.equity ?? 0} prefix="$" tone="neutral" sub={data?.account.server} />
       </div>
+
+      {/* fleet analytics — win/loss split + per-agent P&L contribution */}
+      {(t.closed > 0 || pnlByAgent.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="glass p-4 flex flex-col">
+            <p className="eyebrow mb-2">Win / Loss · {pLabel}</p>
+            <div className="flex-1 grid place-items-center">
+              <WinLossDonut wins={t.wins} losses={t.losses} />
+            </div>
+          </div>
+          <div className="glass p-4 lg:col-span-2 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <p className="eyebrow">P&amp;L by Agent · {pLabel}</p>
+              <span className={clsx('text-[11px] font-mono', pnlCls(t.realized))}>${money(t.realized)} total</span>
+            </div>
+            <div className="flex-1">
+              {pnlByAgent.length > 0
+                ? <PnLBarChart data={pnlByAgent} height={200} />
+                : <div className="h-[200px] grid place-items-center text-text-muted text-sm">No closed trades in this window</div>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* agent grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

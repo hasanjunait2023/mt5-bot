@@ -5,7 +5,9 @@ import { StatusDot } from '../components/ui/StatusDot'
 import { Badge } from '../components/ui/Badge'
 import { LogLine } from '../components/ui/LogLine'
 import { Panel } from '../components/ui/Panel'
+import { PageHeader } from '../components/ui/PageHeader'
 import { EquityMiniChart } from '../components/charts/EquityMiniChart'
+import { EquityCurveChart } from '../components/charts/EquityCurveChart'
 import type { LogEntry } from '../types/trading'
 
 export function Overview() {
@@ -23,20 +25,18 @@ export function Overview() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Page header */}
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-text-primary text-2xl font-bold tracking-tight">Overview</h1>
-          <p className="text-text-secondary text-sm mt-0.5">
-            Real-time account &amp; system snapshot
-          </p>
-        </div>
-        <div className="hidden sm:flex items-center gap-2 px-3 h-8 rounded-full bg-white/[0.04] ring-1 ring-border">
-          <StatusDot status={traderStatus} />
-          <span className="text-text-secondary text-xs font-medium">
-            {trader_running ? (mt5_connected ? 'Trading live' : 'Bot up · MT5 down') : 'Bot offline'}
-          </span>
-        </div>
-      </div>
+      <PageHeader
+        title="Overview"
+        subtitle="Real-time account & system snapshot"
+        right={
+          <div className="hidden sm:flex items-center gap-2 px-3 h-8 rounded-full bg-white/[0.04] ring-1 ring-border">
+            <StatusDot status={traderStatus} />
+            <span className="text-text-secondary text-xs font-medium">
+              {trader_running ? (mt5_connected ? 'Trading live' : 'Bot up · MT5 down') : 'Bot offline'}
+            </span>
+          </div>
+        }
+      />
 
       {/* Hero financial row — equity is the number a trader watches */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -68,6 +68,19 @@ export function Overview() {
           tone={positions.length > 0 ? 'accent' : 'neutral'}
         />
       </div>
+
+      {/* Equity curve — the trader's headline chart */}
+      <Panel
+        title="Equity Curve"
+        i={0}
+        right={
+          <span className="text-[11px] font-mono text-text-muted">
+            session · {equity_history.length} pts
+          </span>
+        }
+      >
+        <EquityCurveChart data={equity_history} />
+      </Panel>
 
       {/* Risk strip — drawdown shown against its limit so risk is felt, not just read */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

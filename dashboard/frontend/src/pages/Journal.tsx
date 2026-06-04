@@ -3,6 +3,8 @@ import { apiFetch } from '../lib/api'
 import { Badge } from '../components/ui/Badge'
 import { Table } from '../components/ui/Table'
 import { MetricCard } from '../components/ui/MetricCard'
+import { WinLossDonut } from '../components/charts/WinLossDonut'
+import { PnLBarChart } from '../components/charts/PnLBarChart'
 import type { ReactNode } from 'react'
 
 interface Trade {
@@ -366,6 +368,34 @@ export function Journal() {
             tone={total.profit_factor != null && total.profit_factor >= 1 ? 'profit' : 'loss'} />
           <MetricCard label="Net PnL" value={fmt(total.net_pnl)}
             tone={total.net_pnl >= 0 ? 'profit' : 'loss'} />
+        </div>
+      )}
+
+      {/* Visual analytics — win/loss split + net P&L per strategy */}
+      {total && total.trades > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 reveal" style={{ ['--i' as string]: 0.5 }}>
+          <div className="glass rounded-xl p-4 flex flex-col">
+            <p className="eyebrow mb-2">Win / Loss</p>
+            <div className="flex-1 grid place-items-center">
+              <WinLossDonut wins={total.wins} losses={total.losses} />
+            </div>
+          </div>
+          <div className="glass rounded-xl p-4 lg:col-span-2 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <p className="eyebrow">Net P&amp;L by Strategy</p>
+              <span className="text-[11px] text-text-muted font-mono">{fmt(total.net_pnl)} total</span>
+            </div>
+            <div className="flex-1">
+              <PnLBarChart
+                height={200}
+                data={Object.entries(stats?.by_strategy ?? {})
+                  .filter(([, s]) => s.trades > 0)
+                  .map(([name, s]) => ({ label: name, value: Number(s.net_pnl.toFixed(2)) }))
+                  .sort((a, b) => b.value - a.value)
+                  .slice(0, 8)}
+              />
+            </div>
+          </div>
         </div>
       )}
 

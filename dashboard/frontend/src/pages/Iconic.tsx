@@ -42,6 +42,25 @@ interface IconicState {
   scores_all: Record<string, IconicScore>
 }
 
+interface BoardStrength { currency: string; strength: number; scale7: number }
+interface BoardGroupMember { symbol: string; klass: string; score: number; side: string }
+interface BoardGroup {
+  dominant: string; side: string; leader: string | null
+  members: BoardGroupMember[]; rolled_over: boolean
+}
+interface BoardOpen { symbol: string; side: string; dom: string | null; ticket: number }
+interface BoardState {
+  running: boolean
+  updated_at: string | null
+  dry?: boolean
+  n_pairs: number
+  strength: BoardStrength[]
+  groups: BoardGroup[]
+  candidates: IconicSignal[]
+  open: BoardOpen[]
+  managed: Record<string, unknown>[]
+}
+
 interface IconicAgentState {
   mode: string
   live_mode: boolean
@@ -289,25 +308,123 @@ function SignalCard({ sig }: { sig: IconicSignal }) {
   )
 }
 
+// ── BoardPanel — the whole-board view (strength matrix + groups + leaders) ─────
+function StrengthMeter({ rows }: { rows: BoardStrength[] }) {
+  // scale7 in [-7,+7]; render a centered bar
+  return (
+    <div className="space-y-1.5">
+      {rows.map(r => {
+        const pct = Math.min(100, Math.abs(r.scale7) / 7 * 50)   // half-width max
+        const strong = r.scale7 >= 0
+        return (
+          <div key={r.currency} className="flex items-center gap-2">
+            <span className="font-mono text-xs font-semibold w-10 shrink-0">{r.currency}</span>
+            <div className="relative flex-1 h-3 rounded bg-white/[0.04] ring-1 ring-border">
+              <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/20" />
+              <div
+                className={`absolute top-0 bottom-0 ${strong ? 'bg-emerald-400/70' : 'bg-rose-400/70'}`}
+                style={strong
+                  ? { left: '50%', width: `${pct}%` }
+                  : { right: '50%', width: `${pct}%` }}
+              />
+            </div>
+            <span className={`font-mono text-[11px] w-12 text-right shrink-0 ${
+              strong ? 'text-emerald-300' : 'text-rose-300'}`}>
+              {r.scale7 >= 0 ? '+' : ''}{r.scale7.toFixed(1)}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function BoardPanel({ board }: { board: BoardState | null }) {
+  if (!board || board.n_pairs === 0) {
+    return (
+      <div className="text-text-tertiary text-sm text-center py-8">
+        Board feed idle — board_trader not running (runs at cutover, or `--dry`).
+      </div>
+    )
+  }
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Strength matrix */}
+      <div>
+        <p className="text-[10px] uppercase tracking-widest font-semibold text-text-muted mb-2">
+          Currency strength (±7) · {board.n_pairs} pairs
+        </p>
+        <StrengthMeter rows={board.strength} />
+      </div>
+      {/* Groups + leaders */}
+      <div>
+        <p className="text-[10px] uppercase tracking-widest font-semibold text-text-muted mb-2">
+          Correlation groups · leader + roll-over
+        </p>
+        <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-0.5">
+          {board.groups.length === 0 && (
+            <p className="text-text-tertiary text-xs py-2">No A/B groups on the board now.</p>
+          )}
+          {board.groups.map(g => (
+            <div key={g.dominant}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/[0.02] ring-1 ring-border">
+              <span className="font-mono text-[11px] font-semibold w-9 shrink-0">{g.dominant}</span>
+              <Badge variant={g.side === 'BUY' ? 'buy' : 'sell'}>{g.side}</Badge>
+              <span className="text-[11px] text-text-secondary flex-1 truncate">
+                leader <span className="text-amber-300 font-mono">{g.leader ?? '—'}</span>
+                <span className="text-text-tertiary"> · {g.members.length} member{g.members.length !== 1 ? 's' : ''}</span>
+              </span>
+              <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ring-1 shrink-0 ${
+                g.rolled_over
+                  ? 'text-emerald-300 bg-emerald-500/10 ring-emerald-500/30'
+                  : 'text-text-muted bg-white/[0.03] ring-border'}`}>
+                {g.rolled_over ? 'ROLLED OVER' : 'no sister'}
+              </span>
+            </div>
+          ))}
+        </div>
+        {board.open.length > 0 && (
+          <div className="mt-3">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-text-muted mb-1.5">
+              Open book ({board.open.length})
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {board.open.map(o => (
+                <span key={o.ticket}
+                  className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/[0.03] ring-1 ring-border">
+                  {o.symbol} <span className={o.side === 'BUY' ? 'text-emerald-300' : 'text-rose-300'}>{o.side}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function Iconic() {
   const [state, setState]       = useState<IconicState | null>(null)
   const [history, setHistory]   = useState<IconicSignal[]>([])
   const [agent, setAgent]       = useState<IconicAgentState | null>(null)
+  const [board, setBoard]       = useState<BoardState | null>(null)
 
   useEffect(() => {
     let dead = false
     const load = async () => {
       try {
-        const [r1, r2, r3] = await Promise.all([
+        const [r1, r2, r3, r4] = await Promise.all([
           apiFetch('/iconic/state').then(r => r.ok ? r.json() : null),
           apiFetch('/iconic/signals?limit=30').then(r => r.ok ? r.json() : null),
           apiFetch('/iconic/agent').then(r => r.ok ? r.json() : null),
+          apiFetch('/iconic/board').then(r => r.ok ? r.json() : null),
         ])
         if (dead) return
         if (r1) setState(r1 as IconicState)
         if (r2) setHistory((r2 as { signals: IconicSignal[] }).signals || [])
         if (r3) setAgent(r3 as IconicAgentState)
+        if (r4) setBoard(r4 as BoardState)
       } catch { /* ignore */ }
     }
     load()
@@ -374,6 +491,11 @@ export function Iconic() {
           </div>
         ))}
       </div>
+
+      {/* Whole-board view — strength matrix + correlation groups + leaders */}
+      <Panel i={-2} title={`Board${board?.dry ? ' · dry-observe' : ''}${board?.updated_at ? ' · ' + fmtTime(board.updated_at) : ''}`}>
+        <BoardPanel board={board} />
+      </Panel>
 
       {/* Agent status panel */}
       <Panel i={-1} title="Live Agent">

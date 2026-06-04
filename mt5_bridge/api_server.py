@@ -384,6 +384,7 @@ def _deal_to_dict(d) -> dict:
 def history_deals_range(
     from_: Optional[int] = Query(None, alias="from"),
     to: Optional[int] = None,
+    days: Optional[int] = None,
     x_api_key: Optional[str] = Header(None),
 ):
     """All deals in a unix-time range. Mirrors mt5.history_deals_get(from, to).
@@ -394,7 +395,11 @@ def history_deals_range(
         raise HTTPException(503, "MT5 not connected")
     now = datetime.now(timezone.utc)
     dt_to = datetime.fromtimestamp(to, tz=timezone.utc) if to else now
-    dt_from = datetime.fromtimestamp(from_, tz=timezone.utc) if from_ else now - timedelta(days=90)
+    # Honor ?days=N as a convenience window (used by ad-hoc/agent "today" queries).
+    # Silently ignoring it returned 90d of history and once looked like a 24h
+    # over-trading spike — keep it explicit. `from`/`to` still win when given.
+    _win = days if (days and days > 0) else 90
+    dt_from = datetime.fromtimestamp(from_, tz=timezone.utc) if from_ else now - timedelta(days=_win)
     with _mt5_lock:
         deals = mt5.history_deals_get(dt_from, dt_to)
     if deals is None:
@@ -501,6 +506,7 @@ def trade_open(req: TradeOpen, x_api_key: Optional[str] = Header(None)):
 
 class TradeClose(BaseModel):
     ticket: int
+    volume: Optional[float] = None    # partial close; None/<=0 → close full position
 
 
 @app.post("/trade/close")
@@ -517,10 +523,20 @@ def trade_close(req: TradeClose, x_api_key: Optional[str] = Header(None)):
     if tick is None:
         raise HTTPException(503, f"No tick: {mt5.last_error()}")
 
+    # Partial close: clamp the requested volume to the symbol's step + the
+    # position's open volume. None/<=0 or >= open volume → full close.
+    vol = float(pos.volume)
+    if req.volume and req.volume > 0:
+        info = mt5.symbol_info(pos.symbol)
+        step = getattr(info, "volume_step", 0.01) or 0.01
+        want = round(float(req.volume) / step) * step
+        if 0 < want < pos.volume:
+            vol = round(want, 2)
+
     close_type = mt5.ORDER_TYPE_SELL if pos.type == mt5.POSITION_TYPE_BUY else mt5.ORDER_TYPE_BUY
     price = tick.bid if close_type == mt5.ORDER_TYPE_SELL else tick.ask
     request = {
-        "action": mt5.TRADE_ACTION_DEAL, "symbol": pos.symbol, "volume": pos.volume,
+        "action": mt5.TRADE_ACTION_DEAL, "symbol": pos.symbol, "volume": vol,
         "type": close_type, "position": pos.ticket, "price": price,
         "deviation": 20, "magic": pos.magic, "comment": "JTCC_close",
         "type_time": mt5.ORDER_TIME_GTC,
@@ -530,7 +546,42 @@ def trade_close(req: TradeClose, x_api_key: Optional[str] = Header(None)):
         raise HTTPException(503, f"order_send None: {mt5.last_error()}")
     return {
         "success": result.retcode == mt5.TRADE_RETCODE_DONE,
-        "ticket": req.ticket, "retcode": result.retcode, "comment": result.comment,
+        "ticket": req.ticket, "closed_volume": vol, "partial": vol < pos.volume,
+        "retcode": result.retcode, "comment": result.comment,
+    }
+
+
+class TradeModify(BaseModel):
+    ticket: int
+    sl: Optional[float] = None
+    tp: Optional[float] = None
+
+
+@app.post("/trade/modify")
+def trade_modify(req: TradeModify, x_api_key: Optional[str] = Header(None)):
+    """Modify a position's SL/TP (used for stop-to-zero and trailing). Keeps the
+    existing level for any field left None."""
+    _check_auth(x_api_key)
+    if not _ensure_mt5():
+        raise HTTPException(503, "MT5 not connected")
+    positions = mt5.positions_get(ticket=req.ticket)
+    if not positions:
+        raise HTTPException(404, f"Position {req.ticket} not found")
+    pos = positions[0]
+    new_sl = float(req.sl) if req.sl is not None else float(pos.sl)
+    new_tp = float(req.tp) if req.tp is not None else float(pos.tp)
+    request = {
+        "action": mt5.TRADE_ACTION_SLTP, "symbol": pos.symbol,
+        "position": pos.ticket, "sl": new_sl, "tp": new_tp,
+        "magic": pos.magic,
+    }
+    result = mt5.order_send(request)
+    if result is None:
+        raise HTTPException(503, f"order_send None: {mt5.last_error()}")
+    return {
+        "success": result.retcode == mt5.TRADE_RETCODE_DONE,
+        "ticket": req.ticket, "sl": new_sl, "tp": new_tp,
+        "retcode": result.retcode, "comment": result.comment,
     }
 
 

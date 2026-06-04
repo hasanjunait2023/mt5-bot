@@ -44,7 +44,10 @@ DEFAULT_CONFIG = {
     "channels": {c: True for c in CHANNELS},
 }
 
-_lock = threading.Lock()
+# RLock (not Lock): load_config() holds this while calling save_config() on the
+# first-run/corrupt path, and save_config() re-acquires it — a plain Lock would
+# self-deadlock the calling thread.
+_lock = threading.RLock()
 _cache: dict | None = None
 _cache_mtime: float = 0.0
 

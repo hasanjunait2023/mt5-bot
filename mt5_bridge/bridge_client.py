@@ -36,6 +36,7 @@ ORDER_TYPE_SELL = 1
 POSITION_TYPE_BUY = 0
 POSITION_TYPE_SELL = 1
 TRADE_ACTION_DEAL = 1
+TRADE_ACTION_SLTP = 2
 ORDER_TIME_GTC = 0
 ORDER_FILLING_FOK = 0
 ORDER_FILLING_IOC = 1
@@ -91,9 +92,24 @@ def _post(path: str, body: dict) -> Optional[dict]:
 
 # ── Lifecycle ────────────────────────────────────────────────────────────────
 def initialize(*args, **kwargs) -> bool:
-    """Bridge is already connected to MT5; just confirm it's reachable."""
-    h = _get("/health")
-    return bool(h and h.get("mt5_initialized"))
+    """Confirm the bridge is reachable — waiting out a short restart window.
+
+    The bridge (wine api_server) occasionally exits and is auto-restarted by the
+    orchestrator within ~15-30s. Failing instantly on the first refused
+    connection makes a (re)starting trader crash-loop (boot does sys.exit(1))
+    and spams "MT5 init failed" alerts for a blip the system already self-heals.
+    Instead, poll /health until MT5 is back, bounded by MT5_BRIDGE_WAIT_SEC so a
+    genuinely-dead bridge still escalates to the caller. Set the env to 0 to
+    restore the old fail-fast behavior.
+    """
+    deadline = time.monotonic() + float(os.getenv("MT5_BRIDGE_WAIT_SEC", "60"))
+    while True:
+        h = _get("/health")
+        if h and h.get("mt5_initialized"):
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(2)
 
 
 def shutdown() -> None:
@@ -217,9 +233,20 @@ def order_send(request: dict):
     """Translate an mt5 order request dict into a bridge POST. Opens go to
     /trade/open (bridge builds the deal); a request carrying "position" is a
     close → /trade/close. Returns an mt5-style result namespace with .retcode."""
-    is_close = "position" in request
-    if is_close:
-        resp = _post("/trade/close", {"ticket": int(request["position"])})
+    if request.get("action") == TRADE_ACTION_SLTP and "position" in request:
+        # SL/TP modify → /trade/modify (stop-to-zero, trailing)
+        body = {"ticket": int(request["position"])}
+        if request.get("sl") is not None:
+            body["sl"] = float(request["sl"])
+        if request.get("tp") is not None:
+            body["tp"] = float(request["tp"])
+        resp = _post("/trade/modify", body)
+    elif "position" in request:
+        # close by ticket; carry volume for a partial close
+        body = {"ticket": int(request["position"])}
+        if request.get("volume"):
+            body["volume"] = float(request["volume"])
+        resp = _post("/trade/close", body)
     else:
         action = "BUY" if request.get("type") == ORDER_TYPE_BUY else "SELL"
         resp = _post("/trade/open", {

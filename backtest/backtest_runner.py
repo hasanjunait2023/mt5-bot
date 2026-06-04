@@ -1728,7 +1728,7 @@ td{{padding:6px;border-bottom:1px solid #eee}} h1{{color:#1a237e}}
 
 
 CPP_SYMBOLS = ["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY"]
-CPP_PARAMS_FILE = os.path.join(os.path.dirname(__file__), "..", "cpp_params.json")
+CPP_PARAMS_FILE = os.path.join(os.path.dirname(__file__), "..", "configs", "cpp_params.json")
 
 
 def load_cpp_params() -> dict:

@@ -9,6 +9,7 @@ const Positions    = lazy(() => import('./pages/Positions').then(m => ({ default
 const History      = lazy(() => import('./pages/History').then(m => ({ default: m.History })))
 const BotsAgents   = lazy(() => import('./pages/BotsAgents').then(m => ({ default: m.BotsAgents })))
 const SystemAgents = lazy(() => import('./pages/SystemAgents').then(m => ({ default: m.SystemAgents })))
+const Fleet        = lazy(() => import('./pages/Fleet').then(m => ({ default: m.Fleet })))
 const Reports      = lazy(() => import('./pages/Reports').then(m => ({ default: m.Reports })))
 const Logs         = lazy(() => import('./pages/Logs').then(m => ({ default: m.Logs })))
 const Settings     = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })))
@@ -38,6 +39,7 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Suspense fallback={<PageLoader />}><Overview /></Suspense>} />
+            <Route path="fleet"     element={<Suspense fallback={<PageLoader />}><Fleet /></Suspense>} />
             <Route path="positions" element={<Suspense fallback={<PageLoader />}><Positions /></Suspense>} />
             <Route path="history"   element={<Suspense fallback={<PageLoader />}><History /></Suspense>} />
             <Route path="bots"      element={<Suspense fallback={<PageLoader />}><BotsAgents /></Suspense>} />

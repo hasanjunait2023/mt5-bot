@@ -139,3 +139,24 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Live-trade highlight ──────────────────────────────────────────────────
+   Cards for agents that currently hold an open position get a breathing,
+   P&L-tinted halo so the eye lands on them instantly. The first shadow layer
+   doubles as the 1px ring (these classes replace the tailwind ring on the
+   card, since both drive box-shadow). Honors prefers-reduced-motion above. */
+@keyframes trade-breathe-profit {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(34,197,94,.40), 0 0 22px -6px rgba(34,197,94,.45); }
+  50%      { box-shadow: 0 0 0 1px rgba(34,197,94,.65), 0 0 44px -2px rgba(34,197,94,.85); }
+}
+@keyframes trade-breathe-loss {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(244,63,94,.40), 0 0 22px -6px rgba(244,63,94,.45); }
+  50%      { box-shadow: 0 0 0 1px rgba(244,63,94,.65), 0 0 44px -2px rgba(244,63,94,.85); }
+}
+@keyframes trade-breathe-accent {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(59,130,246,.40), 0 0 22px -6px rgba(59,130,246,.45); }
+  50%      { box-shadow: 0 0 0 1px rgba(59,130,246,.65), 0 0 44px -2px rgba(59,130,246,.85); }
+}
+.trade-glow-profit { animation: trade-breathe-profit 2.6s ease-in-out infinite; }
+.trade-glow-loss   { animation: trade-breathe-loss   2.6s ease-in-out infinite; }
+.trade-glow-accent { animation: trade-breathe-accent 2.6s ease-in-out infinite; }

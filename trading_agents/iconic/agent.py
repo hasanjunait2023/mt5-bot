@@ -42,6 +42,7 @@ MAGIC           = 20260700          # Iconic Trader magic number
 BARS_H1         = 500               # warmup + lookback
 BARS_M15        = 500
 POLL_INTERVAL_S = 60                # seconds between scans when idle
+NEWS_SYNC_EVERY_S = 3 * 3600        # refresh news calendar (A-class purpose) this often
 PAPER_MIN_TRADES = 20               # min paper trades before promotion
 PAPER_MIN_PF     = 1.3              # min profit factor for promotion
 MAX_TRADES_PER_SYMBOL_DAY = 2
@@ -84,6 +85,24 @@ except Exception:
     _JOURNAL = False
     def _journal_open(*a, **kw): pass   # type: ignore
     def _journal_close(*a, **kw): pass  # type: ignore
+
+
+# ── News calendar sync (feeds A-class STRONG purpose) ───────────────────────────
+try:
+    from trading_agents.iconic.news_sync import sync as _news_sync
+except Exception:
+    _news_sync = None
+
+
+def _sync_news() -> None:
+    if _news_sync is None:
+        return
+    try:
+        n = _news_sync()
+        if n >= 0:
+            log.info("News calendar synced: %d G7 events", n)
+    except Exception:
+        log.warning("News calendar sync failed", exc_info=True)
 
 
 # ── Daily state ───────────────────────────────────────────────────────────────
@@ -420,6 +439,9 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
     from trading_agents.iconic.engine import IconicEngine
     engine = IconicEngine()
 
+    _sync_news()                         # initial pull so A-class can fire from the start
+    _last_news_sync = time.time()
+
     _last_h1_bar: dict[str, int] = {}   # symbol → last processed H1 bar time
 
     log.info("Initial state: paper=%d trades  PF=%.2f  live=%s",
@@ -436,6 +458,11 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
 
             equity = acc.equity
             daily.roll_if_new_day(acc.balance)
+
+            # Refresh the news calendar periodically (A-class STRONG purpose)
+            if time.time() - _last_news_sync >= NEWS_SYNC_EVERY_S:
+                _sync_news()
+                _last_news_sync = time.time()
 
             # Daily DD guard
             dd_pct = daily.daily_loss_pct(equity)
@@ -596,6 +623,21 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
+
+    # Cutover hook: when ICONIC_BOARD is set (.env), this service runs the
+    # whole-board system instead of the single-pair USDCAD agent. Read .env
+    # directly so a freshly-set flag is honored without an orchestrator restart.
+    try:
+        from dotenv import dotenv_values
+        _flag = (dotenv_values(BASE_DIR / ".env").get("ICONIC_BOARD")
+                 or os.getenv("ICONIC_BOARD", ""))
+    except Exception:
+        _flag = os.getenv("ICONIC_BOARD", "")
+    if str(_flag).strip() in ("1", "true", "True", "yes"):
+        log.info("ICONIC_BOARD set — delegating to board_trader (whole-board system)")
+        from trading_agents.iconic.board_trader import run as board_run
+        board_run(once=False, dry=False)
+        return
 
     run(args.symbols, args.risk, args.dd, args.paper)
 

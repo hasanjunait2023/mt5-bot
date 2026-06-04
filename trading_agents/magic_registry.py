@@ -15,8 +15,12 @@ from __future__ import annotations
 AGENT_MAGICS: dict[int, str] = {
     20260100: "mtf_live",   # MTF EMA scalper
     20260600: "jtcc",       # JTCC ICT/SMC
-    20260700: "iconic",     # Iconic / Urban Forex
+    20260700: "iconic",     # Iconic / Urban Forex (RESERVED — a one-off NGS/NextGenSync
+                            # Grid live-test reused this magic 2026-05-20/21 then was
+                            # deleted; do NOT reuse 20260700 for anything but iconic)
     20260522: "scalp",      # Gold Scalp (GS11/GS07/GS01/GS12 — all share this magic)
+    20260603: "gsvp",       # GS-VP adaptive volume-profile scalp
+    20260800: "asia_fade",  # Asia Desk — Asian Range Fade (S1)
 }
 
 # MT5 Expert Advisors (compiled .mq5, separate from the python agents).

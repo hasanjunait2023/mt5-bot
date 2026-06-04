@@ -53,5 +53,5 @@ foreach ($item in $questions) {
 }
 
 Write-Host "`n=== ALL DONE ===" -ForegroundColor Green
-$outFile = Join-Path "C:\Users\Junait\mt5 bot" "goldscalp_research.md"
+$outFile = Join-Path "C:\Users\Junait\mt5 bot\docs" "goldscalp_research.md"
 Write-Host "Output: $outFile" -ForegroundColor Cyan

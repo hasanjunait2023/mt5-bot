@@ -14,6 +14,7 @@ STATE_PATH   = BASE_DIR / "logs" / "iconic" / "_iconic_state.json"
 EVENTS_PATH  = BASE_DIR / "logs" / "iconic" / "_iconic_events.jsonl"
 AGENT_PATH   = BASE_DIR / "logs" / "iconic" / "_agent_state.json"
 PAPER_PATH   = BASE_DIR / "logs" / "iconic" / "_paper_trades.jsonl"
+BOARD_PATH   = BASE_DIR / "logs" / "iconic" / "_board_state.json"
 
 # Scalp agent paths (logs/iconic_scalp/)
 SCALP_AGENT_PATH = BASE_DIR / "logs" / "iconic_scalp" / "_agent_state.json"
@@ -56,6 +57,17 @@ def get_iconic_state():
         "updated_at": None,
         "signals_live": {},
         "scores_all": {},
+    })
+
+
+@router.get("/iconic/board")
+def get_iconic_board():
+    """Whole-board view: 8-currency strength matrix, correlation groups + leaders,
+    candidate leaders (after hard group roll-over), open book, and management
+    actions. Written by board_trader (the board-level system)."""
+    return _read_json(BOARD_PATH, {
+        "running": False, "updated_at": None, "n_pairs": 0,
+        "strength": [], "groups": [], "candidates": [], "open": [], "managed": [],
     })
 
 

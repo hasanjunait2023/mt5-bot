@@ -76,7 +76,18 @@ class IconicEngine:
         self._rr_b = rr_b
 
     def evaluate(self, snapshots: dict, strength: dict, *,
-                 now: Optional[datetime] = None) -> list[IconicTradeSignal]:
+                 now: Optional[datetime] = None,
+                 leaders_only: bool = False,
+                 require_group_rollover: bool = False) -> list[IconicTradeSignal]:
+        """Evaluate the board into actionable signals.
+
+        leaders_only            — emit only the group leader of each currency
+                                  group (the board-system behaviour). Default
+                                  False keeps the per-pair agent's behaviour.
+        require_group_rollover  — HARD-gate the leader on a confirming sister
+                                  (≥2 A/B in the group same side). Default False
+                                  keeps the old SOFT behaviour (flag, don't cancel).
+        """
         now = now or datetime.now(timezone.utc)
         scores = self.scorer.classify_group(snapshots, strength, now=now)
 
@@ -95,15 +106,19 @@ class IconicEngine:
             sc = scores.get(sym)
             if sc is None or sc.klass not in ("A", "B"):
                 continue
+            if leaders_only and not sc.is_leader:
+                continue
             # Group roll-over gate (course Q6 step 6): leader should have at
             # least one sister pair also A/B class agreeing with the direction.
-            # Soft gate: downgrades signal to note, does NOT cancel — the agent
-            # is in paper-trade mode and we need trade data to validate.
             if sc.is_leader:
                 base, quote = split_pair(sym)
                 dom = base if abs(sc.base7) >= abs(sc.quote7) else quote
                 group = ab_by_dom.get(dom, [])
                 if len(group) < 2:
+                    if require_group_rollover:
+                        # HARD gate (board system): no sister → not a real
+                        # group roll-over → stand aside.
+                        continue
                     sc.flags.append("⚠️ No sister pair confirms — group roll-over unverified")
             sig = self._build(sym, snap, sc)
             if sig is not None:

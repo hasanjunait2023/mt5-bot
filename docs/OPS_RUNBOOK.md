@@ -41,8 +41,32 @@ health-checks, and auto-restarts on death. To see "who trades & why not":
 
 Key ports / endpoints:
 - Bridge (MT5 over HTTP): `http://localhost:8090` — `/health`, `/reconciler/status`
+
+**Counting "today's trades" — use `?days=N`, not the default.** `GET /history/deals`
+defaults to **90 days** of history. It now also accepts `?days=N` (e.g. `?days=1`
+for the last 24h); `from`/`to` unix params still override. Before this was added,
+passing an unknown param was silently ignored and returned all 90 days — which once
+read as a 2430-deal "Iconic over-trading" spike that was really a 3-week history dump
+dominated by a one-off NGS/NextGenSync Grid gold-grid live-test (magic 20260700, comment
+`NGS_Grid`) from 2026-05-20/21 that was deleted. To check real recent activity, filter
+by `?days=1` or by timestamp; magic 20260700 is iconic (RESERVED — see
+`trading_agents/magic_registry.py`), and iconic is restricted to USDCAD, ~0-2 trades/day.
 - Dashboard backend: port `8000`/`8010`
 - systemd units restarted on deploy: `mt5-dashboard`, `mt5-telegram`
+
+**Bridge blips self-heal — don't panic on a one-off "Live Trader offline" alert.**
+The wine `api_server` exits occasionally; the orchestrator restarts it in ~15-30s
+(`logs/orch.out`: `[bridge] UNHEALTHY (process exited)` → `started` → `healthy`).
+Traders now ride this out instead of crash-looping: `bridge_client.initialize()`
+polls `/health` for up to `MT5_BRIDGE_WAIT_SEC` (default 60s) before giving up, so a
+(re)starting trader waits for the bridge rather than `sys.exit(1)`-ing. Alerting
+matches: `log_tailer` no longer pages CRITICAL on every ERROR line — transient
+connection errors (HTTPConnectionPool / "MT5 init failed" / reconnect) only page
+(as WARNING) if they persist past `TRANSIENT_GRACE_SEC` (120s); a blip that
+self-heals inside that window pages nothing. Hard errors still page CRITICAL once,
+then cool down 15 min. So: a single "offline" blip that clears = expected, no action.
+If `[bridge] UNHEALTHY` repeats every few minutes, the wine terminal is genuinely
+unstable — check memory/load and restart the bridge (below).
 
 ## Deploy
 

@@ -64,3 +64,4 @@ graphify-out/manifest.json
 graphify-out/cache/
 graphify-out/cost.json
 backtest/_cache/
+.gstack/

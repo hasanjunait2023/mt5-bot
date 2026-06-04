@@ -14,7 +14,7 @@
   "max_daily_loss_pct": 0.03,
   "max_drawdown_pct": 0.20,
   "cpp": {
-    "_doc": "Unified Confluence Pullback Portfolio. CPP-FX runs the Python cpp_live_trader on these FX pairs; Gold/Silver are covered by the validated MQL5 EAs (S1/S15/S18) on the same account. The 6% daily-DD breaker in cpp_live_trader is account-wide so it protects ALL strategies. Strategy params live in cpp_params.json.",
+    "_doc": "Unified Confluence Pullback Portfolio. CPP-FX runs the Python cpp_live_trader on these FX pairs; Gold/Silver are covered by the validated MQL5 EAs (S1/S15/S18) on the same account. The 6% daily-DD breaker in cpp_live_trader is account-wide so it protects ALL strategies. Strategy params live in configs/cpp_params.json.",
     "fx_symbols": ["EURUSD", "GBPUSD", "USDJPY"],
     "metals_routed_to": {"XAUUSD": ["S1", "S15", "S18"], "XAGUSD": ["S1", "S15"]},
     "rr_ratio": 2.0,

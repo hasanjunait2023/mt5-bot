@@ -9,7 +9,7 @@ const SERVER =
   "C:/Users/Junait/AppData/Local/npm-cache/_npx/0d29dd9f4e472da9/node_modules/notebooklm-mcp/dist/index.js";
 const NOTEBOOK_URL =
   "https://notebooklm.google.com/notebook/a8beab3a-f26b-44ae-a9dc-31167864935d";
-const OUT = "C:/Users/Junait/mt5 bot/goldscalp_research.md";
+const OUT = "C:/Users/Junait/mt5 bot/docs/goldscalp_research.md";
 
 const QUESTIONS = [
   // Q1 - Inventory of sources

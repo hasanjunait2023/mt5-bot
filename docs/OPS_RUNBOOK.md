@@ -54,6 +54,15 @@ SSH to VPS → `git pull` → `pip install -r requirements-server.txt` →
 the agent orchestrator**. After a change to the bridge/agents you must restart
 them on the VPS yourself (see below).
 
+**Definition of done = verified on the VPS.** The VPS is the live runner; local is
+down. A change is not finished when committed locally — it is finished when the
+file is on the VPS and the affected service is restarted and confirmed running the
+new code (new PID + state/log reflects it). VPS repo is ~24 commits behind and
+heavily dirty (live state/cache files), so do **NOT** blanket `git pull`; copy only
+the changed code files with `scp` and restart the affected agent. Agents respawn
+automatically when killed — `pkill -f 'trading_agents.<mod>.agent'` then verify a
+new PID with `pgrep -af`.
+
 ## Common procedures (on the VPS)
 
 ```bash

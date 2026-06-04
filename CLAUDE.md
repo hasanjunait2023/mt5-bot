@@ -1,3 +1,14 @@
+## VPS is the target (definition of done)
+
+The live system runs on the **VPS** (`trader@72.62.228.196`), not locally — the
+local stack is down by choice. Therefore **every change targets the VPS**: a task
+is NOT done until the change is deployed to the VPS *and verified running there*.
+"Committed locally" or "works locally" is not done. After any code/config change,
+confirm it took effect on the VPS (file present, service restarted, new PID,
+state/log reflects it). Deploy gotchas (auto-deploy restarts only dashboard +
+telegram; agents/bridge need manual restart; VPS repo is behind + dirty so NO
+blanket `git pull` — copy only changed files): see `docs/OPS_RUNBOOK.md`.
+
 ## Operations
 
 For anything operational — VPS access/deploy, account info, service list, restart

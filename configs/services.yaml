@@ -137,12 +137,16 @@ services:
   - id: asia_fade
     name: Asia Desk (Asian Range Fade)
     group: mt5
-    # Asian-session mean reversion on JPY pairs. Validated 2.1yr M15 real-cost:
-    # USDJPY PF 1.60/oos 1.46, AUDJPY 1.47/oos 1.40 (non-JPY had no edge).
-    # Trades 02:00-07:00 UTC, flattens before London. See trading_agents/asia_desk/.
+    # Asian-session mean-reversion fade with ATR(14) stop. Validated 2.1yr M15
+    # real-cost: XAUUSD 2.15/oos 2.23 (best), BTCUSD 1.72/1.71, AUDJPY 1.56/1.44,
+    # USDJPY 1.57/1.49, XAGUSD 1.54/2.08, EURJPY 1.36/1.32, GBPJPY 1.27/1.04.
+    # Breakout/sweep/ICT/ORB families all FAILED. Trades 02:00-07:00 UTC, flattens
+    # before London. Runs standalone+cron watchdog on VPS (start_vps.sh would
+    # duplicate the stack); this entry is for a clean orchestrator restart.
     profiles: [vps, linux]
     cmd: [python, -m, trading_agents.asia_desk.agent,
-          --pairs, USDJPY, AUDJPY, --risk, "0.5"]
+          --pairs, XAUUSD, BTCUSD, AUDJPY, USDJPY, XAGUSD, EURJPY, GBPJPY,
+          --risk, "0.5"]
     health: {type: file, path: "logs/asia_desk/_state.json", max_age: 1200, grace: 120}
     depends_on: [bridge]
 
@@ -171,7 +175,7 @@ services:
     name: Maic CEO Telegram Bot
     group: core
     profiles: [vps, linux]
-    cmd: [python, telegram_bot.py]
+    cmd: [python, -m, trading_agents.telegram_bot]
     health: {type: process}
     depends_on: [bridge]
 

@@ -150,6 +150,18 @@ services:
     health: {type: file, path: "logs/asia_desk/_state.json", max_age: 1200, grace: 120}
     depends_on: [bridge]
 
+  - id: confluence
+    name: Confluence Desk (S13 + S19)
+    group: mt5
+    # Two EAs that passed a 2-year MT5 Strategy Tester backtest, ported to python.
+    # S13 5-Way Confluence (XAUUSD H1, ST PF 1.56) — port re-validated PF 1.48 → LIVE.
+    # S19 Confluence Pullback (EURUSD M15, ST PF 1.47) — port PF 0.81 → HELD in code
+    # until the ADX/Stoch math reconciles. Demo-execute via the bridge shim.
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.confluence_desk.agent, --risk, "0.5", --dd, "6.0"]
+    health: {type: file, path: "logs/confluence/_agent_state.json", max_age: 600, grace: 180}
+    depends_on: [bridge]
+
   # ── Strategy Factory (YouTube → research → codegen → backtest → demo soak) ────
   - id: factory_runner
     name: Strategy Factory Runner

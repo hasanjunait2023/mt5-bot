@@ -57,6 +57,8 @@ AGENTS = [
      "magic": 20260603, "orch_id": "gsvp",       "state": BASE_DIR / "logs/scalp/_gsvp_agent_state.json", "pairs": []},
     {"id": "asia_fade", "name": "Asia Desk",     "strategy": "Asian Range Fade (S1)",
      "magic": 20260800, "orch_id": "asia_fade",  "state": BASE_DIR / "logs/asia_desk/_state.json",        "pairs": []},
+    {"id": "confluence", "name": "Confluence Desk", "strategy": "S13 5-Way + S19 Pullback",
+     "magic": 20261300, "orch_id": "confluence", "state": BASE_DIR / "logs/confluence/_agent_state.json", "pairs": ["XAUUSD", "GBPUSD", "USDJPY"]},
 ]
 
 _CACHE_TTL_S = 2.0
@@ -205,8 +207,11 @@ def _build(period: str, from_: Optional[int], to: Optional[int]):
         age = _age_sec(a["state"])
         svc = orch_by_id.get(a["orch_id"], {})
         orch_status = svc.get("status", "unknown")
+        # A fresh state file (<120s) means the agent's loop is alive and writing —
+        # trust that as "live" even for standalone (non-orchestrator) agents like
+        # asia_fade / confluence. Orchestrator status is the fallback signal.
         fresh = age is not None and age < 120
-        health = "live" if (orch_status == "running" and fresh) else \
+        health = "live" if fresh else \
                  "warning" if orch_status in ("running", "starting") else "offline"
 
         magic = a["magic"]

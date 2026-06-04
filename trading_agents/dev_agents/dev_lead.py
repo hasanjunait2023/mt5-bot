@@ -40,7 +40,7 @@ BASE_DIR = Path(__file__).parent.parent.parent
 
 SYSTEM_PROMPT = """You are DevLead, engineering team lead for the FX Vault MT5 Bot.
 
-You manage 7 specialized dev agents. When given a task, determine which agent(s) to invoke and in what order.
+You manage 8 specialized dev agents. When given a task, determine which agent(s) to invoke and in what order.
 
 Available agents:
 - monitor: Check live system health (MonitorAgent)
@@ -50,6 +50,9 @@ Available agents:
 - debug: Debug a strategy issue (DebugInvestigatorAgent) — needs: strategy name + symptom
 - ea_sync: Check Python/EA parameter sync (EASyncAgent) — needs: strategy name or "all"
 - doc_keeper: Update docstrings (DocKeeperAgent) — needs: scope
+- restart: Restart a dead/stuck/stale managed service via the orchestrator — the ONLY way to fix a process that is "not running", crashed, or whose state file is stale — needs: service (e.g. jtcc, ea_coach, mtf_live, iconic, gsvp)
+
+When an issue says a component is "not running", "down", "crashed", "stuck", or its state file is "stale", pick the restart agent with that component as the service.
 
 Respond ONLY in JSON:
 {
@@ -144,6 +147,47 @@ def _run_doc_keeper(params: dict, client: anthropic.Anthropic) -> str:
     return f"DocKeeper: added {count} docstrings in {scope}"
 
 
+def _run_restart(params: dict, client: anthropic.Anthropic) -> str:
+    """Restart a dead/stuck managed service via the orchestrator. The dev team's
+    only infra actuator: writes a restart request the orchestrator consumes on
+    its next tick, then waits for the service to come back."""
+    import json as _json, time as _time
+    service = (params.get("service") or params.get("component") or "").strip()
+    if not service:
+        return "Restart: missing 'service' param"
+    orch_state = BASE_DIR / "logs" / "_orchestrator_state.json"
+    req_file = BASE_DIR / "logs" / "_restart_requests.json"
+    known = []
+    try:
+        d = _json.loads(orch_state.read_text(encoding="utf-8"))
+        known = [str(s.get("id")) for s in d.get("services", [])]
+    except Exception:
+        pass
+    if known and service not in known:
+        match = next((k for k in known if service in k or k in service), None)
+        if not match:
+            return f"Restart: unknown service '{service}' (known: {', '.join(known)})"
+        service = match
+    try:
+        existing = []
+        if req_file.exists():
+            existing = _json.loads(req_file.read_text(encoding="utf-8") or "[]")
+        existing.append({"service": service, "by": "dev_lead"})
+        req_file.write_text(_json.dumps(existing), encoding="utf-8")
+    except Exception as e:
+        return f"Restart: request write problem: {e}"
+    for _ in range(12):  # up to ~60s (orchestrator tick ~30s)
+        _time.sleep(5)
+        try:
+            d = _json.loads(orch_state.read_text(encoding="utf-8"))
+            svc = next((s for s in d.get("services", []) if str(s.get("id")) == service), None)
+            if svc and svc.get("pid") and svc.get("status") in ("running", "starting"):
+                return f"Restart: {service} back up (pid {svc.get('pid')}, status {svc.get('status')})"
+        except Exception:
+            pass
+    return f"Restart: requested {service}; orchestrator will keep retrying until healthy"
+
+
 AGENT_HANDLERS = {
     "monitor": _run_monitor,
     "backtest": _run_backtest,
@@ -152,6 +196,7 @@ AGENT_HANDLERS = {
     "debug": _run_debug,
     "ea_sync": _run_ea_sync,
     "doc_keeper": _run_doc_keeper,
+    "restart": _run_restart,
 }
 
 

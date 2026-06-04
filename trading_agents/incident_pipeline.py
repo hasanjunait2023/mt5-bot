@@ -209,11 +209,53 @@ def _ceo_resolve(inc: Incident) -> tuple[str, bool]:
     try:
         from trading_agents.dev_agents.dev_lead import run_task
         out = run_task(task)
-        ok = not any(w in str(out).lower()
-                     for w in ("failed", "error:", "could not", "exception"))
+        kw_ok = not any(w in str(out).lower()
+                        for w in ("failed", "error:", "could not", "exception"))
+        verified = _verify_resolved(inc.component)
+        ok = kw_ok if verified is None else verified
         return (str(out)[:1500], ok)
     except Exception as e:
         return (f"dev team delegation error: {e}", False)
+
+
+_ORCH_STATE = _BASE / "logs" / "_orchestrator_state.json"
+# component substring -> (heartbeat file, max fresh minutes). Only files known
+# to exist; absent means "process-alive is enough".
+_STATE_FRESH = {
+    "jtcc":     ("logs/jtcc/_jtcc_state.json", 5),
+    "ea_coach": ("logs/ea_agents/_coach_state.json", 720),
+}
+
+
+def _verify_resolved(component):
+    """Confirm a component is ACTUALLY healthy from real system state rather than
+    trusting the wording of the dev-team report. Returns True/False when state is
+    determinable, else None (caller falls back to the text heuristic)."""
+    import os as _os, time as _time
+    comp = (component or "").lower()
+    proc_ok = None
+    try:
+        d = _read_json(_ORCH_STATE, {})
+        for s in (d.get("services", []) if isinstance(d, dict) else []):
+            sid = str(s.get("id", "")).lower()
+            if sid and (sid in comp or comp in sid):
+                proc_ok = s.get("status") in ("running", "starting") and bool(s.get("pid"))
+                break
+    except Exception:
+        pass
+    fresh_ok = None
+    for key, (rel, max_min) in _STATE_FRESH.items():
+        if key in comp:
+            fp = _BASE / rel
+            try:
+                if fp.exists():
+                    fresh_ok = ((_time.time() - _os.path.getmtime(fp)) / 60.0) <= max_min
+            except Exception:
+                pass
+            break
+    if proc_ok is None and fresh_ok is None:
+        return None
+    return all(v for v in (proc_ok, fresh_ok) if v is not None)
 
 
 # ───────────────────────── public entrypoint ─────────────────────────

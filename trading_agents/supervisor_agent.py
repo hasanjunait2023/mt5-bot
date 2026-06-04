@@ -48,6 +48,27 @@ JTCC_LATENCY     = BASE_DIR / "logs" / "jtcc" / "_jtcc_latency.json"
 JTCC_COACH       = BASE_DIR / "logs" / "jtcc" / "_jtcc_coach.json"
 SUPERVISOR_LOG   = BASE_DIR / "logs" / "supervisor_report.json"
 SUPERVISOR_HIST  = BASE_DIR / "logs" / "supervisor_history.json"
+ORCH_STATE       = BASE_DIR / "logs" / "_orchestrator_state.json"
+
+
+def _orch_considers_healthy(component: str, max_state_age_s: int = 120) -> bool:
+    """True if the orchestrator (more authoritative than this snapshot)
+    shows a service matching `component` starting/running with a live pid.
+    Used to drop boot-race false positives before escalating."""
+    comp = (component or "").lower()
+    if not comp:
+        return False
+    try:
+        if time.time() - ORCH_STATE.stat().st_mtime > max_state_age_s:
+            return False  # stale orchestrator state — do not trust it
+        d = _read_json(ORCH_STATE)
+        for s in (d.get("services", []) if isinstance(d, dict) else []):
+            sid = str(s.get("id", "")).lower()
+            if sid and (sid in comp or comp in sid):
+                return s.get("status") in ("starting", "running") and bool(s.get("pid"))
+    except Exception:
+        pass
+    return False
 
 DEFAULT_INTERVAL_HOURS = 10
 
@@ -392,6 +413,15 @@ def run_audit(client: anthropic.Anthropic) -> dict:
     # 3. escalate issues that need dev team
     dev_results = {}
     dev_issues = [i for i in issues if i.get("needs_dev_team")]
+    # Drop boot-timing false positives: if the orchestrator already shows the
+    # component alive, a "down/stale" reading is just a race with startup —
+    # escalating it to the dev team only manufactures phantom incidents.
+    _phantom = [i for i in dev_issues if _orch_considers_healthy(i.get("component", ""))]
+    if _phantom:
+        for i in _phantom:
+            log.info("  Skipping phantom escalation [%s] — orchestrator shows it healthy",
+                     i.get("component"))
+        dev_issues = [i for i in dev_issues if i not in _phantom]
     if dev_issues:
         log.info("Escalating %d issue(s) to dev team...", len(dev_issues))
         _notify(

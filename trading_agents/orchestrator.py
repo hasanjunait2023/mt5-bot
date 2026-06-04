@@ -46,6 +46,7 @@ except Exception:
 
 CONFIG = BASE_DIR / "configs" / "services.yaml"
 STATE_FILE = BASE_DIR / "logs" / "_orchestrator_state.json"
+RESTART_REQ = BASE_DIR / "logs" / "_restart_requests.json"
 LOCK_FILE = BASE_DIR / "logs" / "_orchestrator.lock"
 SVC_LOG_DIR = BASE_DIR / "logs" / "services"
 
@@ -382,6 +383,7 @@ class Orchestrator:
                     if self._stop:
                         break
                     svc.check()
+                self._process_restart_requests()
                 self._write_state()
                 for _ in range(int(self.interval)):
                     if self._stop:
@@ -402,6 +404,38 @@ class Orchestrator:
         except Exception:
             pass
         _log("orchestrator down")
+
+    def _process_restart_requests(self) -> None:
+        """Honour external restart requests (dev-team incident pipeline writes
+        logs/_restart_requests.json: a list of {"service": <id>}). Fail-safe:
+        any error is swallowed so the supervise loop never dies."""
+        try:
+            if not RESTART_REQ.exists():
+                return
+            raw = RESTART_REQ.read_text(encoding="utf-8").strip()
+            RESTART_REQ.unlink(missing_ok=True)  # consume immediately
+            reqs = json.loads(raw) if raw else []
+        except Exception as e:
+            _log(f"restart-request read failed: {e}")
+            try:
+                RESTART_REQ.unlink(missing_ok=True)
+            except Exception:
+                pass
+            return
+        if not isinstance(reqs, list):
+            return
+        wanted = {str(r.get("service")) for r in reqs
+                  if isinstance(r, dict) and r.get("service")}
+        for svc in self.services:
+            if svc.id in wanted:
+                try:
+                    _log(f"[{svc.id}] external restart requested")
+                    svc.stop()
+                    svc.fails = 0
+                    svc.start()
+                    svc.restarts += 1
+                except Exception as e:
+                    _log(f"[{svc.id}] external restart failed: {e}")
 
     def _write_state(self):
         STATE_FILE.parent.mkdir(parents=True, exist_ok=True)

@@ -1,30 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import clsx from 'clsx'
-import { Icon, type IconName } from '../ui/Icon'
-
-const NAV: { to: string; label: string; icon: IconName }[] = [
-  { to: '/',          label: 'Overview',        icon: 'overview' },
-  { to: '/strategy',  label: 'Strategy Perf',   icon: 'reports' },
-  { to: '/positions', label: 'Positions',       icon: 'positions' },
-  { to: '/history',   label: 'History',         icon: 'history' },
-  { to: '/bots',      label: 'Bots & Agents',   icon: 'bots' },
-  { to: '/system',    label: 'System Agents',   icon: 'system' },
-  { to: '/pending',   label: 'Pending & Stalled', icon: 'logs' },
-  { to: '/reports',   label: 'Reports',         icon: 'reports' },
-  { to: '/logs',      label: 'Logs',            icon: 'logs' },
-  { to: '/eas',       label: 'Expert Advisors', icon: 'eas' },
-  { to: '/cpp',       label: 'CPP Portfolio',   icon: 'reports' },
-  { to: '/jtcc',      label: 'JTCC Signals',     icon: 'bots' },
-  { to: '/signals',   label: 'Signals',          icon: 'system' },
-  { to: '/desk',      label: 'Alpha Desk',       icon: 'reports' },
-  { to: '/iconic',    label: 'Iconic Trader',    icon: 'bots' },
-  { to: '/asia',      label: 'Asia Desk',        icon: 'bots' },
-  { to: '/scalp',     label: 'Gold Scalp',       icon: 'bots' },
-  { to: '/vp',        label: 'Volume Profile',   icon: 'reports' },
-  { to: '/journal',   label: 'Trade Journal',    icon: 'history' },
-  { to: '/telegram',  label: 'Telegram HQ',     icon: 'telegram' },
-  { to: '/settings',  label: 'Settings',        icon: 'settings' },
-]
+import { Icon } from '../ui/Icon'
+import { NAV } from './navItems'
 
 export function Sidebar() {
   return (

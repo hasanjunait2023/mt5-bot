@@ -33,7 +33,9 @@ RANGE_H0, RANGE_H1 = 0, 2             # Asian range build window (UTC)
 ENTRY_H0, ENTRY_H1 = 2, 7            # entry window (UTC)
 FLATTEN_H = 7                         # force-close all positions at/after this UTC hour
 TP_FRAC = 0.70                        # target = this fraction of range width
-SL_PIPS = 12                          # stop beyond the range edge
+SL_PIPS = 12                          # (legacy) fixed-pip stop, JPY only
+SL_ATR = 1.0                          # volatility stop: SL = edge ∓ SL_ATR*ATR(14)
+                                      # — required so gold/silver/BTC stops scale to price
 
 STATE_DIR = BASE_DIR / "logs" / "asia_desk"
 STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -59,7 +61,8 @@ except Exception:
     def _journal_close(*a, **kw): pass
 
 PIP = {"USDJPY": 0.01, "AUDJPY": 0.01, "EURJPY": 0.01, "GBPJPY": 0.01,
-       "NZDJPY": 0.01, "AUDUSD": 0.0001}
+       "NZDJPY": 0.01, "AUDUSD": 0.0001, "XAUUSD": 0.1, "XAGUSD": 0.01,
+       "BTCUSD": 1.0}
 
 
 def _pip(sym):
@@ -73,6 +76,12 @@ def rsi(s, n=14):
     return (100 - 100 / (1 + up / dn.replace(0, np.nan))).fillna(50)
 
 
+def atr(df, n=14):
+    h, l, c = df["high"], df["low"], df["close"].shift()
+    tr = pd.concat([h - l, (h - c).abs(), (l - c).abs()], axis=1).max(axis=1)
+    return tr.ewm(alpha=1/n, adjust=False).mean()
+
+
 def get_m15(mt5, symbol, count=400):
     rates = mt5.copy_rates_from_pos(symbol, "M15", 0, count)
     if rates is None or len(rates) == 0:
@@ -82,6 +91,7 @@ def get_m15(mt5, symbol, count=400):
     df["hour"] = df["ts"].dt.hour
     df["date"] = df["ts"].dt.date
     df["rsi"] = rsi(df["close"])
+    df["atr"] = atr(df)
     return df
 
 
@@ -218,7 +228,7 @@ def secs_to_next_m15():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pairs", nargs="+", default=["USDJPY", "AUDJPY"])
+    ap.add_argument("--pairs", nargs="+", default=["XAUUSD", "BTCUSD", "AUDJPY", "USDJPY"])
     ap.add_argument("--risk", type=float, default=0.5)
     ap.add_argument("--max-td", type=int, default=4, help="max entries/symbol/day")
     ap.add_argument("--dry", action="store_true", help="log signals, place NO orders")
@@ -283,14 +293,15 @@ def main():
                         if width <= 0 or has_open(mt5, sym) or daily.get(sym, 0) >= args.max_td:
                             continue
                         last = df.iloc[-1]
-                        if not (30 <= last["rsi"] <= 70):
+                        a = last["atr"]
+                        if not (30 <= last["rsi"] <= 70) or a <= 0 or a != a:
                             continue
-                        pip = _pip(sym)
+                        # volatility-scaled stop (works across FX/metals/crypto)
                         if last["low"] <= lo:          # touch support → long
-                            if place_order(mt5, sym, 1, lo - SL_PIPS * pip, lo + TP_FRAC * width, args.risk):
+                            if place_order(mt5, sym, 1, lo - SL_ATR * a, lo + TP_FRAC * width, args.risk):
                                 daily[sym] = daily.get(sym, 0) + 1
                         elif last["high"] >= hi:       # touch resistance → short
-                            if place_order(mt5, sym, -1, hi + SL_PIPS * pip, hi - TP_FRAC * width, args.risk):
+                            if place_order(mt5, sym, -1, hi + SL_ATR * a, hi - TP_FRAC * width, args.risk):
                                 daily[sym] = daily.get(sym, 0) + 1
                     except Exception as e:
                         log.error(f"  {sym}: {e}")

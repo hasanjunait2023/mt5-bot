@@ -22,12 +22,12 @@ LIMIT = 50000
 PIP = {"USDJPY": 0.01, "AUDUSD": 0.0001, "GBPUSD": 0.0001, "AUDJPY": 0.01,
        "NZDJPY": 0.01, "NZDUSD": 0.0001, "XAUUSD": 0.1,
        "EURUSD": 0.0001, "USDCHF": 0.0001, "USDCAD": 0.0001, "EURJPY": 0.01,
-       "GBPJPY": 0.01, "EURGBP": 0.0001}
+       "GBPJPY": 0.01, "EURGBP": 0.0001, "XAGUSD": 0.01, "BTCUSD": 1.0}
 # round-trip cost in PRICE units (spread + slippage, conservative)
 COST = {"USDJPY": 0.020, "AUDUSD": 0.00018, "GBPUSD": 0.00020, "AUDJPY": 0.028,
         "NZDJPY": 0.038, "NZDUSD": 0.00024, "XAUUSD": 0.45,
         "EURUSD": 0.00015, "USDCHF": 0.00022, "USDCAD": 0.00025, "EURJPY": 0.025,
-        "GBPJPY": 0.035, "EURGBP": 0.00022}
+        "GBPJPY": 0.035, "EURGBP": 0.00022, "XAGUSD": 0.04, "BTCUSD": 40.0}
 
 
 # ── data ───────────────────────────────────────────────────────────────────────
@@ -240,6 +240,93 @@ def s5_gold(df, sym):
     return sorted(setups, key=lambda s: s["idx"])
 
 
+def s6_sweep_reclaim(df, sym):
+    """Fake-breakout / stop-hunt reversal (S6). Sweep a Donchian(20) extreme then
+    close back inside, entered WITH the HTF trend (EMA200 proxy). RSI 30-70. TP 1:2."""
+    df = df.copy()
+    df["rsi"] = rsi(df["close"])
+    df["ema"] = df["close"].ewm(span=200, adjust=False).mean()
+    N = 20
+    df["dch"] = df["high"].rolling(N).max().shift(1)
+    df["dcl"] = df["low"].rolling(N).min().shift(1)
+    rows = df.reset_index(drop=True)
+    buf = 2 * PIP[sym]
+    setups = []
+    for i in range(N + 1, len(rows) - 1):
+        r = rows.iloc[i]
+        if not (0 <= r["hour"] < 6):           # Asian session entries
+            continue
+        if not (30 <= r["rsi"] <= 70):
+            continue
+        if np.isnan(r["dch"]) or np.isnan(r["ema"]):
+            continue
+        up = r["close"] > r["ema"]
+        if up and r["low"] < r["dcl"] and r["close"] > r["dcl"]:      # sweep low, reclaim, uptrend → long
+            sl = r["low"] - buf; risk = r["close"] - sl
+            if risk > 0:
+                setups.append({"idx": i, "dir": 1, "sl": sl, "tp": r["close"] + 2 * risk, "exit_hour": 7})
+        elif (not up) and r["high"] > r["dch"] and r["close"] < r["dch"]:  # sweep high, reclaim, downtrend → short
+            sl = r["high"] + buf; risk = sl - r["close"]
+            if risk > 0:
+                setups.append({"idx": i, "dir": -1, "sl": sl, "tp": r["close"] - 2 * risk, "exit_hour": 7})
+    return setups
+
+
+def s1c_fade_atr(df, sym):
+    """S1 fade but with a VOLATILITY-based stop (SL = edge - 1.0*ATR14) instead of
+    a fixed pip stop — required for high-priced assets (gold/silver/BTC) where a
+    fixed '12 pip' stop is absurdly tight and inflates PF. Realistic test."""
+    df = df.copy(); df["rsi"] = rsi(df["close"]); df["atr"] = atr(df)
+    setups = []
+    for _, g in df.groupby("date"):
+        rng = _day_range(g, 0, 2)
+        if not rng:
+            continue
+        hi, lo = rng; width = hi - lo
+        if width <= 0:
+            continue
+        win = g[(g["hour"] >= 2) & (g["hour"] < 7)]
+        for idx, r in win.iterrows():
+            a = r["atr"]
+            if np.isnan(a) or a <= 0 or not (30 <= r["rsi"] <= 70):
+                continue
+            if r["low"] <= lo:
+                setups.append({"idx": idx, "dir": 1, "sl": lo - 1.0 * a,
+                               "tp": lo + 0.70 * width, "exit_hour": 7})
+            elif r["high"] >= hi:
+                setups.append({"idx": idx, "dir": -1, "sl": hi + 1.0 * a,
+                               "tp": hi - 0.70 * width, "exit_hour": 7})
+    return sorted(setups, key=lambda s: s["idx"])
+
+
+def s5b_gold_v2(df, sym):
+    """Gold breakout v2 — SGE-aligned window. Box 00:00-01:30 UTC, execute in the
+    high-volume 01:30-06:00 window (SGE 01:30 + MCX 03:30), breakout close beyond box
+    + EMA200 bias, SL 1.5*ATR(14), TP 1:2, exit before 08:00."""
+    df = df.copy()
+    df["atr"] = atr(df); df["ema"] = df["close"].ewm(span=200, adjust=False).mean()
+    df["m"] = df["ts"].dt.hour * 60 + df["ts"].dt.minute
+    setups = []
+    for _, g in df.groupby("date"):
+        box = g[(g["m"] >= 0) & (g["m"] < 90)]      # 00:00-01:30
+        if len(box) < 2:
+            continue
+        hi, lo = box["high"].max(), box["low"].min()
+        win = g[(g["m"] >= 90) & (g["m"] < 360)]     # 01:30-06:00
+        for idx, r in win.iterrows():
+            a = r["atr"]
+            if np.isnan(a) or a <= 0:
+                continue
+            up = r["close"] > r["ema"]
+            if r["close"] > hi and up:
+                sl = r["low"] - 1.5 * a
+                setups.append({"idx": idx, "dir": 1, "sl": sl, "tp": r["close"] + 2 * (r["close"] - sl), "exit_hour": 8}); break
+            if r["close"] < lo and not up:
+                sl = r["high"] + 1.5 * a
+                setups.append({"idx": idx, "dir": -1, "sl": sl, "tp": r["close"] - 2 * (sl - r["close"]), "exit_hour": 8}); break
+    return sorted(setups, key=lambda s: s["idx"])
+
+
 STRATS = {
     "S1_fade":     (s1_fade,     ["USDJPY", "AUDUSD", "EURUSD", "GBPUSD", "USDCHF",
                                   "USDCAD", "AUDJPY", "NZDJPY", "EURJPY", "GBPJPY",
@@ -248,6 +335,11 @@ STRATS = {
     "S3_pipstorm": (s3_pipstorm, ["GBPUSD"]),
     "S4_orb":      (s4_orb,      ["USDJPY", "AUDJPY", "NZDJPY", "AUDUSD", "NZDUSD"]),
     "S5_gold":     (s5_gold,     ["XAUUSD"]),
+    "S5b_gold_v2": (s5b_gold_v2, ["XAUUSD"]),
+    "S6_sweep":    (s6_sweep_reclaim, ["USDJPY", "AUDJPY", "EURJPY", "GBPJPY",
+                                       "NZDJPY", "XAUUSD", "XAGUSD", "BTCUSD"]),
+    "S1_metals_btc": (s1_fade,   ["XAUUSD", "XAGUSD", "BTCUSD"]),
+    "S1c_fade_atr": (s1c_fade_atr, ["USDJPY", "AUDJPY", "XAUUSD", "XAGUSD", "BTCUSD"]),
 }
 
 

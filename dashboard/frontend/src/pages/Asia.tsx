@@ -68,7 +68,7 @@ export function Asia() {
           <p className="eyebrow">Asia Desk</p>
           <h1 className="text-2xl font-semibold">Asian Range Fade</h1>
           <p className="text-sm text-white/50 mt-1">
-            Mean reversion on JPY pairs · session {state?.session_window_utc ?? '02:00-07:00'} UTC ·
+            Mean-reversion fade · gold · BTC · JPY pairs · session {state?.session_window_utc ?? '02:00-07:00'} UTC ·
             flattens before London
           </p>
         </div>

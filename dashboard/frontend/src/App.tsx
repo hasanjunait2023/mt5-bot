@@ -19,6 +19,7 @@ const Jtcc         = lazy(() => import('./pages/Jtcc').then(m => ({ default: m.J
 const Signals      = lazy(() => import('./pages/Signals').then(m => ({ default: m.Signals })))
 const Desk         = lazy(() => import('./pages/Desk').then(m => ({ default: m.Desk })))
 const Iconic       = lazy(() => import('./pages/Iconic').then(m => ({ default: m.Iconic })))
+const Asia         = lazy(() => import('./pages/Asia').then(m => ({ default: m.Asia })))
 const Journal      = lazy(() => import('./pages/Journal').then(m => ({ default: m.Journal })))
 const Scalp        = lazy(() => import('./pages/Scalp').then(m => ({ default: m.Scalp })))
 const VolumeProfile = lazy(() => import('./pages/VolumeProfile').then(m => ({ default: m.VolumeProfile })))
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="signals"   element={<Suspense fallback={<PageLoader />}><Signals /></Suspense>} />
             <Route path="desk"      element={<Suspense fallback={<PageLoader />}><Desk /></Suspense>} />
             <Route path="iconic"    element={<Suspense fallback={<PageLoader />}><Iconic /></Suspense>} />
+            <Route path="asia"      element={<Suspense fallback={<PageLoader />}><Asia /></Suspense>} />
             <Route path="journal"   element={<Suspense fallback={<PageLoader />}><Journal /></Suspense>} />
             <Route path="scalp"    element={<Suspense fallback={<PageLoader />}><Scalp /></Suspense>} />
             <Route path="vp"       element={<Suspense fallback={<PageLoader />}><VolumeProfile /></Suspense>} />

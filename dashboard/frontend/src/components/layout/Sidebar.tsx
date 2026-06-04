@@ -18,6 +18,7 @@ const NAV: { to: string; label: string; icon: IconName }[] = [
   { to: '/signals',   label: 'Signals',          icon: 'system' },
   { to: '/desk',      label: 'Alpha Desk',       icon: 'reports' },
   { to: '/iconic',    label: 'Iconic Trader',    icon: 'bots' },
+  { to: '/asia',      label: 'Asia Desk',        icon: 'bots' },
   { to: '/scalp',     label: 'Gold Scalp',       icon: 'bots' },
   { to: '/vp',        label: 'Volume Profile',   icon: 'reports' },
   { to: '/journal',   label: 'Trade Journal',    icon: 'history' },

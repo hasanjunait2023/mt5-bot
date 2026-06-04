@@ -31,6 +31,7 @@ from api import iconic as iconic_api
 from api import journal as journal_api
 from api import scalp as scalp_api
 from api import vp as vp_api
+from api import asia as asia_api
 
 logging.basicConfig(
     level=logging.INFO,
@@ -126,6 +127,7 @@ app.include_router(iconic_api.router,     prefix="/api", dependencies=_protected
 app.include_router(journal_api.router,    prefix="/api", dependencies=_protected)
 app.include_router(scalp_api.router,      prefix="/api", dependencies=_protected)
 app.include_router(vp_api.router,         prefix="/api", dependencies=_protected)
+app.include_router(asia_api.router,       prefix="/api", dependencies=_protected)
 
 # WebSocket validates the token itself (browsers can't set WS headers).
 app.include_router(ws.router)

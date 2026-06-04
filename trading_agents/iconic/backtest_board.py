@@ -42,6 +42,7 @@ REPORT = BASE_DIR / "logs" / "jtcc" / "_backtest_board.json"
 
 WARMUP        = 300       # bars before trading (ema200 + pattern lookback)
 WINDOW        = 300       # slice fed to the scorer/pattern each bar
+SCORE_MIN     = float(os.getenv("BOARD_SCORE_MIN", "0"))  # quality filter sweep
 EVAL_EVERY    = 3         # run the (heavy) board decision every Nth bar; exits
                           # are still checked every bar. The money-spot setup
                           # persists across bars, so sampling barely misses
@@ -108,22 +109,21 @@ def _simulate(data: dict[str, pd.DataFrame], lo: int, hi: int) -> dict:
         for sym in list(open_tr.keys()):
             tr = open_tr[sym]; bar = data[sym].iloc[t]
             hi_p, lo_p = float(bar["high"]), float(bar["low"])
-            exit_px = None
+            exit_px = None; reason = None
             if tr["side"] == "BUY":
-                if lo_p <= tr["sl"]: exit_px = tr["sl"]
-                elif hi_p >= tr["tp"]: exit_px = tr["tp"]
+                if lo_p <= tr["sl"]: exit_px, reason = tr["sl"], "SL"
+                elif hi_p >= tr["tp"]: exit_px, reason = tr["tp"], "TP"
             else:
-                if hi_p >= tr["sl"]: exit_px = tr["sl"]
-                elif lo_p <= tr["tp"]: exit_px = tr["tp"]
+                if hi_p >= tr["sl"]: exit_px, reason = tr["sl"], "SL"
+                elif lo_p <= tr["tp"]: exit_px, reason = tr["tp"], "TP"
             if exit_px is None and t - tr["entry_bar"] >= MAX_HOLD_BARS:
-                exit_px = float(bar["close"])
+                exit_px, reason = float(bar["close"]), "TIMEOUT"
             if exit_px is not None:
                 pnl = (exit_px - tr["entry"]) if tr["side"] == "BUY" else (tr["entry"] - exit_px)
                 pnl -= tr["spread"]
                 r = pnl / tr["risk"] if tr["risk"] > 0 else 0.0
                 trades.append({"symbol": sym, "side": tr["side"], "klass": tr["klass"],
-                               "pnl": pnl, "r": r, "bars": t - tr["entry_bar"],
-                               "exit": "TP" if r > 0 else "SL"})
+                               "r": r, "bars": t - tr["entry_bar"], "exit": reason})
                 del open_tr[sym]
 
         # decision sampling: only run the board every EVAL_EVERY bars
@@ -158,6 +158,8 @@ def _simulate(data: dict[str, pd.DataFrame], lo: int, hi: int) -> dict:
         for s, sc in scores.items():
             if sc.klass not in ("A", "B") or not sc.is_leader:
                 continue
+            if sc.score < SCORE_MIN:
+                continue
             d = dom_of(s, sc)
             if not d or len(ab_by_dom.get(d, [])) < 2:      # hard group roll-over
                 continue
@@ -183,8 +185,13 @@ def _simulate(data: dict[str, pd.DataFrame], lo: int, hi: int) -> dict:
             nb = data[sym].iloc[t + 1]
             spread = TYPICAL_SPREAD.get(sym, 1e-4)
             entry = float(nb["open"]) + (spread if sig.side == "BUY" else 0.0)
-            risk = abs(entry - sig.stop)
-            if risk <= 0:
+            # R is normalized by the SIGNAL's intended risk (the position-sizing
+            # basis), not the realized entry→stop — otherwise a next-bar open near
+            # the stop shrinks the denominator and inflates R beyond what lot
+            # sizing (capped at 2% equity) could ever capture. Entry slippage
+            # (actual vs intended entry) is absorbed into the pnl.
+            risk = abs(sig.entry - sig.stop)
+            if risk <= 3 * spread:        # stop too tight to be economic → skip
                 continue
             open_tr[sym] = {"side": sig.side, "entry": entry, "sl": sig.stop,
                             "tp": sig.tp_final, "risk": risk, "spread": spread,
@@ -192,16 +199,27 @@ def _simulate(data: dict[str, pd.DataFrame], lo: int, hi: int) -> dict:
             if dom:
                 open_doms.add(dom)
 
-    wins = [t for t in trades if t["pnl"] > 0]
-    losses = [t for t in trades if t["pnl"] <= 0]
-    gross_w = sum(t["pnl"] for t in wins)
-    gross_l = abs(sum(t["pnl"] for t in losses))
+    # PF must be R-based, NOT raw price: summing price-pnl across pairs of
+    # different price scales (GBPJPY ~100s vs EURGBP ~0.001) is meaningless.
+    wins = [t for t in trades if t["r"] > 0]
+    losses = [t for t in trades if t["r"] <= 0]
+    gross_w = sum(t["r"] for t in wins)
+    gross_l = abs(sum(t["r"] for t in losses))
     pf = round(gross_w / gross_l, 3) if gross_l > 0 else (99.0 if gross_w > 0 else 0.0)
-    total_r = round(sum(t["r"] for t in trades), 2)
-    return {"trades": len(trades), "wins": len(wins),
-            "win_rate": round(100 * len(wins) / len(trades), 1) if trades else 0.0,
-            "profit_factor": pf, "total_R": total_r,
-            "avg_bars": round(sum(t["bars"] for t in trades) / len(trades), 1) if trades else 0.0}
+    n = len(trades)
+    from collections import Counter
+    exits = dict(Counter(t["exit"] for t in trades))
+    return {
+        "trades": n, "wins": len(wins),
+        "win_rate": round(100 * len(wins) / n, 1) if n else 0.0,
+        "profit_factor_R": pf,
+        "total_R": round(sum(t["r"] for t in trades), 2),
+        "expectancy_R": round(sum(t["r"] for t in trades) / n, 3) if n else 0.0,
+        "avg_win_R": round(gross_w / len(wins), 2) if wins else 0.0,
+        "avg_loss_R": round(-gross_l / len(losses), 2) if losses else 0.0,
+        "exits": exits,
+        "avg_bars": round(sum(t["bars"] for t in trades) / n, 1) if n else 0.0,
+    }
 
 
 def main():

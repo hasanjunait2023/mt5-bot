@@ -1,0 +1,55 @@
+{
+  "strategy": "S2",
+  "generated_at": "2026-05-22T14:18:40.080814",
+  "python_source": "strategy2_m5_scalp.py",
+  "ea_source": "S2_M5_Scalp.mq5",
+  "recommended_params": {
+    "NewsFilterImplementation": "Implement news filter similar to Python version",
+    "H1_EMA200_Bias_Logic": "Verify and align with Python's unseen implementation",
+    "MACD_Histogram_Check": "Align with Python's intended logic for direction match"
+  },
+  "discrepancies": [
+    {
+      "parameter": "Session Hours",
+      "python_value": "07:00\u201317:00 UTC",
+      "ea_value": "07:00\u201317:00 UTC",
+      "severity": "minor",
+      "description": "Identical, no discrepancy. (Included for completeness)"
+    },
+    {
+      "parameter": "TP/SL Ratios",
+      "python_value": "SL:18, TP1:+20, TP2:+40, BE:+8",
+      "ea_value": "SL:18, TP1:+20, TP2:+40, BE:+8",
+      "severity": "minor",
+      "description": "Identical, no discrepancy. (Included for completeness)"
+    },
+    {
+      "parameter": "Entry Conditions - MACD Check",
+      "python_value": "MACD(12,26,9) histogram matches direction (implies custom calculation)",
+      "ea_value": "MACD histogram check simplified (hist[0] > 0 for buy, < 0 for sell, or trend confirmation)",
+      "severity": "critical",
+      "description": "Python might expect a more nuanced MACD histogram direction match, while MQL5 checks for basic positivity/negativity or trend confirmation."
+    },
+    {
+      "parameter": "Risk Parameters - Lot Sizing Calculation",
+      "python_value": "Uses `pip_value()` considering `point` value directly",
+      "ea_value": "Calculates using `SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE)` and `pip`",
+      "severity": "minor",
+      "description": "Functionally similar but implemented differently; potential for slight calculation differences due to data source nuances."
+    },
+    {
+      "parameter": "Logic for H1 EMA200 Bias",
+      "python_value": "Not explicitly shown in provided Python snippet",
+      "ea_value": "Present with distance check (< 20 pips from EMA for neutral bias)",
+      "severity": "critical",
+      "description": "Key layer (Layer 1) logic not visible in Python code; assuming it's implemented but not shown."
+    },
+    {
+      "parameter": "News Filter Implementation",
+      "python_value": "Present with external API call",
+      "ea_value": "Absent in provided MQL5 snippet",
+      "severity": "critical",
+      "description": "News block filter is in Python but missing in MQL5, potentially affecting trade entry during news events."
+    }
+  ]
+}

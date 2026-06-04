@@ -1,0 +1,81 @@
+{
+  "strategy": "S4",
+  "generated_at": "2026-05-24T18:00:48.196662",
+  "python_source": "strategy4_multi_pair.py",
+  "ea_source": "S4_MultiPair_Engine.mq5",
+  "recommended_params": {
+    "USDJPY_max_spread": "1.5 pips (match Python)",
+    "GBPUSD_max_spread": "2 pips (match Python)",
+    "DailyDD_Halt_Pct": "5.0 (add input, check AccountInfoDouble(ACCOUNT_EQUITY) vs day-start equity on every tick)",
+    "Portfolio_Coordination": "Use GlobalVariables (GV) for cross-EA state: GV 'S4_open_count', 'S4_metals_open', 'S4_usd_open', 'S4_daily_loss_pct' \u00e2\u20ac\u201d read/write atomically before any new entry",
+    "BE_Pips": "4 (verify/add explicit input)",
+    "BE_Lock_Pips": "6 (verify/add explicit input)",
+    "TP1_Partial_Pct": "60 (verify/add explicit input)",
+    "Time_Exit_Min": "15 (verify/add explicit input)"
+  },
+  "discrepancies": [
+    {
+      "parameter": "USDJPY max_spread",
+      "python_value": "1.5 pips",
+      "ea_value": "2 pips",
+      "severity": "minor",
+      "description": "EA is more conservative \u00e2\u20ac\u201d filters out more entries. Tighter spread in Python means more trades allowed; EA will miss some."
+    },
+    {
+      "parameter": "GBPUSD max_spread",
+      "python_value": "2 pips",
+      "ea_value": "3 pips",
+      "severity": "minor",
+      "description": "Same pattern. EA over-filters by 50%. Especially punishing during London open volatility."
+    },
+    {
+      "parameter": "MAX_DAILY_DD (portfolio halt)",
+      "python_value": "5.0% combined DD \u00e2\u2020\u2019 halt all pairs",
+      "ea_value": "NOT IMPLEMENTED",
+      "severity": "critical",
+      "description": "EA has zero drawdown circuit breaker. On a bad day all 5 instances keep trading past the 5% hard stop. Python halts the entire portfolio; EA cannot."
+    },
+    {
+      "parameter": "MAX_TOTAL_RISK / MAX_OPEN_TRADES",
+      "python_value": "1.5% total open risk, max 3 simultaneous trades",
+      "ea_value": "NOT IMPLEMENTED (single-instance architecture, no cross-EA coordination)",
+      "severity": "critical",
+      "description": "Five independent EA instances have no shared state. All 5 can open simultaneously = 1.5% risk \u00c3\u2014 5 = 7.5% open risk. Violates the entire portfolio risk model."
+    },
+    {
+      "parameter": "Group limits (MAX_METALS_OPEN / MAX_USD_OPEN)",
+      "python_value": "metals \u00e2\u2030\u00a4 1 open, USD \u00e2\u2030\u00a4 2 open",
+      "ea_value": "NOT IMPLEMENTED",
+      "severity": "critical",
+      "description": "No group awareness. Both XAUUSD and XAGUSD EAs can open simultaneously \u00e2\u20ac\u201d Python explicitly blocks this. Doubles metals exposure silently."
+    },
+    {
+      "parameter": "Correlation block (metals same-direction)",
+      "python_value": "Block if both metals group entries are same direction",
+      "ea_value": "NOT IMPLEMENTED",
+      "severity": "critical",
+      "description": "Highly correlated XAUUSD + XAGUSD can both go long/short simultaneously. Python blocks this; EA has no mechanism even in principle (no inter-EA IPC)."
+    },
+    {
+      "parameter": "NEWS_BLOCK_MIN",
+      "python_value": "15-minute block around news events",
+      "ea_value": "NOT IMPLEMENTED",
+      "severity": "minor",
+      "description": "EA will trade through high-impact news. Consistent with many MQL5 EAs that use external news filters, but Python strategy explicitly pauses."
+    },
+    {
+      "parameter": "BE_PIPS / BE_LOCK_PIPS / TP1_PARTIAL / TIME_EXIT_MIN",
+      "python_value": "BE at +4 pips, lock to +6 pips, TP1 close 60%, time exit 15 min",
+      "ea_value": "UNVERIFIABLE \u00e2\u20ac\u201d EA code truncated before trade management logic",
+      "severity": "critical",
+      "description": "Variables beSet and tp1Hit exist in EA, confirming intent, but actual pip values and partial close ratios cannot be confirmed from provided code. Must review full EA source."
+    },
+    {
+      "parameter": "Hourly portfolio summary / daily summary at 17:30 UTC",
+      "python_value": "Implemented via PortfolioState._last_hourly + daily summary coroutine",
+      "ea_value": "NOT IMPLEMENTED (EA only has per-trade alerts implied)",
+      "severity": "minor",
+      "description": "Operational monitoring gap. No portfolio-aggregate Telegram reporting in EA layer."
+    }
+  ]
+}

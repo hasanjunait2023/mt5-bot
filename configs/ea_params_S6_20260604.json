@@ -1,0 +1,69 @@
+{
+  "strategy": "S6",
+  "generated_at": "2026-06-04T04:50:02.033769",
+  "python_source": "strategy6_asian_range.py",
+  "ea_source": "S6_Asian_Range_Breakout.mq5",
+  "recommended_params": {
+    "RiskPct": "0.5 \u00e2\u20ac\u201d align to Python spec OR update Python to 1.5 with explicit sign-off; do not leave undocumented 3\u00c3\u2014 gap",
+    "EntryMin": "55 \u00e2\u20ac\u201d match Python 07:55 UTC, OR update Python PLACE_M=45 to match validated backtest",
+    "MagicNumber": "20260600 \u00e2\u20ac\u201d unify; if running both systems segregate by account not magic"
+  },
+  "discrepancies": [
+    {
+      "parameter": "risk_pct",
+      "python_value": "0.5% (RISK_PCT = 0.005)",
+      "ea_value": "1.5% (RiskPct = 1.5)",
+      "severity": "critical",
+      "description": "EA risks 3\u00c3\u2014 more equity per trade than Python spec. One losing trade = 1.5% DD vs 0.5% intended. EA comment says 'locked post-cost sweep' \u00e2\u20ac\u201d intentional divergence, but Python spec was never updated."
+    },
+    {
+      "parameter": "entry_time",
+      "python_value": "07:55 UTC (PLACE_H=7, PLACE_M=55)",
+      "ea_value": "07:45 UTC (EntryHour=7, EntryMin=45)",
+      "severity": "critical",
+      "description": "10-min gap. EA arms orders earlier, catching different spread/price conditions at London open. EA comment says this matches backtest_s6_v2 \u00e2\u20ac\u201d Python was not updated to reflect."
+    },
+    {
+      "parameter": "range_validation_method",
+      "python_value": "Fixed pips: RANGE_MIN=40, RANGE_MAX=150, SPIKE_MAX=50, SL_BUFFER=10",
+      "ea_value": "ATR-relative: RMin_ATR=0.50\u00c3\u2014H4-ATR, RMax_ATR=4.00\u00c3\u2014H4-ATR, CMax_ATR=1.50\u00c3\u2014H4-ATR, Buf_ATR=0.10\u00c3\u2014H4-ATR",
+      "severity": "critical",
+      "description": "v2 EA uses instrument-agnostic ATR-relative bounds (validated multi-symbol PF 1.38\u00e2\u20ac\u201c1.89). Python uses XAUUSD-hardcoded fixed pips. On high-vol days ATR thresholds admit/reject different days than fixed pips do."
+    },
+    {
+      "parameter": "h4_ema200_trend_filter",
+      "python_value": "absent",
+      "ea_value": "present (h4ema200 = iMA(_Symbol, PERIOD_H4, 200, 0, MODE_EMA, PRICE_CLOSE))",
+      "severity": "critical",
+      "description": "EA skips counter-trend breakouts. Python takes every valid range regardless of H4 trend. Trade sets diverge on counter-trend days \u00e2\u20ac\u201d Python over-trades relative to validated EA."
+    },
+    {
+      "parameter": "range_body_filter",
+      "python_value": "absent",
+      "ea_value": "BodyMaxFrac=0.60 (reject if largest candle body > 60% of range)",
+      "severity": "critical",
+      "description": "EA rejects spike/manipulation Asian sessions. Python accepts all geometrically valid ranges. Produces different trade sets on spike days."
+    },
+    {
+      "parameter": "min_range_bars",
+      "python_value": "absent",
+      "ea_value": "MinRangeBars=16 (require >= 16 M15 bars in window)",
+      "severity": "minor",
+      "description": "EA guards against data gaps. Python computes range on whatever bars exist \u00e2\u20ac\u201d partial sessions pass silently."
+    },
+    {
+      "parameter": "max_spread",
+      "python_value": "25 pips (MAX_SPREAD=25)",
+      "ea_value": "30 pips (Max_Spread=30)",
+      "severity": "minor",
+      "description": "EA allows 5 extra pips of spread \u00e2\u20ac\u201d slightly looser quality gate at entry."
+    },
+    {
+      "parameter": "magic_number",
+      "python_value": "20260600",
+      "ea_value": "20260602",
+      "severity": "minor",
+      "description": "Different magic numbers mean neither system recognizes the other's orders. Dangerous if both run simultaneously on same account \u00e2\u20ac\u201d duplicate positions, double exposure."
+    }
+  ]
+}

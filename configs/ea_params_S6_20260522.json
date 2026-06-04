@@ -1,0 +1,48 @@
+{
+  "strategy": "S6",
+  "generated_at": "2026-05-22T13:27:55.884469",
+  "python_source": "strategy6_asian_range.py",
+  "ea_source": "S6_Asian_Range_Breakout.mq5",
+  "recommended_params": {
+    "RiskPct": 0.5,
+    "EntryMin": 55,
+    "Max_Spread": 25
+  },
+  "discrepancies": [
+    {
+      "parameter": "Entry Time",
+      "python_value": "07:55 UTC",
+      "ea_value": "07:45 UTC",
+      "severity": "minor",
+      "description": "Python places orders at 07:55 UTC vs EA's 07:45 UTC. May cause slight timing differences in trade execution."
+    },
+    {
+      "parameter": "Risk Percentage",
+      "python_value": "0.5% per trade",
+      "ea_value": "1.5% (input RiskPct)",
+      "severity": "critical",
+      "description": "EA uses 3x higher risk per trade than Python strategy. Could lead to significantly different position sizing and drawdowns."
+    },
+    {
+      "parameter": "Range Validation Method",
+      "python_value": "Fixed pip ranges (40-150 pips)",
+      "ea_value": "ATR-scaled ranges (0.5-4.0 \u00d7 H4 ATR)",
+      "severity": "critical",
+      "description": "EA uses instrument-agnostic ATR scaling while Python uses fixed pips. Validation logic differs fundamentally."
+    },
+    {
+      "parameter": "Max Spread Filter",
+      "python_value": "25 pips",
+      "ea_value": "30 pips",
+      "severity": "minor",
+      "description": "EA allows wider spreads before rejecting trades."
+    },
+    {
+      "parameter": "Entry Filters",
+      "python_value": "No H4 EMA filter, no body fraction check",
+      "ea_value": "Includes H4 EMA200 trend filter and BodyMaxFrac=0.60",
+      "severity": "critical",
+      "description": "EA has additional entry filters not present in Python version."
+    }
+  ]
+}

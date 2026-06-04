@@ -1,0 +1,20 @@
+name: Gold Scalp (GS11/GS07)
+id: scalp_gs11
+magic: 20260522
+mode: paper
+symbols: [XAUUSD]
+timeframes: [M1]
+state_file: logs/scalp/_agent_state.json
+trades_file: logs/scalp/_paper_trades.jsonl
+dashboard_page: /scalp
+paper_gate:
+  min_trades: 20
+  min_pf: 1.3
+risk:
+  pct_per_trade: 1.0
+  daily_dd_pct: 20.0
+  max_concurrent: 2
+dashboard:
+  color: neutral
+  group: scalp
+  description: GS11 Opening Range + GS07 Liquidity Sweep on XAUUSD M1

@@ -1,0 +1,64 @@
+{
+  "strategy": "S1",
+  "generated_at": "2026-06-03T15:16:47.982884",
+  "python_source": "strategy1_swing_scalp.py",
+  "ea_source": "S1_Swing_Scalp.mq5",
+  "recommended_params": {
+    "SL_Pips": 80,
+    "PART_LV[0]": 25,
+    "PART_LV[1]": 50,
+    "PART_LV[2]": 100,
+    "TimeExitHrs": 24
+  },
+  "discrepancies": [
+    {
+      "parameter": "Session Hours",
+      "python_value": "London (07:00-12:00 UTC) + NY (13:00-17:00 UTC)",
+      "ea_value": "London (07:00-12:00 UTC) + NY (13:00-17:00 UTC)",
+      "severity": "minor",
+      "description": "Session hours are identical in both implementations."
+    },
+    {
+      "parameter": "SL Pips",
+      "python_value": "50-100 pips (capped at 80)",
+      "ea_value": "Fixed 60 pips",
+      "severity": "critical",
+      "description": "Python allows variable SL (50-80) while EA uses fixed 60 pips, affecting risk calculation and position sizing."
+    },
+    {
+      "parameter": "RR Minimum",
+      "python_value": "1:2",
+      "ea_value": "Not explicitly set (partial closes at 30/60/120 pips with SL=60)",
+      "severity": "critical",
+      "description": "Python enforces minimum 1:2 RR, while EA's first partial (30 pips) gives 0.5 RR when SL=60."
+    },
+    {
+      "parameter": "Entry Conditions",
+      "python_value": "Includes Order Block + FVG filters",
+      "ea_value": "Only H4 EMA bias + M15 EMA cross + RSI",
+      "severity": "critical",
+      "description": "EA intentionally removed Order Block and FVG layers present in Python strategy."
+    },
+    {
+      "parameter": "Partial Close Levels",
+      "python_value": "25, 50, 100, 200 pips",
+      "ea_value": "30, 60, 120 pips",
+      "severity": "minor",
+      "description": "Different profit-taking thresholds between implementations."
+    },
+    {
+      "parameter": "News Filter",
+      "python_value": "Blocks trades 60 mins around high-impact news",
+      "ea_value": "No news filter implemented",
+      "severity": "critical",
+      "description": "EA lacks news filtering present in Python strategy."
+    },
+    {
+      "parameter": "Max Hold Time",
+      "python_value": "24 hours",
+      "ea_value": "48 hours (TimeExitHrs=48)",
+      "severity": "minor",
+      "description": "Different time-based exit thresholds."
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+name: JTCC ICT/SMC
+id: jtcc
+magic: 20260200
+mode: live
+symbols: [XAUUSD, XAGUSD, BTCUSD, EURUSD, GBPUSD, USDJPY]
+timeframes: [M3, M15, H1, H4, D1]
+state_file: logs/jtcc/_jtcc_state.json
+trades_file: logs/jtcc/_jtcc_trades.jsonl
+dashboard_page: /jtcc
+paper_gate:
+  min_trades: 20
+  min_pf: 1.3
+risk:
+  pct_per_trade: 1.0
+  daily_dd_pct: 20.0
+  max_concurrent: 2
+  kill_zone_only: true
+  min_confluence: 3
+dashboard:
+  color: accent
+  group: ict
+  description: ICT/SMC 4-layer agent — Kill Zone confluence trading

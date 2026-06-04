@@ -23,6 +23,7 @@ Run continuously (VPS): `python scripts/pending_tracker.py --loop --interval 300
 | 5 | VPS restart: bridge + Iconic + Scalp — load close-reconciler (`a0daf09`) + demo-execution (`3bef3a4`); then check `/reconciler/status` | 2026-06-03 | do on next VPS visit; code committed, needs restart to take effect |
 | 6 | Signal systems → demo execution: signal_engine / alpha_desk / factory_paper have no executor; need separate Exness demo accounts (decide count) + per-system routing | 2026-06-03 | 1 account = margin conflict with the 4 live agents; bigger infra task, awaiting account count |
 | 7 | Secrets/SSH cross-session sharing — adopt **sops + age** encrypted-in-repo (recommended). Keys exist: `~/.ssh/vps_trader`, `~/.ssh/vps_controller` | 2026-06-04 | scaffold ready; needs go-ahead to encrypt+commit on the key-holding box (real secrets → GitHub, encrypted) |
+| 8 | **Security: GitHub PAT is embedded plaintext in `git remote` URL** (`.git/config`) | 2026-06-04 | rotate the token + move to credential manager / encrypted store; pushes currently rely on it |
 
 > Add a row when you say "keep this pending". Remove it when done.
 
@@ -31,5 +32,12 @@ Run continuously (VPS): `python scripts/pending_tracker.py --loop --interval 300
 ## Stalled agents (auto — do not edit)
 
 <!-- STALLED:START -->
-_No scan yet. Run `python scripts/pending_tracker.py --once`._
+| Agent | Why | Stale for | Allowed |
+|-------|-----|-----------|---------|
+| `mtf_live` (MTF Live Trader) | state stale 161569s > 900s allowed | 161569s | 900s |
+| `iconic` (Iconic Scalp) | state stale 161572s > 600s allowed | 161572s | 600s |
+| `scalp_gs11` (Gold Scalp (GS11/GS07)) | state stale 161565s > 600s allowed | 161565s | 600s |
+| `gsvp` (GS-VP Volume Profile (M15)) | state stale 39417s > 720s allowed | 39417s | 720s |
+
+_Last scan: 2026-06-04T04:56:52+00:00_
 <!-- STALLED:END -->

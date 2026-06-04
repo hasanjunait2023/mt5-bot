@@ -1,0 +1,59 @@
+{
+  "strategy": "S2",
+  "generated_at": "2026-06-04T04:43:00.770538",
+  "python_source": "strategy2_m5_scalp.py",
+  "ea_source": "S2_M5_Scalp.mq5",
+  "recommended_params": {
+    "MaxDailyDD_Pct": 5.0,
+    "NewsBlock_MinBefore": 30,
+    "NewsBlock_MinAfter": 30,
+    "MACD_BullCondition": "hist[0] > 0 && hist[0] > hist[1]",
+    "MACD_BearCondition": "hist[0] < 0 && hist[0] < hist[1]",
+    "SpreadCheck": "add spread guard in OnTick() before entry: if((Ask-Bid)/pip > Max_Spread) return;",
+    "BE_Buffer_Pips": 0
+  },
+  "discrepancies": [
+    {
+      "parameter": "MaxDailyDD",
+      "python_value": "5.0% equity",
+      "ea_value": "NOT IMPLEMENTED",
+      "severity": "critical",
+      "description": "Python halts trading after 5% daily equity drawdown. EA has no daily DD check \u00e2\u20ac\u201d will keep trading through unlimited intraday losses."
+    },
+    {
+      "parameter": "NewsFilter",
+      "python_value": "Block \u00c2\u00b130 min around High-impact FF calendar events",
+      "ea_value": "NOT IMPLEMENTED",
+      "severity": "critical",
+      "description": "Python fetches ForexFactory calendar and skips entries near high-impact news. EA has no news guard \u00e2\u20ac\u201d will fire signals into NFP, FOMC, etc."
+    },
+    {
+      "parameter": "MACD_EntryCondition",
+      "python_value": "histogram matches direction (implied: hist > 0 for bull, hist < 0 for bear)",
+      "ea_value": "hist[0] > 0 || hist[0] > hist[1] (bull); hist[0] < 0 || hist[0] < hist[1] (bear)",
+      "severity": "minor",
+      "description": "EA uses OR logic \u00e2\u20ac\u201d allows entry when histogram is negative but rising (bull) or positive but falling (bear). Python spec implies stricter sign-only check. EA will generate ~30-40% more signals, lowering quality threshold."
+    },
+    {
+      "parameter": "SpreadCheck_Usage",
+      "python_value": "spread_ok() called before every entry; blocks if spread > 25 pips",
+      "ea_value": "Max_Spread = 25 declared as input but not visibly called in entry logic",
+      "severity": "minor",
+      "description": "EA input exists but spread check call is absent from visible code (file may be truncated). If truly unused, EA will trade wide-spread conditions Python would block \u00e2\u20ac\u201d especially dangerous on XAUUSD during news."
+    },
+    {
+      "parameter": "BreakevenOffset",
+      "python_value": "BE at +8 pips \u00e2\u2020\u2019 SL moves to entry (0 buffer)",
+      "ea_value": "BE at +8 pips \u00e2\u2020\u2019 SL moves to openPrice + 2*pip (2 pip buffer)",
+      "severity": "minor",
+      "description": "EA adds 2-pip BE buffer above entry for longs. Python moves SL to exact entry. Minor P&L difference but logic diverges \u00e2\u20ac\u201d EA slightly more conservative."
+    },
+    {
+      "parameter": "H1BiasDistanceFilter",
+      "python_value": "Not visible in provided code (truncated)",
+      "ea_value": "dist < 20 pips \u00e2\u2020\u2019 h1BiasDir = 0 (no bias)",
+      "severity": "minor",
+      "description": "EA neutralizes H1 bias when price is within 20 pips of EMA200. Python code is truncated \u00e2\u20ac\u201d cannot confirm equivalent filter exists. If absent in Python, bias signals diverge near EMA200."
+    }
+  ]
+}

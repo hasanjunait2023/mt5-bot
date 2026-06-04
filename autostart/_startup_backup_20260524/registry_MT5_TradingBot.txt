@@ -1,0 +1,1 @@
+﻿MT5_TradingBot=powershell.exe -WindowStyle Hidden -NonInteractive -ExecutionPolicy Bypass -File "c:\Users\Junait\mt5 bot\autostart\bot_launcher.ps1"

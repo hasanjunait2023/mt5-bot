@@ -1,0 +1,49 @@
+{
+  "strategy": "S5",
+  "generated_at": "2026-06-04T04:48:44.928635",
+  "python_source": "strategy5_news_spike.py",
+  "ea_source": "S5_News_Spike_Reversal.mq5",
+  "recommended_params": {
+    "Retrace50_Pips": "Dynamic calculation based on spike size",
+    "Retrace70_Pips": "Dynamic calculation based on spike size",
+    "SessionStart": "Event-driven timing",
+    "SessionEnd": "Event-driven timing"
+  },
+  "discrepancies": [
+    {
+      "parameter": "Session Hours",
+      "python_value": "Event-driven (based on scheduled news times)",
+      "ea_value": "Fixed 7:00-22:00",
+      "severity": "critical",
+      "description": "Python strategy uses news calendar timing, while EA uses fixed daily session hours"
+    },
+    {
+      "parameter": "TP Calculation Method",
+      "python_value": "Percentage of spike range (50%/70%)",
+      "ea_value": "Fixed pips (50/70 pips)",
+      "severity": "critical",
+      "description": "Python uses dynamic TP based on spike size, EA uses static pip values"
+    },
+    {
+      "parameter": "RSI Thresholds",
+      "python_value": "Overbought=70, Oversold=30",
+      "ea_value": "Overbought=65, Oversold=35",
+      "severity": "minor",
+      "description": "Slight difference in RSI confirmation levels"
+    },
+    {
+      "parameter": "Max Spread Filter",
+      "python_value": "Not implemented",
+      "ea_value": "Max_Spread=25 pips",
+      "severity": "minor",
+      "description": "EA includes spread check that Python lacks"
+    },
+    {
+      "parameter": "Pre-News Phase",
+      "python_value": "Closes trades 30min before news",
+      "ea_value": "Not implemented",
+      "severity": "critical",
+      "description": "Python has pre-news trade blocking that EA lacks"
+    }
+  ]
+}

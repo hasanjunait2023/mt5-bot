@@ -1,0 +1,35 @@
+{
+  "strategy": "GS12",
+  "name": "ICT Stupid-Simple (Sweep->IFVG->Trendline Break)",
+  "symbol": "XAUUSD",
+  "timeframe": "M3",
+  "params": {
+    "sweep_lookback": 5,
+    "trend_swing_lookback": 3,
+    "fit_swings": 2,
+    "sl_buffer_atr": 0.5,
+    "atr_period": 14,
+    "min_depth_atr": 0.5,
+    "rr": 1.2,
+    "use_ifvg_only": true,
+    "session_filter": false,
+    "htf_bias": true,
+    "htf_ema": 200,
+    "min_displacement_atr": 0.0,
+    "conf_window": 8
+  },
+  "validation": {
+    "selection": "most-robust (max of min(IS,OOS)); not the lucky-OOS pick",
+    "in_sample_pf": 1.05,
+    "in_sample_trades": 22,
+    "oos_pf": 1.43,
+    "oos_trades": 11,
+    "oos_win_rate": 63.6,
+    "full_pf": 1.23,
+    "full_trades": 34,
+    "full_win_rate": 55.9
+  },
+  "verdict": "MARGINAL_BELOW_BAR",
+  "notes": "Honest result of aggressive grid + neighborhood search on real XAUUSD spread cost. Profitable on BOTH in-sample (1.05) and out-of-sample (1.43) halves, full-sample PF 1.23 — below the 1.3 live-promotion bar. HTF trend alignment (htf_bias) is the edge; displacement filter and longer HTF EMA did not beat this without overfitting. M1 timeframe had NO robust edge (in-sample PF up to 2.69 collapsed to <0.4 OOS = overfit). Runs PAPER only; the agent paper-gate (20 trades @ PF>=1.3) will not promote it to live until it proves >=1.3 on forward paper data. Not curve-fit to a fake number.",
+  "created": "2026-05-24T03:05:00"
+}

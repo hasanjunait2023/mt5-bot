@@ -1,0 +1,66 @@
+{
+  "strategy": "S5",
+  "generated_at": "2026-05-24T18:02:28.763425",
+  "python_source": "strategy5_news_spike.py",
+  "ea_source": "S5_News_Spike_Reversal.mq5",
+  "recommended_params": {
+    "RSI_Oversold": 30,
+    "RSI_Overbought": 70,
+    "RSI_Timeframe": "PERIOD_M5 (code change \u00e2\u20ac\u201d replace iRSI PERIOD_M1 with PERIOD_M5)",
+    "Retrace_Method": "dynamic \u00e2\u20ac\u201d compute spike_range = spikeHigh - spikeLow; TP1 = entry + 0.5*spike_range; TP2 = entry + 0.7*spike_range (code change, not input param)",
+    "Pre_News_Flatten": "add OnTimer() or OnTick() block: detect upcoming high-impact event T-30min \u00e2\u2020\u2019 close all magic-tagged trades + set noEntry flag until spike detected",
+    "Retrace50_Pips": "REMOVE \u00e2\u20ac\u201d replace with dynamic calculation",
+    "Retrace70_Pips": "REMOVE \u00e2\u20ac\u201d replace with dynamic calculation"
+  },
+  "discrepancies": [
+    {
+      "parameter": "RSI entry thresholds",
+      "python_value": "RSI_OVERSOLD=30 / RSI_OVERBOUGHT=70",
+      "ea_value": "rsi[1] < 35 (buy) / rsi[1] > 65 (sell)",
+      "severity": "critical",
+      "description": "EA uses tighter RSI bands (35/65) vs Python (30/70). EA fires earlier on weaker reversion signals \u00e2\u20ac\u201d more trades, lower quality. Bears significant impact on win rate."
+    },
+    {
+      "parameter": "TP calculation method",
+      "python_value": "TP1 = spike_start + 50% of spike_range; TP2 = spike_start + 70% of spike_range (dynamic per spike)",
+      "ea_value": "Retrace50_Pips=50 fixed / Retrace70_Pips=70 fixed (hardcoded pip distance from entry)",
+      "severity": "critical",
+      "description": "Python TP is a fraction of the actual spike range (e.g. 200-pip spike \u00e2\u2020\u2019 TP2 = 140 pips). EA always targets 50/70 pips regardless of spike magnitude. On large spikes the EA exits far too early, destroying the 1:3\u00e2\u20ac\u201c1:7 RR spec."
+    },
+    {
+      "parameter": "RSI indicator timeframe",
+      "python_value": "M5 bars (get_m5_bars \u00e2\u2020\u2019 _rsi on 5-min closes)",
+      "ea_value": "PERIOD_M1 \u00e2\u20ac\u201d m1rsi14 = iRSI(_Symbol, PERIOD_M1, 14, PRICE_CLOSE)",
+      "severity": "critical",
+      "description": "M1 RSI is far noisier. Reversal signal fires prematurely and triggers more false entries. EA must use M5 RSI to match Python logic."
+    },
+    {
+      "parameter": "Pre-news Phase 1 (T-30 min)",
+      "python_value": "Phase 1: record pre-news range, close all open trades, block new entries from T-30 to T+0",
+      "ea_value": "Not implemented \u00e2\u20ac\u201d no pre-spike trade closure or entry block",
+      "severity": "critical",
+      "description": "EA can hold existing positions through the news spike, which exposes them to 80\u00e2\u20ac\u201c200 pip adverse moves. Python explicitly flattens before news. Missing this phase invalidates the risk model."
+    },
+    {
+      "parameter": "Session filter",
+      "python_value": "No fixed session window \u00e2\u20ac\u201d entry gated by news calendar (ForexFactory events only)",
+      "ea_value": "SessionStart=7 / SessionEnd=22 GMT (broad fixed window)",
+      "severity": "minor",
+      "description": "EA can trade any spike 07:00\u00e2\u20ac\u201c22:00 GMT (e.g. random volatility). Python only trades classified high-impact events. EA mitigates this via spike-proxy approach (documented in comments) but will take non-news spikes as trades."
+    },
+    {
+      "parameter": "News calendar integration",
+      "python_value": "Optional ForexFactory calendar (fetch_ff_calendar); HIGH_IMPACT_EVENTS filter list",
+      "ea_value": "None \u00e2\u20ac\u201d spike detection is the sole proxy for news",
+      "severity": "minor",
+      "description": "Acceptable trade-off for backtesting (noted in EA header). Live deployment should add external calendar webhook or use Python bridge to gate EA entries."
+    },
+    {
+      "parameter": "TP1 partial-close split",
+      "python_value": "TP1 closes 50% of position at 50% retrace; TP2 closes remaining 50% at 70% retrace",
+      "ea_value": "tp1Hit bool exists but visible buy entry sets single TP = ask + Retrace70_Pips * pip \u00e2\u20ac\u201d partial close logic not confirmed in truncated code",
+      "severity": "critical",
+      "description": "EA code is truncated after the buy entry block. If partial close at TP1 is missing, full position exits at TP2 only, removing the 50% profit-lock that anchors the strategy's high win-rate feel. Verify SeekReversal() sell block and trade management OnTick() for partial close."
+    }
+  ]
+}

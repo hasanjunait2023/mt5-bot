@@ -1,0 +1,59 @@
+{
+  "strategy": "S1",
+  "generated_at": "2026-05-22T14:09:25.925460",
+  "python_source": "strategy1_swing_scalp.py",
+  "ea_source": "S1_Swing_Scalp.mq5",
+  "recommended_params": {
+    "SL_Pips": 80,
+    "PART_LV": [
+      25,
+      50,
+      100
+    ],
+    "TRAIL_PIPS": 100
+  },
+  "discrepancies": [
+    {
+      "parameter": "Session Hours",
+      "python_value": "London (07:00-12:00 UTC) + NY (13:00-17:00 UTC)",
+      "ea_value": "London (07:00-12:00 UTC) + NY (13:00-17:00 UTC)",
+      "severity": "minor",
+      "description": "Session hours match exactly in both implementations."
+    },
+    {
+      "parameter": "TP/SL Ratios",
+      "python_value": "SL 50-100 pips (OB boundary, capped at 80), RR \u2265 1:2",
+      "ea_value": "Fixed SL 60 pips, uncapped trailing exit with partial closes at 30/60/120 pips",
+      "severity": "critical",
+      "description": "EA uses fixed SL vs Python's dynamic OB-based SL. Python's RR minimum 1:2 not explicitly enforced in EA's trailing logic."
+    },
+    {
+      "parameter": "Entry Conditions",
+      "python_value": "H4 EMA200 bias + H1 OB + H1 FVG + M15 EMA21 reclaim + RSI14",
+      "ea_value": "H4 EMA200 bias + M15 EMA21 cross + RSI14 (OB/FVG layers removed)",
+      "severity": "critical",
+      "description": "EA intentionally omits Order Block and Fair Value Gap filters present in Python strategy."
+    },
+    {
+      "parameter": "Risk Parameters",
+      "python_value": "1% equity risk, max 5 trades/day, spread \u226430pips, news filter",
+      "ea_value": "1% equity risk, max 5 trades/day (no spread/news filters)",
+      "severity": "minor",
+      "description": "Core risk parameters match, but EA lacks spread and news filtering."
+    },
+    {
+      "parameter": "Partial Close Logic",
+      "python_value": "25% at 25/50/100/200 pips",
+      "ea_value": "25% at 30/60/120 pips with trailing",
+      "severity": "minor",
+      "description": "Different profit-taking levels between implementations."
+    },
+    {
+      "parameter": "Time-Based Exit",
+      "python_value": "Max 24h hold time",
+      "ea_value": "48h time-based exit",
+      "severity": "minor",
+      "description": "Different maximum trade duration limits."
+    }
+  ]
+}

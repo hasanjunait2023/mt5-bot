@@ -1,0 +1,51 @@
+{
+  "strategy": "S2",
+  "generated_at": "2026-05-24T17:59:31.461955",
+  "python_source": "strategy2_m5_scalp.py",
+  "ea_source": "S2_M5_Scalp.mq5",
+  "recommended_params": {
+    "MaxDailyDD_Pct": 5.0,
+    "NewsBlockMinutes": 30,
+    "NewsFilterEnabled": true,
+    "MacdConditionStrict_Bull": "hist[0] > 0 AND hist[0] > hist[1]",
+    "MacdConditionStrict_Bear": "hist[0] < 0 AND hist[0] < hist[1]",
+    "H1BiasRefresh": "once_per_session_not_per_bar"
+  },
+  "discrepancies": [
+    {
+      "parameter": "max_daily_drawdown",
+      "python_value": "5.0% equity \u00e2\u20ac\u201d loop checks and halts trading",
+      "ea_value": "NOT IMPLEMENTED \u00e2\u20ac\u201d no input, no tracking, no halt",
+      "severity": "critical",
+      "description": "Python stops all new entries when daily realized loss hits 5% equity. EA has no equivalent guard \u00e2\u20ac\u201d will compound losses through a losing session without limit on XAUUSD."
+    },
+    {
+      "parameter": "news_filter",
+      "python_value": "news_block(): fetches FF calendar, blocks 30 min before/after High-impact events",
+      "ea_value": "NOT IMPLEMENTED \u00e2\u20ac\u201d no calendar fetch, no block window",
+      "severity": "critical",
+      "description": "Python skips entries near high-impact news. EA trades through NFP, FOMC, CPI etc. on XAUUSD \u00e2\u20ac\u201d flash-spike SL-hunting risk is severe."
+    },
+    {
+      "parameter": "macd_histogram_entry_condition",
+      "python_value": "histogram matches direction (>0 for bull, <0 for bear \u00e2\u20ac\u201d standard interpretation)",
+      "ea_value": "hist[0] > 0 OR hist[0] > hist[1] (bull); hist[0] < 0 OR hist[0] < hist[1] (bear)",
+      "severity": "minor",
+      "description": "EA OR-logic allows entry on a rising-but-still-negative histogram (bull) or falling-but-still-positive (bear). Python implies strict sign match. EA fires ~20-30% more signals, degrades filter quality."
+    },
+    {
+      "parameter": "h1_bias_refresh_frequency",
+      "python_value": "once per trading session (docstring: 'cached')",
+      "ea_value": "every H1 bar close (lastH1Bar gate)",
+      "severity": "minor",
+      "description": "Python locks bias at session open and holds it. EA flips bias mid-session if price crosses EMA200. EA behaviour is more reactive but inconsistent with Python backtest assumptions."
+    },
+    {
+      "parameter": "h1_bias_neutralization_distance",
+      "python_value": "not visible \u00e2\u20ac\u201d code truncated before bias logic",
+      "ea_value": "neutral (h1BiasDir=0) when price within 20 pips of H1 EMA200",
+      "severity": "minor",
+      "description": "EA has an explicit 20-pip dead-band around EMA200 to avoid choppy-zone entries. If Python lacks this, EA is more conservative on bias; if Python has a different threshold, parameters are mismatched."
+    }
+  ]
+}

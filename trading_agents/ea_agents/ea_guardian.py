@@ -163,7 +163,10 @@ def _escalate_to_dev(ea_name: str, symptom: str) -> str:
     """Auto-escalate a HARD anomaly to the dev team's DebugInvestigator."""
     try:
         from trading_agents.dev_agents.debug_investigator import investigate
-        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        # Construct with a sentinel when no key is set so the SDK doesn't raise here;
+        # investigate() routes through chat_resilient, which falls back to the claude
+        # CLI (OAuth subscription) / NVIDIA when this client's key is bad/missing.
+        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or "sk-ant-noop")
         result = investigate(ea_name, symptom, client)
         hypothesis = result.get("hypothesis", "Unknown")
         confidence = result.get("confidence", "?")

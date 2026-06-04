@@ -31,6 +31,10 @@ from typing import Optional
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
+# Put the mt5_bridge/ dir on the path so `import bridge_client` resolves directly.
+# On Linux `from mt5_bridge import bridge_client` hits the namespace-package edge
+# case (see iconic/agent.py, mtf_live_trader.py) — import the submodule by name.
+sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
 
 LOG_DIR = BASE_DIR / "logs" / "scalp"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -89,7 +93,7 @@ def _is_demo(acc) -> bool:
 
 
 def _fetch_bars(symbol: str, n: int) -> Optional[dict]:
-    from mt5_bridge import bridge_client as mt5
+    import bridge_client as mt5
     rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M15, 0, n)
     if rates is None or len(rates) < 60:
         return None
@@ -104,7 +108,7 @@ def _fetch_bars(symbol: str, n: int) -> Optional[dict]:
 
 
 def _calc_lots(symbol: str, entry: float, stop: float, risk_pct: float) -> float:
-    from mt5_bridge import bridge_client as mt5
+    import bridge_client as mt5
     acc, sym = mt5.account_info(), mt5.symbol_info(symbol)
     if acc is None or sym is None:
         return 0.0
@@ -122,14 +126,14 @@ def _calc_lots(symbol: str, entry: float, stop: float, risk_pct: float) -> float
 
 
 def _our_positions() -> tuple:
-    from mt5_bridge import bridge_client as mt5
+    import bridge_client as mt5
     pos = mt5.positions_get(magic=GSVP_MAGIC)
     return tuple(p for p in (pos or ()) if p.magic == GSVP_MAGIC)
 
 
 def _place_order(symbol: str, side: str, stop: float, tp: float,
                  risk_pct: float) -> Optional[tuple[int, float, float]]:
-    from mt5_bridge import bridge_client as mt5
+    import bridge_client as mt5
     tick, sym = mt5.symbol_info_tick(symbol), mt5.symbol_info(symbol)
     if tick is None or sym is None:
         return None
@@ -158,7 +162,7 @@ def _place_order(symbol: str, side: str, stop: float, tp: float,
 
 
 def _realized_pnl(ticket: int) -> float:
-    from mt5_bridge import bridge_client as mt5
+    import bridge_client as mt5
     deals = mt5.history_deals_get(position=ticket) or ()
     return float(sum(getattr(d, "profit", 0.0) for d in deals))
 
@@ -279,7 +283,7 @@ def _write_state(mode: str, symbols: list[str], book: Book, daily: DailyState,
 # ── Main loop ─────────────────────────────────────────────────────────────────
 def run(symbols: list[str], risk_pct: float, dd_limit: float,
         force_paper: bool, allow_real: bool) -> None:
-    from mt5_bridge import bridge_client as mt5
+    import bridge_client as mt5
 
     log.info("=== GS-VP Agent starting === symbols=%s risk=%.1f%% dd=%.1f%% paper=%s allow_real=%s",
              symbols, risk_pct, dd_limit, force_paper, allow_real)

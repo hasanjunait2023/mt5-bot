@@ -1,0 +1,82 @@
+{
+  "strategy": "S1",
+  "generated_at": "2026-05-24T18:11:23.569470",
+  "python_source": "strategy1_swing_scalp.py",
+  "ea_source": "S1_Swing_Scalp.mq5",
+  "recommended_params": {
+    "SL_Pips": "dynamic from OB boundary, clamp [50, 80] \u00e2\u20ac\u201d requires OB detection logic in EA",
+    "TimeExitHrs": 24,
+    "MagicNumber": 20260100,
+    "NewsFilter": "add high-impact block \u00c2\u00b160 min (EconomicCalendar or external webhook)",
+    "PART_LV": "[25, 50, 100]",
+    "TP4_Pips": 200,
+    "OBLayer": "re-add H1 OB detection and require price inside/near OB zone before entry",
+    "FVGLayer": "re-add H1 FVG filter (or explicitly backtest S1v2 without it and document PF)",
+    "RR_MinCheck": "gate entry: if (TP_pips / SL_pips) < 2.0 \u00e2\u2020\u2019 skip"
+  },
+  "discrepancies": [
+    {
+      "parameter": "entry_conditions_layers",
+      "python_value": "H4 EMA200 bias + H1 Order Block + H1 FVG + M15 EMA21 reclaim + RSI14 (4 layers)",
+      "ea_value": "H4 EMA200 bias (dist>30p) + M15 EMA21 cross + RSI14 (2 layers \u00e2\u20ac\u201d OB/FVG intentionally removed)",
+      "severity": "critical",
+      "description": "EA is a v2 that stripped H1 OB and H1 FVG confluence filters to match backtest_s1_v2. Live EA will fire on signals the Python strategy would reject. Signal frequency will be higher; edge quality unverified without OB/FVG gate."
+    },
+    {
+      "parameter": "sl_calculation",
+      "python_value": "Dynamic: OB boundary, capped 50\u00e2\u20ac\u201c80 pips (SL_MIN_PIPS=50, SL_MAX_PIPS=80)",
+      "ea_value": "Fixed 60 pips (SL_Pips=60, single input, no dynamic OB-based sizing)",
+      "severity": "critical",
+      "description": "Python SL is structural (placed at OB edge), EA SL is arbitrary fixed. Lot sizing differs because pip distance used in CalcLot differs per trade. Risk per trade may be miscalibrated vs Python intent."
+    },
+    {
+      "parameter": "exit_strategy",
+      "python_value": "Fixed partial closes: +25p(25%), +50p(25%), +100p(25%), +200p(25%) \u00e2\u20ac\u201d full exit at +200p",
+      "ea_value": "Trailing runner: bank 25% at +30/+60/+120p, BE after first, lock +60p after +120p, final 25% trails 100p off peak \u00e2\u20ac\u201d no fixed TP",
+      "severity": "critical",
+      "description": "Completely different exit architecture. Python closes all at +200p max. EA leaves 25% running indefinitely with trail. PF/profit distribution profiles are incomparable. EA v2 comment acknowledges this as intentional ('uncapped winners = the v2 edge') but means Python backtest results do NOT apply to EA."
+    },
+    {
+      "parameter": "partial_close_trigger_pips",
+      "python_value": "25, 50, 100, 200 pips",
+      "ea_value": "30, 60, 120 pips (3 levels, not 4)",
+      "severity": "critical",
+      "description": "All partial levels are different. First partial fires 20% later in EA (+30 vs +25), affecting BE timing and subsequent exposure on losing follow-through."
+    },
+    {
+      "parameter": "max_hold_time",
+      "python_value": "MAX_HOLD_H = 24 hours",
+      "ea_value": "TimeExitHrs = 48 hours",
+      "severity": "minor",
+      "description": "EA holds trades 2\u00c3\u2014 longer. Extends overnight exposure and gap risk, especially relevant for XAUUSD."
+    },
+    {
+      "parameter": "news_filter",
+      "python_value": "NEWS_BLOCK = 60 min around high-impact events (ForexFactory API)",
+      "ea_value": "No news filter present",
+      "severity": "critical",
+      "description": "EA will enter and hold through high-impact news events (NFP, CPI, FOMC). Python strategy explicitly blocks \u00c2\u00b160 min. Missing this on XAUUSD is a significant live-risk gap."
+    },
+    {
+      "parameter": "magic_number",
+      "python_value": "MAGIC = 20260100",
+      "ea_value": "MagicNumber = 20260102",
+      "severity": "minor",
+      "description": "Different magic numbers. If Python bot and EA ever run on the same account/symbol, they will not recognize each other's trades. Causes duplicate position risk and double-counting in MaxTrades check."
+    },
+    {
+      "parameter": "h4_ema_distance_threshold",
+      "python_value": "Not enforced in visible Python code (bias = price above/below EMA200 only)",
+      "ea_value": "dist < 30 pips \u00e2\u2020\u2019 h4BiasDir = 0 (no trade if price too close to EMA)",
+      "severity": "minor",
+      "description": "EA adds a 30-pip minimum distance filter to avoid choppy EMA-hugging conditions. Python strategy has no equivalent gate. EA is stricter here \u00e2\u20ac\u201d net positive, but unverified in Python backtest context."
+    },
+    {
+      "parameter": "rr_minimum",
+      "python_value": "RR_MIN = 2.0 (enforced before entry)",
+      "ea_value": "Not enforced \u00e2\u20ac\u201d trailing runner has no fixed TP so RR is dynamic/open-ended",
+      "severity": "minor",
+      "description": "Python rejects entries where 2:1 RR is not achievable. EA never checks RR at entry. With fixed 60p SL and no minimum TP gate, EA can enter trades Python would skip."
+    }
+  ]
+}

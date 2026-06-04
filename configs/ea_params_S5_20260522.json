@@ -1,0 +1,49 @@
+{
+  "strategy": "S5",
+  "generated_at": "2026-05-22T14:27:23.468232",
+  "python_source": "strategy5_news_spike.py",
+  "ea_source": "S5_News_Spike_Reversal.mq5",
+  "recommended_params": {
+    "Retrace50_Pips": "Dynamic calculation based on spike range",
+    "Retrace70_Pips": "Dynamic calculation based on spike range",
+    "RSI_Overbought": 70,
+    "RSI_Oversold": 30
+  },
+  "discrepancies": [
+    {
+      "parameter": "Session Hours",
+      "python_value": "Event-driven (news-based timing)",
+      "ea_value": "Fixed 7:00-22:00",
+      "severity": "critical",
+      "description": "Python strategy operates only during news events with pre/post windows, while EA uses fixed daily session hours"
+    },
+    {
+      "parameter": "TP/SL Calculation",
+      "python_value": "Percentage-based retracement (50%/70% of spike range)",
+      "ea_value": "Fixed pips (50/70 pips)",
+      "severity": "critical",
+      "description": "Different TP/SL calculation methods lead to varying risk-reward ratios depending on spike size"
+    },
+    {
+      "parameter": "RSI Thresholds",
+      "python_value": "30 (oversold), 70 (overbought)",
+      "ea_value": "35 (oversold), 65 (overbought)",
+      "severity": "minor",
+      "description": "Slight difference in RSI confirmation levels may affect entry timing"
+    },
+    {
+      "parameter": "Pre-News Handling",
+      "python_value": "Blocks entries 30min before news, closes positions",
+      "ea_value": "No news calendar integration",
+      "severity": "critical",
+      "description": "EA lacks news event awareness, using only price action as proxy"
+    },
+    {
+      "parameter": "State Persistence",
+      "python_value": "Uses JSON state file",
+      "ea_value": "No state persistence",
+      "severity": "minor",
+      "description": "EA loses all state on restart, Python preserves between runs"
+    }
+  ]
+}

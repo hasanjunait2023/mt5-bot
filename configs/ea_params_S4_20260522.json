@@ -1,0 +1,40 @@
+{
+  "strategy": "S4",
+  "generated_at": "2026-05-22T14:23:54.226914",
+  "python_source": "strategy4_multi_pair.py",
+  "ea_source": "S4_MultiPair_Engine.mq5",
+  "recommended_params": {
+    "RiskPct": 0.3,
+    "MagicNumber": 20260400
+  },
+  "discrepancies": [
+    {
+      "parameter": "Portfolio Risk Limits",
+      "python_value": "MAX_TOTAL_RISK=1.5%, MAX_OPEN_TRADES=3, group-specific limits (1 metal, 2 USD)",
+      "ea_value": "Not implemented (EA is per-pair, lacks portfolio-wide tracking)",
+      "severity": "critical",
+      "description": "Python enforces portfolio-level risk constraints across all pairs, while MQL5 EA cannot manage cross-pair limits as it runs independently per chart"
+    },
+    {
+      "parameter": "Daily Drawdown Halt",
+      "python_value": "5% combined daily DD halts all pairs",
+      "ea_value": "Not implemented",
+      "severity": "critical",
+      "description": "Python has portfolio-wide DD monitoring and trading halt, MQL5 EA lacks this cross-pair functionality"
+    },
+    {
+      "parameter": "Correlation Block",
+      "python_value": "Metals group same direction blocks new trades",
+      "ea_value": "Not implemented",
+      "severity": "critical",
+      "description": "Python prevents concurrent opposite trades in metals group, MQL5 EA has no cross-pair coordination"
+    },
+    {
+      "parameter": "Session Hours (USDJPY)",
+      "python_value": "[(0,4), (13,17)]",
+      "ea_value": "Same (0-4 and 13-17)",
+      "severity": "minor",
+      "description": "Matches exactly, but EA uses hour < end condition (0-3:59, 13-16:59)"
+    }
+  ]
+}

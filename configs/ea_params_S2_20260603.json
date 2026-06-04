@@ -1,0 +1,71 @@
+{
+  "strategy": "S2",
+  "generated_at": "2026-06-03T05:03:41.919985",
+  "python_source": "strategy2_m5_scalp.py",
+  "ea_source": "S2_M5_Scalp.mq5",
+  "recommended_params": {
+    "AddNewsFilter": "Implement HTTP call to ff_calendar_thisweek.json or use WebRequest \u00e2\u20ac\u201d block 30 min before/after High impact events. Requires Tools > Options > Expert Advisors > Allow WebRequest for listed URLs.",
+    "DailyDrawdownLimit": "Track session equity start (OnSessionStart or first OnTick of UTC day). If (equity_start - AccountEquity()) / equity_start >= 0.05 \u00e2\u20ac\u201d stop opening trades until next UTC day.",
+    "MACDCondition_Bull": "hist[0] > 0 AND hist[0] > hist[1] \u00e2\u20ac\u201d require both positive AND rising to match Python intent",
+    "MACDCondition_Bear": "hist[0] < 0 AND hist[0] < hist[1] \u00e2\u20ac\u201d require both negative AND falling",
+    "H1BiasCache": "If Python once-per-session behavior is intentional, cache h1BiasDir at session open (07:00 UTC) and freeze until 17:00. Currently EA updates each H1 bar \u00e2\u20ac\u201d decide which is spec."
+  },
+  "discrepancies": [
+    {
+      "parameter": "news_filter",
+      "python_value": "30-min block around high-impact FF events (news_block())",
+      "ea_value": "ABSENT \u00e2\u20ac\u201d no news filter anywhere in EA",
+      "severity": "critical",
+      "description": "EA will trade through high-impact news. Python won't. Real edge difference, not cosmetic."
+    },
+    {
+      "parameter": "max_daily_dd",
+      "python_value": "5.0% equity drawdown limit \u00e2\u20ac\u201d halts new trades",
+      "ea_value": "ABSENT \u00e2\u20ac\u201d no daily DD tracking or halt logic visible",
+      "severity": "critical",
+      "description": "EA has no daily loss circuit-breaker. Python stops trading after 5% daily equity loss. EA can blow past that unchecked."
+    },
+    {
+      "parameter": "h1_bias_update_frequency",
+      "python_value": "Cached once per session (comment: 'once per session, cached')",
+      "ea_value": "RefreshH1Bias() called every H1 bar \u00e2\u20ac\u201d updates every 60 min",
+      "severity": "minor",
+      "description": "EA bias is fresher and more responsive. Python locks in the morning bias all day. EA behavior is preferable but they diverge mid-session."
+    },
+    {
+      "parameter": "h1_bias_distance_filter",
+      "python_value": "Not visible in truncated code \u00e2\u20ac\u201d unclear if implemented",
+      "ea_value": "if(dist < 20) h1BiasDir = 0 \u00e2\u20ac\u201d flat bias when price within 20 pips of EMA200",
+      "severity": "minor",
+      "description": "EA suppresses bias signal near EMA200. If Python lacks this, it takes trades when price is ambiguous relative to bias."
+    },
+    {
+      "parameter": "breakeven_offset",
+      "python_value": "BE at exact entry (openPrice, implied by BE_PIPS=8 trigger to entry SL)",
+      "ea_value": "new_sl = openPrice + 2 * pip (adds 2-pip buffer above entry for buys)",
+      "severity": "minor",
+      "description": "EA sets SL 2 pips inside profit \u00e2\u20ac\u201d protects against whipsaw at entry. Python implies pure breakeven. Small but real behavioral diff."
+    },
+    {
+      "parameter": "macd_entry_condition",
+      "python_value": "Layer comment: 'MACD histogram matches direction' \u00e2\u20ac\u201d implies histogram > 0 for bull, < 0 for bear",
+      "ea_value": "hist[0] > 0 || hist[0] > hist[1] for bull \u00e2\u20ac\u201d accepts negative-but-rising histogram",
+      "severity": "minor",
+      "description": "EA OR condition is more permissive. A rising negative histogram triggers bull entry in EA; Python intent requires histogram already positive. May generate early entries in EA."
+    },
+    {
+      "parameter": "rsi_zones",
+      "python_value": "Zone values not visible in truncated code",
+      "ea_value": "Bull: RSI 40-65 | Bear: RSI 35-60 (asymmetric bounds)",
+      "severity": "minor",
+      "description": "RSI zones are asymmetric \u00e2\u20ac\u201d bear range is 5 points lower than bull. Cannot confirm Python matches without full file. Verify intentionality."
+    },
+    {
+      "parameter": "spread_filter_application",
+      "python_value": "spread_ok() checked before entry \u00e2\u20ac\u201d MAX_SPREAD=25 pips",
+      "ea_value": "Max_Spread=25 declared as input but OnTick() not visible (file truncated) \u00e2\u20ac\u201d cannot confirm it's actually called",
+      "severity": "minor",
+      "description": "Spread input exists but application is unverified due to truncation. Confirm Max_Spread check is inside OnTick() entry gate."
+    }
+  ]
+}

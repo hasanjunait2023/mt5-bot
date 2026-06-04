@@ -65,3 +65,35 @@ def get_loss_analysis():
             "by_symbol": {},
             "trades": [],
         }
+
+
+@router.get("/scorecard")
+def get_scorecard(window_days: int = 30):
+    """Strategy Performance scorecard — verdict + per-strategy P&L + fix + improvement
+    queue. Serves the cached file the analytics service writes (fresh, cheap); falls
+    back to building live if the file is missing."""
+    import json
+    sc_file = BASE_DIR / "logs" / "_strategy_scorecard.json"
+    try:
+        if sc_file.exists():
+            data = json.loads(sc_file.read_text(encoding="utf-8"))
+            if window_days == data.get("window_days"):
+                return data
+        from trading_agents.strategy_scorecard import build_scorecard
+        return build_scorecard(window_days=window_days)
+    except Exception as e:
+        return {"error": f"scorecard unavailable: {e}", "strategies": [],
+                "counts": {"profitable": 0, "losing": 0, "insufficient": 0},
+                "portfolio": {"net_pnl": 0, "trades": 0}, "improvement_queue": []}
+
+
+@router.get("/reconciler/status")
+def get_reconciler_status():
+    """Proxy the bridge reconciler status for the dashboard 'last reconciled' stamp."""
+    import os
+    import requests
+    base = os.getenv("MT5_BRIDGE_URL", "http://localhost:8090")
+    try:
+        return requests.get(f"{base}/reconciler/status", timeout=4).json()
+    except Exception as e:
+        return {"error": str(e), "last_run": None, "enabled": False}

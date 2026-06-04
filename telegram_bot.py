@@ -27,6 +27,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from trading_agents.maic_ceo_agent import chat as maic_chat, clear_history
 from trading_agents import telegram_hq
 
+_NB_URL_RE = re.compile(r"https?://notebooklm\.google\.com/notebook/[A-Za-z0-9?=&_-]+")
+
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
     level=logging.INFO
@@ -181,6 +183,40 @@ async def _handle_approval(update: Update, text: str) -> bool:
     return True
 
 
+# ───────────────────────── strategy factory ─────────────────────────
+
+async def _handle_youtube(update: Update, text: str) -> bool:
+    """If the message has a YouTube link, create a factory job. Returns True if
+    consumed."""
+    from trading_agents.factory import youtube as yt
+    from trading_agents.factory import state as fst
+
+    url = yt.extract_url(text)
+    if not url:
+        return False
+    nb_match = _NB_URL_RE.search(text)
+    notebook_url = nb_match.group(0) if nb_match else ""
+    chat_ref = str(update.effective_chat.id)
+    try:
+        job = await asyncio.to_thread(fst.new_job, url, chat_id=chat_ref,
+                                      notebook_url=notebook_url)
+    except Exception as e:  # noqa: BLE001
+        await update.message.reply_text(f"Could not start factory job: {e}")
+        return True
+
+    msg = [f"🏭 Strategy Factory job *{job['job_id']}* started.",
+           f"Video: {url}"]
+    if notebook_url:
+        msg.append("NotebookLM notebook linked ✅ — I'll run the A-to-Z research.")
+    else:
+        msg.append("⚠️ No NotebookLM notebook URL found. For deep research, create a "
+                   "notebook, add this video as a source, and paste the notebook URL. "
+                   "I'll still run transcript + chart-vision research without it.")
+    msg.append("Track progress & approve gates in the dashboard → /factory.")
+    await update.message.reply_text("\n".join(msg), parse_mode="Markdown")
+    return True
+
+
 # ───────────────────────── message router ─────────────────────────
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -194,6 +230,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     category = telegram_hq.category_for_thread(thread_id) if thread_id else None
     logger.info("[Maic] %s (topic=%s): %s",
                 update.effective_user.username, category, user_text[:80])
+
+    # YouTube link → kick off a Strategy Factory job (Option C: also grab the
+    # NotebookLM notebook URL if the user pasted one alongside it).
+    if await _handle_youtube(update, user_text):
+        return
 
     # Approvals topic → try to consume as a YES/NO/TEST MORE decision first.
     if category == "ea_coach" and await _handle_approval(update, user_text):
@@ -230,7 +271,10 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     logger.info("Maic CEO Agent bot is running...")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    # drop_pending_updates: on a (re)start, skip the backlog so Maic doesn't
+    # re-answer old messages — matters while the dual-poller conflict causes
+    # frequent restarts until the competing (VPS) instance is stopped.
+    app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 
 if __name__ == "__main__":

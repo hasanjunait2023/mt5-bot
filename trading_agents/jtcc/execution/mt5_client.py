@@ -11,14 +11,14 @@ import requests
 
 log = logging.getLogger("jtcc.mt5_client")
 
-_DEFAULT_TIMEOUT = 5
-_MAX_RETRIES = 3
+_DEFAULT_TIMEOUT = 20       # MT5 copy_rates can be slow during broker reconnect
+_MAX_RETRIES = 2            # fewer retries — fail fast to unblock queue
 _RETRY_DELAY = 1.0
 
 # Circuit breaker state
 _breaker_state = {"failures": 0, "open_until": 0.0}
-_BREAKER_THRESHOLD = 5      # consecutive failures to open
-_BREAKER_COOLDOWN = 60      # seconds to wait before retry
+_BREAKER_THRESHOLD = 3      # open faster — 3 failures is enough signal
+_BREAKER_COOLDOWN = 30      # shorter cooldown — retry sooner
 
 
 def _breaker_check() -> bool:
@@ -38,7 +38,7 @@ def _breaker_record(success: bool) -> None:
 
 
 def _get_bridge_url() -> str:
-    return os.getenv("MT5_BRIDGE_URL", "http://localhost:8000").rstrip("/")
+    return os.getenv("MT5_BRIDGE_URL", "http://localhost:8090").rstrip("/")
 
 
 def _get_headers() -> dict:

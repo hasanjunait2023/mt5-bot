@@ -65,8 +65,15 @@ class IconicTradeSignal:
 
 
 class IconicEngine:
-    def __init__(self, news_provider: Optional[NewsProvider] = None):
-        self.scorer = IconicConfluenceScorer(news_provider=news_provider)
+    def __init__(self, news_provider: Optional[NewsProvider] = None,
+                 setup_tf: str = SETUP_TF, pullback_tf: str = "M15",
+                 purpose_window_min: int = 90, rr_a: float = RR_A, rr_b: float = RR_B):
+        self.scorer = IconicConfluenceScorer(
+            news_provider=news_provider, setup_tf=setup_tf,
+            pullback_tf=pullback_tf, purpose_window_min=purpose_window_min)
+        self._setup_tf = setup_tf
+        self._rr_a = rr_a
+        self._rr_b = rr_b
 
     def evaluate(self, snapshots: dict, strength: dict, *,
                  now: Optional[datetime] = None) -> list[IconicTradeSignal]:
@@ -105,21 +112,21 @@ class IconicEngine:
 
     def _build(self, sym: str, snap: dict, sc: IconicScore) -> Optional[IconicTradeSignal]:
         tfs = snap.get("tfs", {})
-        if SETUP_TF not in tfs:
+        if self._setup_tf not in tfs:
             return None
-        h1 = tfs[SETUP_TF]
-        setup = pattern.detect_setup(h1, sc.side, symbol=sym)
+        setup_df = tfs[self._setup_tf]
+        setup = pattern.detect_setup(setup_df, sc.side, symbol=sym)
         if not setup.valid:
             return None
 
         # Dead-volume confirmation on the Test 2 bar (the stop-hunt push).
-        volume_dead = self._dead_at(h1, setup.test2_idx)
+        volume_dead = self._dead_at(setup_df, setup.test2_idx)
 
         entry, stop = float(setup.entry), float(setup.stop)
         risk = abs(entry - stop)
         if risk <= 0:
             return None
-        rr = RR_A if sc.klass == "A" else RR_B
+        rr = self._rr_a if sc.klass == "A" else self._rr_b
         scale_rs = SCALE_A if sc.klass == "A" else SCALE_B
         if sc.side == "SELL":
             tp_final = entry - rr * risk

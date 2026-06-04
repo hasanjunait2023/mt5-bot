@@ -1,0 +1,161 @@
+// © Manipulation Candle Detector [ICT/SMC]
+// Definition (per the user's NotebookLM sources): a manipulation candle "manipulates to one
+// side and then closes in the OPPOSING direction" — an outside-bar liquidity grab + flip.
+//   Bullish: candle breaks BELOW the previous candle's low (sweeps SSL) and CLOSES ABOVE the
+//            previous candle's high. Rule quoted: "we always need the candle to close above the
+//            previous candle's high."  → "🟢 Bull Manipulation"
+//   Bearish: candle breaks ABOVE the previous candle's high (sweeps BSL) and CLOSES BELOW the
+//            previous candle's low.  → "🔴 Bear Manipulation"
+// The sources give NO fixed wick ratio — the CLOSE beyond the opposite extreme is the requirement.
+// Confluences (optional, off by default): high volume, must also sweep a real swing level,
+// rejection-wick filter. Swing highs/lows are drawn as liquidity (BSL/SSL) and turn solid when grabbed.
+// NON-REPAINT: pattern uses the prior closed candle [1]; all detection gated by barstate.isconfirmed.
+//@version=6
+indicator("Manipulation Candle Detector [ICT/SMC]", overlay=true, max_bars_back=5000, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+
+// ─── CORE RULE ────────────────────────────────────────────────────────────────
+var GRP_CORE = "Manipulation Candle (core rule)"
+sweepBuffer = input.float(0.0, "Sweep Buffer", minval=0.0, tooltip="Min price (points) the wick must pierce the previous candle's extreme by", group=GRP_CORE)
+
+// ─── OPTIONAL CONFLUENCE ──────────────────────────────────────────────────────
+var GRP_CONF = "Confluence (optional — off = pure pattern)"
+useWick    = input.bool(false, "Require rejection wick", tooltip="Also require a long wick into the liquidity (sources give no fixed ratio, so default OFF)", group=GRP_CONF)
+minWickRatio = input.float(50.0, "  Min Rejection Wick %", minval=0.0, maxval=100.0, group=GRP_CONF)
+reqVol     = input.bool(false, "Require high volume", tooltip="Manipulation often prints on high volume then reverses (a trap). Off for FX/CFDs with no real volume", group=GRP_CONF)
+volLen     = input.int(20, "  Volume SMA Length", minval=1, group=GRP_CONF)
+volMult    = input.float(1.5, "  Volume × SMA", minval=0.1, step=0.1, group=GRP_CONF)
+reqSwing   = input.bool(true, "Require sweep of a swing level", tooltip="Only signal if the wick also grabs a recent swing high/low (real liquidity), not just the previous candle. Turn OFF for the pure previous-candle pattern", group=GRP_CONF)
+
+// ─── LIQUIDITY / VISUALS ──────────────────────────────────────────────────────
+var GRP_VIS = "Liquidity & Visuals"
+lookback   = input.int(15, "Swing Lookback", minval=3, maxval=50, tooltip="Bars left/right to mark swing highs (BSL) / lows (SSL) as liquidity", group=GRP_VIS)
+showLines  = input.bool(true, "Show Liquidity Lines", group=GRP_VIS)
+showLabels = input.bool(true, "Show Labels", group=GRP_VIS)
+showBg     = input.bool(true, "Show Background", group=GRP_VIS)
+showTable  = input.bool(true, "Show Info Table", group=GRP_VIS)
+lineExtend = input.int(25, "Liquidity Line Length", minval=5, maxval=100, group=GRP_VIS)
+
+// ─── SWING (PIVOT) LIQUIDITY — non-repainting ─────────────────────────────────
+// Pivots confirm `lookback` bars after they form; ph/pl RETURN the pivot price.
+ph = ta.pivothigh(lookback, lookback)
+pl = ta.pivotlow(lookback, lookback)
+
+var float[] swHi      = array.new_float()
+var int[]   swHiSwept = array.new_int()
+var line[]  swHiLines = array.new_line()
+var float[] swLo      = array.new_float()
+var int[]   swLoSwept = array.new_int()
+var line[]  swLoLines = array.new_line()
+
+addSwing(float[] prices, int[] swept, line[] lines, float price, int pbar, color col) =>
+    line ln = na
+    if showLines
+        ln := line.new(pbar, price, bar_index + lineExtend, price, xloc=xloc.bar_index, color=color.new(col, 0), style=line.style_dashed, width=1)
+    array.push(prices, price)
+    array.push(swept, 0)
+    array.push(lines, ln)
+    if array.size(prices) > 3
+        array.shift(prices)
+        array.shift(swept)
+        old = array.shift(lines)
+        if not na(old)
+            line.delete(old)
+
+if not na(ph)
+    addSwing(swHi, swHiSwept, swHiLines, ph, bar_index - lookback, color.red)
+if not na(pl)
+    addSwing(swLo, swLoSwept, swLoLines, pl, bar_index - lookback, color.green)
+
+// ─── CANDLE ANATOMY ───────────────────────────────────────────────────────────
+prevH     = high[1]
+prevL     = low[1]
+rng       = high - low
+lowerWick = math.min(open, close) - low
+upperWick = high - math.max(open, close)
+volSma    = ta.sma(volume, volLen)
+
+// Core notebook rule: sweep one side of the PREVIOUS candle, close beyond its OTHER side.
+bullRaw = low < prevL - sweepBuffer and close > prevH
+bearRaw = high > prevH + sweepBuffer and close < prevL
+
+// Optional rejection-wick confluence
+wickBullOK = not useWick or (rng > 0 and lowerWick >= rng * minWickRatio / 100.0)
+wickBearOK = not useWick or (rng > 0 and upperWick >= rng * minWickRatio / 100.0)
+// Optional volume confluence
+volOK = not reqVol or (not na(volSma) and volume >= volSma * volMult)
+
+// ─── DETECTION (confirmed bars only) ──────────────────────────────────────────
+var string lastSignal = "None"
+bool bull = false
+bool bear = false
+bool sweptLowNow  = false   // did THIS bar grab a fresh swing low?
+bool sweptHighNow = false   // did THIS bar grab a fresh swing high?
+
+if barstate.isconfirmed
+    // Mark swing-liquidity grabs (independent of the signal) → solidify the line.
+    if array.size(swLo) > 0
+        for i = 0 to array.size(swLo) - 1
+            if array.get(swLoSwept, i) == 0 and low < array.get(swLo, i)
+                array.set(swLoSwept, i, 1)
+                sweptLowNow := true
+                ln = array.get(swLoLines, i)
+                if not na(ln)
+                    line.set_style(ln, line.style_solid)
+                    line.set_color(ln, color.new(color.lime, 0))
+                    line.set_width(ln, 2)
+    if array.size(swHi) > 0
+        for i = 0 to array.size(swHi) - 1
+            if array.get(swHiSwept, i) == 0 and high > array.get(swHi, i)
+                array.set(swHiSwept, i, 1)
+                sweptHighNow := true
+                ln = array.get(swHiLines, i)
+                if not na(ln)
+                    line.set_style(ln, line.style_solid)
+                    line.set_color(ln, color.new(color.red, 0))
+                    line.set_width(ln, 2)
+
+    bull := bullRaw and wickBullOK and volOK and (not reqSwing or sweptLowNow)
+    bear := bearRaw and wickBearOK and volOK and (not reqSwing or sweptHighNow)
+    if bull
+        lastSignal := "Bull Manipulation"
+    if bear
+        lastSignal := "Bear Manipulation"
+
+// ─── LABELS (capped at 50) ────────────────────────────────────────────────────
+var label[] labels = array.new_label()
+
+_addLabel(string txt, color col, bool below) =>
+    lb = label.new(bar_index, below ? low : high, txt, xloc=xloc.bar_index, yloc=below ? yloc.belowbar : yloc.abovebar, style=below ? label.style_label_up : label.style_label_down, color=col, textcolor=color.white, size=size.small)
+    array.push(labels, lb)
+    if array.size(labels) > 50
+        label.delete(array.shift(labels))
+
+if showLabels and bull
+    _addLabel("🟢 Bull Manipulation", color.new(color.green, 0), true)
+if showLabels and bear
+    _addLabel("🔴 Bear Manipulation", color.new(color.red, 0), false)
+
+// ─── CANDLE COLOR + BACKGROUND ────────────────────────────────────────────────
+barcolor(bull ? color.lime : bear ? color.red : na)
+bgcolor(showBg ? (bull ? color.new(color.green, 85) : bear ? color.new(color.red, 85) : na) : na)
+
+// ─── INFO TABLE (top-right) ───────────────────────────────────────────────────
+var table info = table.new(position.top_right, 2, 4, border_width=1, frame_color=color.new(color.gray, 40), frame_width=1)
+
+if showTable and barstate.islast
+    sigCol = lastSignal == "Bull Manipulation" ? color.new(color.green, 0) : lastSignal == "Bear Manipulation" ? color.new(color.red, 0) : color.new(color.gray, 0)
+    filters = (useWick ? "Wick " : "") + (reqVol ? "Vol " : "") + (reqSwing ? "Swing" : "")
+    filters := filters == "" ? "Pattern only" : filters
+    table.cell(info, 0, 0, "Last Signal", text_color=color.white, text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(info, 1, 0, lastSignal, text_color=color.white, text_size=size.small, bgcolor=sigCol)
+    table.cell(info, 0, 1, "Rule", text_color=color.white, text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(info, 1, 1, "Sweep + flip-close", text_color=color.white, text_size=size.small, bgcolor=color.new(color.black, 40))
+    table.cell(info, 0, 2, "Confluence", text_color=color.white, text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(info, 1, 2, filters, text_color=color.white, text_size=size.small, bgcolor=color.new(color.black, 40))
+    table.cell(info, 0, 3, "Swing Lookback", text_color=color.white, text_size=size.small, bgcolor=color.new(color.black, 20))
+    table.cell(info, 1, 3, str.tostring(lookback) + " bars", text_color=color.white, text_size=size.small, bgcolor=color.new(color.black, 40))
+
+// ─── ALERTS ───────────────────────────────────────────────────────────────────
+alertcondition(bull, "Bullish Manipulation Candle", "Bullish manipulation: swept previous low, closed above previous high")
+alertcondition(bear, "Bearish Manipulation Candle", "Bearish manipulation: swept previous high, closed below previous low")
+alertcondition(bull or bear, "Any Manipulation Candle", "Manipulation candle detected (sweep + flip-close)")

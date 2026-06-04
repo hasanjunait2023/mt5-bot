@@ -1,0 +1,73 @@
+{
+  "strategy": "S5",
+  "generated_at": "2026-06-03T05:06:09.590329",
+  "python_source": "strategy5_news_spike.py",
+  "ea_source": "S5_News_Spike_Reversal.mq5",
+  "recommended_params": {
+    "TP1_calc": "dynamic \u00e2\u20ac\u201d measure spike_pips = (spikeHigh - spikeLow) / pip; tp1 = entry + spike_pips * 0.50 * pip (bear spike: buy) or entry - spike_pips * 0.50 * pip (bull spike: sell)",
+    "TP2_calc": "dynamic \u00e2\u20ac\u201d tp2 = entry + spike_pips * 0.70 * pip (same direction as TP1)",
+    "RSI_buy_threshold": "< 30 (not < 35)",
+    "RSI_sell_threshold": "> 70 (not > 65)",
+    "SessionStart": "remove hard clock gate OR add event-proximity guard (\u00c2\u00b130 min around known event times hardcoded)",
+    "PartialClose_TP1": "close 50% of initLot when bid/ask crosses TP1 level",
+    "PreNewsRange": "record iHigh/iLow of last 6 M5 bars before spike as pre-event range reference"
+  },
+  "discrepancies": [
+    {
+      "parameter": "TP1 / TP2 calculation method",
+      "python_value": "dynamic: spike_size \u00c3\u2014 0.50 / spike_size \u00c3\u2014 0.70 (scales with spike)",
+      "ea_value": "static fixed: Retrace50_Pips=50 / Retrace70_Pips=70 (never scales)",
+      "severity": "critical",
+      "description": "On 80-pip spike Python targets 40/56 pips; EA targets 50/70 \u00e2\u20ac\u201d already overshooting. On 150-pip spike Python targets 75/105; EA still only 50/70 \u00e2\u20ac\u201d massively undershoots. RR degrades as spike grows larger. This breaks the 1:3\u00e2\u20ac\u201c1:7 RR claim."
+    },
+    {
+      "parameter": "RSI entry threshold",
+      "python_value": "RSI_OVERBOUGHT=70, RSI_OVERSOLD=30",
+      "ea_value": "rsi[1] < 35 (buy), rsi[1] > 65 (sell)",
+      "severity": "minor",
+      "description": "EA uses tighter band (65/35 vs 70/30). Fewer entries triggered \u00e2\u20ac\u201d filters out some valid reversals Python would take. Directionally conservative but inconsistent with spec."
+    },
+    {
+      "parameter": "Session window",
+      "python_value": "no fixed window \u00e2\u20ac\u201d event-driven (triggers only around ForexFactory news times)",
+      "ea_value": "SessionStart=7, SessionEnd=22 GMT (any candle in window)",
+      "severity": "critical",
+      "description": "Python gates entries on actual calendar events. EA gates only by clock hour \u00e2\u20ac\u201d will enter on any 80-pip spike 7-22 GMT regardless of news. In backtester this produces false positives (random spikes, liquidity sweeps) that Python would ignore."
+    },
+    {
+      "parameter": "News calendar integration",
+      "python_value": "HAS_NEWS_FILTER via fetch_ff_calendar() \u00e2\u20ac\u201d pre-blocks entries outside \u00c2\u00b130 min of high-impact events",
+      "ea_value": "absent \u00e2\u20ac\u201d spike detection is the only news proxy, no event pre-filter",
+      "severity": "critical",
+      "description": "Python pre-identifies event time T, records pre-news range T-30, blocks entries outside T+0 to T+30. EA has no concept of event time \u00e2\u20ac\u201d cannot do pre-news ranging or time-gated entry. Fundamentally different signal source."
+    },
+    {
+      "parameter": "Pre-news range recording (Phase 1)",
+      "python_value": "records high/low of 30-min window before event; uses as context for reversal target",
+      "ea_value": "absent \u00e2\u20ac\u201d no pre-news range tracked",
+      "severity": "critical",
+      "description": "Python uses pre-news range to contextualize spike magnitude and set reversal targets relative to prior range. EA has no equivalent. Entire Phase 1 logic missing."
+    },
+    {
+      "parameter": "Partial close at TP1 (50% position)",
+      "python_value": "TP1 closes 50% of position; remaining 50% trails to TP2",
+      "ea_value": "code truncated but visible TP line sets single TP = ask + Retrace70_Pips \u00e2\u20ac\u201d no partial close logic visible",
+      "severity": "critical",
+      "description": "If EA goes to full TP2 without partial close, risk profile changes materially. Win-rate arithmetic in Python (50% at TP1, 50% at TP2) not replicated. Verify full EA code \u00e2\u20ac\u201d partial close block may be missing."
+    },
+    {
+      "parameter": "REVERSAL_WAIT_MIN entry timing",
+      "python_value": "waits 5 min post-spike before hunting reversal",
+      "ea_value": "elapsed >= 5 \u00e2\u0153\u201c \u00e2\u20ac\u201d matches",
+      "severity": "minor",
+      "description": "Matches. Confirmed in SeekReversal() elapsed < 5 guard."
+    },
+    {
+      "parameter": "TRADE_MAX_HOURS / HoldMaxMin",
+      "python_value": "TRADE_MAX_HOURS=4 (240 min)",
+      "ea_value": "HoldMaxMin=240 \u00e2\u0153\u201c \u00e2\u20ac\u201d matches",
+      "severity": "minor",
+      "description": "Matches."
+    }
+  ]
+}

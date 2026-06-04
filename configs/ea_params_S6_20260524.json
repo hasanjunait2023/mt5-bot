@@ -1,0 +1,55 @@
+{
+  "strategy": "S6",
+  "generated_at": "2026-05-24T18:05:43.151311",
+  "python_source": "strategy6_asian_range.py",
+  "ea_source": "S6_Asian_Range_Breakout.mq5",
+  "recommended_params": {
+    "EntryMin": 55,
+    "RiskPct": 0.5,
+    "Max_Spread": 25
+  },
+  "discrepancies": [
+    {
+      "parameter": "Entry Time",
+      "python_value": "07:55 UTC",
+      "ea_value": "07:45 UTC (EntryHour=7, EntryMin=45)",
+      "severity": "minor",
+      "description": "Python places orders at 07:55, EA at 07:45 \u2014 10-minute difference in execution timing"
+    },
+    {
+      "parameter": "Range Calculation Method",
+      "python_value": "Fixed pip ranges (40-150 pips)",
+      "ea_value": "ATR-relative ranges (RMin_ATR=0.5, RMax_ATR=4.0)",
+      "severity": "critical",
+      "description": "EA uses dynamic ATR scaling instead of fixed pip values \u2014 fundamentally different range filtering"
+    },
+    {
+      "parameter": "Risk Percentage",
+      "python_value": "0.5% per trade",
+      "ea_value": "1.5% (input RiskPct=1.5)",
+      "severity": "critical",
+      "description": "EA uses 3x higher risk per trade \u2014 significant capital exposure difference"
+    },
+    {
+      "parameter": "Max Spread Filter",
+      "python_value": "25 pips",
+      "ea_value": "30 pips (input Max_Spread=30)",
+      "severity": "minor",
+      "description": "Slightly different spread tolerance \u2014 EA allows wider spreads"
+    },
+    {
+      "parameter": "H4 EMA200 Filter",
+      "python_value": "Not present",
+      "ea_value": "Present (h4ema200 trend filter)",
+      "severity": "critical",
+      "description": "EA has additional trend filter not implemented in Python version"
+    },
+    {
+      "parameter": "Candle Body Filter",
+      "python_value": "No single candle >50 pips",
+      "ea_value": "BodyMaxFrac=0.60 (reject if largest candle >60% of range)",
+      "severity": "minor",
+      "description": "Different implementation of candle quality filter"
+    }
+  ]
+}

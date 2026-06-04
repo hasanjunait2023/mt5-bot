@@ -1,0 +1,20 @@
+name: MTF Live Trader
+id: mtf_live
+magic: 20260100
+mode: live
+symbols: [CADJPY, EURJPY, USDJPY, GBPAUD, BTCUSD, AUDNZD, USDCAD, EURUSD, AUDCHF, NZDUSD, EURNZD, NZDJPY, AUDCAD, GBPJPY, AUDUSD, AUDJPY, GBPUSD, XAUUSD]
+timeframes: [M1, M3, M15]
+state_file: mt5_bridge/_live_state.json
+trades_file: mt5_bridge/_live_log.txt
+dashboard_page: /bots
+paper_gate:
+  min_trades: 20
+  min_pf: 1.3
+risk:
+  pct_per_trade: 1.0
+  daily_dd_pct: 20.0
+  max_concurrent: 3
+dashboard:
+  color: profit
+  group: ea
+  description: Multi-Timeframe EMA Alignment Scalper — 18 pairs

@@ -93,6 +93,19 @@ python scripts/pending_tracker.py --once   # writes logs/_stalled_agents.json + 
 python -m trading_agents.daily_trade_report --once
 ```
 
+## Gotcha — wine bridge file ownership (reconciler silently dead)
+
+The bridge runs under **wine python as `trader`** and writes journal files over the
+`Z:` drive map. If any journal file (e.g. `logs/journal/_closes.jsonl`) is owned by
+**root**, the wine process hits `[Errno 13] Permission denied` and that writer dies
+silently — for the reconciler this means it loops every 30s, every cycle throws, so
+`/reconciler/status` shows `last_run:null, closed_total:0` while still
+`enabled:true`. **Fix:** `ls -la logs/journal/` — any `root:root` file → delete it
+(dir is `trader`-owned so unlink works; the bridge recreates it trader-owned) or
+`chown trader:trader`. Never run the bridge/journal-writing code as root.
+(Root-caused 2026-06-04: a stray root-owned empty `_closes.jsonl` blocked all close
+reconciliation → per-strategy P&L stuck MTF-only.)
+
 ## Where state / logs live
 
 - Live account snapshot: `mt5_bridge/_live_state.json`

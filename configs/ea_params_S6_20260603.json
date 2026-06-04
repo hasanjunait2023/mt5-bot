@@ -1,0 +1,104 @@
+{
+  "strategy": "S6",
+  "generated_at": "2026-06-03T05:07:31.027813",
+  "python_source": "strategy6_asian_range.py",
+  "ea_source": "S6_Asian_Range_Breakout.mq5",
+  "recommended_params": {
+    "RiskPct": "0.5 \u00e2\u20ac\u201d sync with Python spec; EA's 1.5 was backtest-tuned but Python never updated; pick one authoritative source and apply to both",
+    "EntryMin": "55 \u00e2\u20ac\u201d or update Python to 45; EA 07:45 matches backtest so prefer updating Python PLACE_M=45",
+    "MagicNumber": "20260600 \u00e2\u20ac\u201d match Python so bridge+EA share order identity; or standardise to 20260602 in Python"
+  },
+  "discrepancies": [
+    {
+      "parameter": "RiskPct",
+      "python_value": "0.005 (0.5%)",
+      "ea_value": "1.5",
+      "severity": "critical",
+      "description": "EA risks 3\u00c3\u2014 more per trade. Python was spec'd at 0.5%; EA comment says 'locked' at 1.5% post-backtest optimisation \u00e2\u20ac\u201d but Python was never updated. Live mismatch will cause outsized drawdown vs expectations if both run."
+    },
+    {
+      "parameter": "EntryTime",
+      "python_value": "07:55 UTC (PLACE_H=7, PLACE_M=55)",
+      "ea_value": "07:45 UTC (EntryHour=7, EntryMin=45)",
+      "severity": "critical",
+      "description": "10-minute gap. EA comment explicitly states '07:45 UTC (matches backtest)'. Python was never updated to match v2 backtest entry time. Different fills \u00e2\u20ac\u201d especially on gap days."
+    },
+    {
+      "parameter": "RangeBounds (min/max)",
+      "python_value": "Fixed: RANGE_MIN=40 pips, RANGE_MAX=150 pips",
+      "ea_value": "ATR-relative: RMin_ATR=0.50\u00c3\u2014H4ATR, RMax_ATR=4.00\u00c3\u2014H4ATR",
+      "severity": "critical",
+      "description": "Fundamentally different filter logic. EA v2 switched to ATR-normalised bounds for instrument-agnosticism. Python still uses pip-hardcoded bounds. On XAUUSD at typical H4 ATR ~150\u00e2\u20ac\u201c250 pips: EA min \u00e2\u2030\u02c6 75\u00e2\u20ac\u201c125 pips vs Python min = 40 pips \u00e2\u20ac\u201d they will filter different days."
+    },
+    {
+      "parameter": "SpikeFilter (SPIKE_MAX / CMax_ATR)",
+      "python_value": "Fixed: SPIKE_MAX=50 pips",
+      "ea_value": "ATR-relative: CMax_ATR=1.50\u00c3\u2014H4ATR",
+      "severity": "critical",
+      "description": "Same concept, different scale. EA 1.50\u00c3\u2014H4ATR \u00e2\u2030\u02c6 225\u00e2\u20ac\u201c375 pips on XAUUSD \u00e2\u20ac\u201d far more permissive than Python's 50 pip hard cap. Days Python rejects as spike-heavy, EA will trade."
+    },
+    {
+      "parameter": "SL_Buffer",
+      "python_value": "Fixed: SL_BUFFER=10 pips",
+      "ea_value": "ATR-relative: Buf_ATR=0.10\u00c3\u2014H4ATR",
+      "severity": "minor",
+      "description": "EA buffer \u00e2\u2030\u02c6 15\u00e2\u20ac\u201c25 pips on XAUUSD. Slightly wider than Python's 10 pips. Consequence: EA stops are looser, lower hit rate but wider cushion. Not dangerous but stop distance differs."
+    },
+    {
+      "parameter": "MaxSpread",
+      "python_value": "MAX_SPREAD=25 pips",
+      "ea_value": "Max_Spread=30 pips",
+      "severity": "minor",
+      "description": "EA allows 5 pips wider spread. Trades near spread boundary (25\u00e2\u20ac\u201c30 pips) Python skips, EA takes."
+    },
+    {
+      "parameter": "MagicNumber",
+      "python_value": "MAGIC=20260600",
+      "ea_value": "MagicNumber=20260602",
+      "severity": "minor",
+      "description": "Different by 2. If Python bridge and EA ever run on same account, they cannot identify each other's orders. One will not cancel the other's pending legs on OCO trigger."
+    },
+    {
+      "parameter": "BodyMaxFrac (range quality filter)",
+      "python_value": "absent",
+      "ea_value": "BodyMaxFrac=0.60 \u00e2\u20ac\u201d reject if largest candle body > 60% of range",
+      "severity": "minor",
+      "description": "EA v2 added a candle-body quality filter; Python has no equivalent. EA rejects choppy ranges Python would trade."
+    },
+    {
+      "parameter": "MinRangeBars",
+      "python_value": "absent (no bar count check)",
+      "ea_value": "MinRangeBars=16 (requires \u00e2\u2030\u00a516 M15 bars in window)",
+      "severity": "minor",
+      "description": "EA ensures a full Asian session window. Python could compute range from partial data on connection drops or DST edge days."
+    },
+    {
+      "parameter": "H4 EMA200 trend filter",
+      "python_value": "absent",
+      "ea_value": "h4ema200 = iMA(_Symbol, PERIOD_H4, 200, 0, MODE_EMA, PRICE_CLOSE) \u00e2\u20ac\u201d handle created, used as trend gate",
+      "severity": "minor",
+      "description": "EA v2 added H4 EMA200 directional bias filter; Python has no bias filter. EA will skip counter-trend breakout setups; Python will take all valid range days regardless of HTF trend."
+    },
+    {
+      "parameter": "TP1/TP2 ratios",
+      "python_value": "TP1=0.70\u00c3\u2014range, TP2=1.50\u00c3\u2014range",
+      "ea_value": "TP1 70% range, TP2 150% range",
+      "severity": "none",
+      "description": "Match exactly."
+    },
+    {
+      "parameter": "Asian session window",
+      "python_value": "00:00\u00e2\u20ac\u201c07:00 UTC",
+      "ea_value": "RangeStart=0, RangeEnd=7 (00:00\u00e2\u20ac\u201c07:00 UTC)",
+      "severity": "none",
+      "description": "Match exactly."
+    },
+    {
+      "parameter": "ForceClose hour",
+      "python_value": "FORCE_CLOSE_H=17 (17:00 UTC)",
+      "ea_value": "ForceCloseH=17",
+      "severity": "none",
+      "description": "Match exactly."
+    }
+  ]
+}

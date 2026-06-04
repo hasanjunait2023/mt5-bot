@@ -1,0 +1,47 @@
+{
+  "strategy": "S4",
+  "generated_at": "2026-06-04T04:45:54.863191",
+  "python_source": "strategy4_multi_pair.py",
+  "ea_source": "S4_MultiPair_Engine.mq5",
+  "recommended_params": {
+    "RiskPct": 0.3,
+    "MagicNumber": 20260400
+  },
+  "discrepancies": [
+    {
+      "parameter": "Portfolio-wide risk limits",
+      "python_value": "MAX_OPEN_TRADES=3, MAX_METALS_OPEN=1, MAX_USD_OPEN=2",
+      "ea_value": "Not implemented (per-chart execution)",
+      "severity": "critical",
+      "description": "Python enforces portfolio-wide trade limits across all pairs, while MQL5 EA operates per-chart without cross-pair coordination"
+    },
+    {
+      "parameter": "Daily drawdown halt",
+      "python_value": "5% combined daily DD halts all pairs",
+      "ea_value": "Not implemented",
+      "severity": "critical",
+      "description": "Python has daily DD monitoring and trading halt, missing in MQL5 EA"
+    },
+    {
+      "parameter": "Correlation block",
+      "python_value": "Metals group same direction blocks trading",
+      "ea_value": "Not implemented",
+      "severity": "critical",
+      "description": "Python prevents concurrent metals trades in same direction, EA lacks this protection"
+    },
+    {
+      "parameter": "Telegram alerts",
+      "python_value": "Trade alerts and hourly summaries",
+      "ea_value": "Not implemented",
+      "severity": "minor",
+      "description": "Python has integrated Telegram notifications, missing in MQL5 EA"
+    },
+    {
+      "parameter": "Session hour overrides",
+      "python_value": "Fixed sessions per pair",
+      "ea_value": "Allows manual overrides via inputs",
+      "severity": "minor",
+      "description": "EA provides input options to override sessions, Python uses fixed configurations"
+    }
+  ]
+}

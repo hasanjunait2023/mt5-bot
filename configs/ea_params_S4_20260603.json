@@ -1,0 +1,91 @@
+{
+  "strategy": "S4",
+  "generated_at": "2026-06-03T05:04:58.340414",
+  "python_source": "strategy4_multi_pair.py",
+  "ea_source": "S4_MultiPair_Engine.mq5",
+  "recommended_params": {
+    "GBPUSD_Override_Spread": 2,
+    "USDJPY_Override_Spread": 2,
+    "MaxDailyDD_Pct": 5.0,
+    "note_portfolio_caps": "Add shared-memory EA (GlobalVariable-based) or external arbiter to enforce max_open_trades=3, max_metals=1, max_usd=2, total_risk_cap=1.5%. Single-instance EA architecture cannot replicate Python portfolio logic without inter-EA communication."
+  },
+  "discrepancies": [
+    {
+      "parameter": "GBPUSD.max_spread",
+      "python_value": "2 pips",
+      "ea_value": "3 pips",
+      "severity": "critical",
+      "description": "EA accepts 50% wider spread on GBPUSD. Trades fire in worse conditions; erodes edge on a 10-pip SL strategy."
+    },
+    {
+      "parameter": "USDJPY.max_spread",
+      "python_value": "1.5 pips",
+      "ea_value": "2 pips",
+      "severity": "minor",
+      "description": "EA uses int, can't store 1.5. Rounds up \u00e2\u20ac\u201d slightly more permissive. Low impact but note the type mismatch."
+    },
+    {
+      "parameter": "portfolio.max_total_open_risk",
+      "python_value": "1.5%",
+      "ea_value": "MISSING",
+      "severity": "critical",
+      "description": "Python blocks new entries when total open risk \u00e2\u2030\u00a5 1.5% equity. EA has no such cap \u00e2\u20ac\u201d 5 instances can each open a trade simultaneously, blowing past the limit."
+    },
+    {
+      "parameter": "portfolio.max_open_trades",
+      "python_value": "3",
+      "ea_value": "MISSING",
+      "severity": "critical",
+      "description": "Portfolio-wide trade count cap absent in EA. All 5 pair instances are independent; up to 5 simultaneous trades possible."
+    },
+    {
+      "parameter": "portfolio.max_metals_open",
+      "python_value": "1 (XAUUSD+XAGUSD group cap)",
+      "ea_value": "MISSING",
+      "severity": "critical",
+      "description": "Nothing prevents XAUUSD and XAGUSD EAs from both holding open positions. Python explicitly caps metals group at 1."
+    },
+    {
+      "parameter": "portfolio.max_usd_open",
+      "python_value": "2 (USDJPY+EURUSD+GBPUSD group cap)",
+      "ea_value": "MISSING",
+      "severity": "critical",
+      "description": "USD group capped at 2 in Python. EA instances are blind to each other \u00e2\u20ac\u201d all 3 USD pairs can trade simultaneously."
+    },
+    {
+      "parameter": "portfolio.max_daily_dd_halt",
+      "python_value": "5.0% combined equity DD \u00e2\u2020\u2019 halt ALL pairs",
+      "ea_value": "MISSING",
+      "severity": "critical",
+      "description": "Python halts entire portfolio at 5% combined daily drawdown. EA has no daily DD check at all \u00e2\u20ac\u201d unbounded intraday loss possible."
+    },
+    {
+      "parameter": "portfolio.correlation_block",
+      "python_value": "metals group: same-direction entry blocked if one already open",
+      "ea_value": "MISSING",
+      "severity": "critical",
+      "description": "XAUUSD and XAGUSD are highly correlated. Python blocks adding same-direction exposure. EA has no awareness of sibling instances."
+    },
+    {
+      "parameter": "news_filter",
+      "python_value": "NEWS_BLOCK_MIN = 15 (block \u00c2\u00b115 min around high-impact news)",
+      "ea_value": "MISSING",
+      "severity": "minor",
+      "description": "No news-time guard in EA. Pairs like GBPUSD/EURUSD are volatile around news; this is a backtest-vs-live gap."
+    },
+    {
+      "parameter": "telegram_reporting",
+      "python_value": "hourly portfolio summary + daily summary at 17:30 UTC",
+      "ea_value": "MISSING",
+      "severity": "minor",
+      "description": "EA has no Telegram integration visible. Monitoring gap \u00e2\u20ac\u201d no live portfolio-level alerts."
+    },
+    {
+      "parameter": "trade_management (BE/partial_TP/time_exit)",
+      "python_value": "BE@+4pip, TP1=60%@tp1+SL\u00e2\u2020\u2019+6pip, TP2=40%@tp2, 15-min time-exit",
+      "ea_value": "UNVERIFIABLE \u00e2\u20ac\u201d code truncated at CheckM5Trend",
+      "severity": "critical",
+      "description": "EA source cut off before trade management logic. Cannot confirm BE pips, partial close ratios, or time-exit are implemented correctly. MUST verify full EA source."
+    }
+  ]
+}

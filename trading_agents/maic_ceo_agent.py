@@ -139,6 +139,7 @@ Available delegations:
 - `[DELEGATE: backtest | symbol=XAUUSD timeframe=M15 sessions=london,new_york]`
 - `[DELEGATE: optimize | symbol=EURUSD strategy=mtf]`
 - `[DELEGATE: live_status]` — check current MT5 positions
+- `[DELEGATE: portfolio_stats]` — which strategies are profitable vs losing, who's in improvement, the fix for each (live scorecard, real numbers — use this whenever Junait asks how strategies are doing)
 - `[DELEGATE: video_analysis | path=videos/strategy.mp4]`
 - `[DELEGATE: session_analysis | symbol=XAUUSD]`
 - `[DELEGATE: ml_signals | symbol=XAUUSD]`
@@ -221,6 +222,17 @@ def _run_delegation(delegation_str: str) -> str:
 
     script = match.group(1).strip()
     params_raw = match.group(2).strip()
+
+    # Data-backed answer to "which strategy is profitable / who needs improvement
+    # / how" — read the live scorecard in-process (no subprocess) so Maic answers
+    # from real numbers instead of guessing.
+    if script in ("portfolio_stats", "scorecard"):
+        try:
+            from trading_agents import strategy_scorecard
+            from trading_agents.eod_review import build_message
+            return build_message(strategy_scorecard.build_scorecard())
+        except Exception as e:
+            return f"portfolio_stats failed: {e}"
 
     script_map = {
         "backtest": BASE_DIR / "mt5_bridge" / "backtest.py",

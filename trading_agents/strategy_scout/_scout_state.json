@@ -28,15 +28,15 @@
       "reason": "backtest produced no result"
     }
   },
-  "cycles": 1,
+  "cycles": 2,
   "scorecard": {
-    "cycle": 1,
-    "collected": 3,
-    "backtested": 3,
+    "cycle": 2,
+    "collected": 0,
+    "backtested": 0,
     "passed": 0,
     "pitched": 0,
     "total_in_pipeline": 3,
     "live": 0
   },
-  "updated_at": "2026-05-19T12:00:22.629071+00:00"
+  "updated_at": "2026-06-04T04:42:26.444702+00:00"
 }

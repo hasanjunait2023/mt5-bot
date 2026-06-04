@@ -1,0 +1,20 @@
+name: Iconic Scalp
+id: iconic
+magic: 20260700
+mode: paper
+symbols: [USDCAD]
+timeframes: [H1]
+state_file: logs/iconic/_agent_state.json
+trades_file: logs/iconic/_paper_trades.jsonl
+dashboard_page: /iconic
+paper_gate:
+  min_trades: 20
+  min_pf: 1.3
+risk:
+  pct_per_trade: 1.0
+  daily_dd_pct: 20.0
+  max_concurrent: 2
+dashboard:
+  color: accent
+  group: scalp
+  description: Navin Urban Forex Iconic method — USDCAD H1

@@ -1,0 +1,447 @@
+// © SessionVP_Alerts — Session Volume Profile with Alerts
+// Each session's VP is confined to its own session box (no extension), completed sessions only.
+// Volume built from chart bars by default (deterministic → static on scroll/zoom); optional lower-TF hi-res.
+// Accumulated per session as bars confirm → stored in ring buffer → drawn at barstate.islast.
+//@version=6
+indicator("Session VP + Alerts", overlay=true, max_bars_back=5000, max_lines_count=500, max_boxes_count=500, max_labels_count=500)
+
+// ─── INPUTS ─────────────────────────────────────────────────────────────────
+var GRP_SESS = "Sessions"
+t_asi  = input.session("0400-1300", "Tokyo session time",   group=GRP_SESS)
+t_lon  = input.session("1300-1800", "London session time",  group=GRP_SESS)
+t_ny   = input.session("1800-0300", "New York session time", group=GRP_SESS)
+tz_off = input.int(6, "UTC offset (hours)", minval=-12, maxval=14, group=GRP_SESS)
+
+var GRP_VP = "Volume Profile"
+VP_R = input.int(10,  "Rows",            minval=4, maxval=12, group=GRP_VP)
+VP_V = input.float(70,"Value Area %",    minval=50, maxval=95, group=GRP_VP) / 100
+VP_N = input.int(6,   "Past sessions",   minval=0, maxval=7,  group=GRP_VP)
+LTF  = input.timeframe("1", "Profile resolution (LTF)",       group=GRP_VP)
+USE_LTF = input.bool(false, "Hi-res profile (lower TF) — off = static", group=GRP_VP)
+
+var GRP_VIS = "Visuals"
+C_ASI  = input.color(#e91e63, "Tokyo colour",    group=GRP_VIS)
+C_LON  = input.color(#2157f3, "London colour",   group=GRP_VIS)
+C_NY   = input.color(#4caf50, "New York colour", group=GRP_VIS)
+C_POC  = input.color(color.black, "POC line colour", group=GRP_VIS)
+C_UP   = input.color(#26c6da, "Buy volume colour",   group=GRP_VIS)
+C_DN   = input.color(#ec407a, "Sell volume colour",  group=GRP_VIS)
+C_PROW = input.color(#ffd54f, "POC row highlight",   group=GRP_VIS)
+BG_TR  = input.int(94, "Background transparency", minval=50, maxval=99, group=GRP_VIS)
+H_FRAC = input.float(0.35, "Histogram width (% of session)", minval=0.1, maxval=0.9, group=GRP_VIS)
+W_POC  = input.int(2,  "POC line width",  minval=1, maxval=4, group=GRP_VIS)
+W_VA   = input.int(1,  "VA line width",   minval=1, maxval=4, group=GRP_VIS)
+SH_HIS = input.bool(true, "Show histogram",  group=GRP_VIS)
+SH_POC = input.bool(true, "Show POC line",   group=GRP_VIS)
+SH_VA  = input.bool(true, "Show VAH/VAL",    group=GRP_VIS)
+SH_LBL = input.bool(true, "Show labels",     group=GRP_VIS)
+BORD_W = input.int(2,  "Session border width", minval=0, maxval=4, group=GRP_VIS)
+BORD_TR= input.int(20, "Session border transparency", minval=0, maxval=90, group=GRP_VIS)
+
+var GRP_AL = "Alerts"
+AL_A_P = input.bool(true, "Tokyo POC",     group=GRP_AL)
+AL_A_V = input.bool(true, "Tokyo VA",      group=GRP_AL)
+AL_L_P = input.bool(true, "London POC",    group=GRP_AL)
+AL_L_V = input.bool(true, "London VA",     group=GRP_AL)
+AL_N_P = input.bool(true, "New York POC",  group=GRP_AL)
+AL_N_V = input.bool(true, "New York VA",   group=GRP_AL)
+
+// ─── LOWER-TIMEFRAME VOLUME DATA (global scope — required) ─────────────────────
+// One array per chart bar holding the intrabar (LTF) values inside that bar.
+ltf_h = request.security_lower_tf(syminfo.tickerid, LTF, high)
+ltf_l = request.security_lower_tf(syminfo.tickerid, LTF, low)
+ltf_o = request.security_lower_tf(syminfo.tickerid, LTF, open)
+ltf_c = request.security_lower_tf(syminfo.tickerid, LTF, close)
+ltf_v = request.security_lower_tf(syminfo.tickerid, LTF, volume)
+
+// ─── SESSION DETECTION (hour/minute — reliable for overnight sessions) ────────
+_parse_sess(string s) =>
+    base  = str.contains(s, ":") ? array.get(str.split(s, ":"), 0) : s
+    parts = str.split(base, "-")
+    ss    = array.get(parts, 0)
+    es    = array.get(parts, 1)
+    si    = int(str.tonumber(str.substring(ss, 0, 2))) * 60 + int(str.tonumber(str.substring(ss, 2, 4)))
+    ei    = int(str.tonumber(str.substring(es, 0, 2))) * 60 + int(str.tonumber(str.substring(es, 2, 4)))
+    [si, ei]
+
+_in_sess(int tod, int sm, int em) =>
+    em > sm ? tod >= sm and tod < em : tod >= sm or tod < em
+
+tz_str       = tz_off >= 0 ? "UTC+" + str.tostring(tz_off) : "UTC" + str.tostring(tz_off)
+tod          = hour(time, tz_str) * 60 + minute(time, tz_str)
+[asi_sm, asi_em] = _parse_sess(t_asi)
+[lon_sm, lon_em] = _parse_sess(t_lon)
+[ny_sm,  ny_em]  = _parse_sess(t_ny)
+in_asi = _in_sess(tod, asi_sm, asi_em)
+in_lon = _in_sess(tod, lon_sm, lon_em)
+in_ny  = _in_sess(tod, ny_sm,  ny_em)
+
+var bool was_asi = false
+var bool was_lon = false
+var bool was_ny  = false
+
+// Session start time (anchor for drawing). Only the most recent start needed.
+var int asi_s_t = na
+var int lon_s_t = na
+var int ny_s_t  = na
+
+// ─── PER-SESSION INTRABAR ACCUMULATION BUFFERS ────────────────────────────────
+var float[] asi_h = array.new_float()
+var float[] asi_l = array.new_float()
+var float[] asi_o = array.new_float()
+var float[] asi_c = array.new_float()
+var float[] asi_v = array.new_float()
+
+var float[] lon_h = array.new_float()
+var float[] lon_l = array.new_float()
+var float[] lon_o = array.new_float()
+var float[] lon_c = array.new_float()
+var float[] lon_v = array.new_float()
+
+var float[] ny_h = array.new_float()
+var float[] ny_l = array.new_float()
+var float[] ny_o = array.new_float()
+var float[] ny_c = array.new_float()
+var float[] ny_v = array.new_float()
+
+_clear_cur(float[] h, float[] l, float[] o, float[] c, float[] v) =>
+    array.clear(h)
+    array.clear(l)
+    array.clear(o)
+    array.clear(c)
+    array.clear(v)
+
+// Append this bar's data into the session buffer (cap length).
+// Default: chart bars (deterministic → static on scroll/zoom/lazy-load).
+// USE_LTF: lower-TF intrabars (hi-res, but may drift on far scroll due to lazy-load).
+_accum(float[] h, float[] l, float[] o, float[] c, float[] v) =>
+    if array.size(h) < 3000
+        if USE_LTF
+            if array.size(ltf_h) > 0
+                n = array.size(ltf_h)
+                for j = 0 to n - 1
+                    array.push(h, array.get(ltf_h, j))
+                    array.push(l, array.get(ltf_l, j))
+                    array.push(o, array.get(ltf_o, j))
+                    array.push(c, array.get(ltf_c, j))
+                    array.push(v, array.get(ltf_v, j))
+        else
+            array.push(h, high)
+            array.push(l, low)
+            array.push(o, open)
+            array.push(c, close)
+            array.push(v, volume)
+
+// Reset on session start; accumulate confirmed intrabars while inside session.
+if in_asi and not was_asi
+    _clear_cur(asi_h, asi_l, asi_o, asi_c, asi_v)
+    asi_s_t := time
+if in_lon and not was_lon
+    _clear_cur(lon_h, lon_l, lon_o, lon_c, lon_v)
+    lon_s_t := time
+if in_ny and not was_ny
+    _clear_cur(ny_h, ny_l, ny_o, ny_c, ny_v)
+    ny_s_t := time
+
+if in_asi and barstate.isconfirmed
+    _accum(asi_h, asi_l, asi_o, asi_c, asi_v)
+if in_lon and barstate.isconfirmed
+    _accum(lon_h, lon_l, lon_o, lon_c, lon_v)
+if in_ny and barstate.isconfirmed
+    _accum(ny_h, ny_l, ny_o, ny_c, ny_v)
+
+// ─── RING-BUFFER STORAGE ─────────────────────────────────────────────────────
+// 8 slots per type. UV/DV flat layout: slot*20 + row (20 = VP_R_MAX headroom).
+// meta[0] = next_write_slot counter (ever-increasing, mod 8). meta[1] = valid count (0..8).
+var float[] asi_poc_s = array.new_float(8, na)
+var float[] asi_vah_s = array.new_float(8, na)
+var float[] asi_val_s = array.new_float(8, na)
+var float[] asi_shi_s = array.new_float(8, na)
+var float[] asi_slo_s = array.new_float(8, na)
+var int[]   asi_st_s  = array.new_int(8, 0)
+var int[]   asi_et_s  = array.new_int(8, 0)
+var float[] asi_uv_s  = array.new_float(160, 0.0)
+var float[] asi_dv_s  = array.new_float(160, 0.0)
+var int[]   asi_meta  = array.new_int(2, 0)
+
+var float[] lon_poc_s = array.new_float(8, na)
+var float[] lon_vah_s = array.new_float(8, na)
+var float[] lon_val_s = array.new_float(8, na)
+var float[] lon_shi_s = array.new_float(8, na)
+var float[] lon_slo_s = array.new_float(8, na)
+var int[]   lon_st_s  = array.new_int(8, 0)
+var int[]   lon_et_s  = array.new_int(8, 0)
+var float[] lon_uv_s  = array.new_float(160, 0.0)
+var float[] lon_dv_s  = array.new_float(160, 0.0)
+var int[]   lon_meta  = array.new_int(2, 0)
+
+var float[] ny_poc_s  = array.new_float(8, na)
+var float[] ny_vah_s  = array.new_float(8, na)
+var float[] ny_val_s  = array.new_float(8, na)
+var float[] ny_shi_s  = array.new_float(8, na)
+var float[] ny_slo_s  = array.new_float(8, na)
+var int[]   ny_st_s   = array.new_int(8, 0)
+var int[]   ny_et_s   = array.new_int(8, 0)
+var float[] ny_uv_s   = array.new_float(160, 0.0)
+var float[] ny_dv_s   = array.new_float(160, 0.0)
+var int[]   ny_meta   = array.new_int(2, 0)
+
+// ─── ALERT LEVELS (last completed session per type) ───────────────────────────
+var float asi_poc = na
+var float asi_vah = na
+var float asi_val = na
+var float lon_poc = na
+var float lon_vah = na
+var float lon_val = na
+var float ny_poc  = na
+var float ny_vah  = na
+var float ny_val  = na
+
+// ─── VOLUME PROFILE COMPUTE (over buffered intrabar candles) ──────────────────
+compute_vp(float[] hs, float[] ls, float[] os, float[] cs, float[] vs, int rows, float va_pct) =>
+    int n   = array.size(hs)
+    float s_hi = na
+    float s_lo = na
+    for i = 0 to n - 1
+        s_hi := na(s_hi) ? array.get(hs, i) : math.max(s_hi, array.get(hs, i))
+        s_lo := na(s_lo) ? array.get(ls, i) : math.min(s_lo, array.get(ls, i))
+    float poc = na
+    float vah = na
+    float val = na
+    uv_arr = array.new_float(rows, 0.0)
+    dv_arr = array.new_float(rows, 0.0)
+    if n < 1 or na(s_hi) or na(s_lo) or s_hi <= s_lo
+        [poc, vah, val, s_hi, s_lo, uv_arr, dv_arr]
+    else
+        rng = s_hi - s_lo
+        stp = rng / rows
+        for i = 0 to n - 1
+            bh    = array.get(hs, i)
+            bl    = array.get(ls, i)
+            bo    = array.get(os, i)
+            bc    = array.get(cs, i)
+            vol   = array.get(vs, i)
+            grn   = bc >= bo
+            btop  = math.max(bo, bc)
+            bbot  = math.min(bo, bc)
+            body  = btop - bbot
+            tw    = bh - btop
+            bw    = bbot - bl
+            den   = body + 2.0*tw + 2.0*bw
+            den   := den == 0.0 ? 1.0 : den
+            bdy_v = body*vol/den
+            tw_v  = 2.0*tw*vol/den
+            bw_v  = 2.0*bw*vol/den
+            for r = 0 to rows - 1
+                rb = s_lo + stp*r
+                rt = rb + stp
+                ob = math.max(0.0, math.min(rt, btop) - math.max(rb, bbot))
+                ot = math.max(0.0, math.min(rt, bh)   - math.max(rb, btop))
+                ow = math.max(0.0, math.min(rt, bbot)  - math.max(rb, bl))
+                bf = body > 0.0 ? ob/body : 0.0
+                tf = tw   > 0.0 ? ot/tw   : 0.0
+                wf = bw   > 0.0 ? ow/bw   : 0.0
+                ua = (grn ? bf*bdy_v : 0.0) + tf*tw_v*0.5 + wf*bw_v*0.5
+                da = (grn ? 0.0 : bf*bdy_v) + tf*tw_v*0.5 + wf*bw_v*0.5
+                array.set(uv_arr, r, array.get(uv_arr,r) + ua)
+                array.set(dv_arr, r, array.get(dv_arr,r) + da)
+        int   poc_r   = 0
+        float poc_vol = -1.0
+        float tot_vol = 0.0
+        for r = 0 to rows - 1
+            tv = array.get(uv_arr,r) + array.get(dv_arr,r)
+            tot_vol := tot_vol + tv
+            if tv > poc_vol
+                poc_vol := tv
+                poc_r   := r
+        poc := s_lo + stp*poc_r + stp*0.5
+        float va_tgt = tot_vol * va_pct
+        float va_acc = poc_vol
+        int   va_lo  = poc_r
+        int   va_hi  = poc_r
+        while va_acc < va_tgt
+            can_u = va_hi+1 <= rows-1
+            can_d = va_lo-1 >= 0
+            uv_u  = can_u ? array.get(uv_arr,va_hi+1)+array.get(dv_arr,va_hi+1) : 0.0
+            dv_d  = can_d ? array.get(uv_arr,va_lo-1)+array.get(dv_arr,va_lo-1) : 0.0
+            if not can_u and not can_d
+                break
+            if uv_u >= dv_d
+                va_hi  := va_hi+1
+                va_acc := va_acc+uv_u
+            else
+                va_lo  := va_lo-1
+                va_acc := va_acc+dv_d
+        vah := s_lo + stp*(va_hi+1)
+        val := s_lo + stp*va_lo
+        float mx = 0.0
+        for r = 0 to rows - 1
+            mx := math.max(mx, array.get(uv_arr,r)+array.get(dv_arr,r))
+        if mx > 0.0
+            for r = 0 to rows - 1
+                array.set(uv_arr, r, array.get(uv_arr,r)/mx)
+                array.set(dv_arr, r, array.get(dv_arr,r)/mx)
+        [poc, vah, val, s_hi, s_lo, uv_arr, dv_arr]
+
+// ─── SAVE VP RESULT TO RING BUFFER ───────────────────────────────────────────
+_save(float[] poc_s, float[] vah_s, float[] val_s, float[] shi_s, float[] slo_s,
+     int[] st_s, int[] et_s, float[] uv_s, float[] dv_s, int[] meta,
+     float p, float h, float l, float sh, float sl, float[] uv, float[] dv, int s_t, int e_t) =>
+    slot = array.get(meta, 0) % 8
+    array.set(poc_s, slot, p)
+    array.set(vah_s, slot, h)
+    array.set(val_s, slot, l)
+    array.set(shi_s, slot, sh)
+    array.set(slo_s, slot, sl)
+    array.set(st_s,  slot, s_t)
+    array.set(et_s,  slot, e_t)
+    for r = 0 to VP_R - 1
+        array.set(uv_s, slot*20+r, array.get(uv, r))
+        array.set(dv_s, slot*20+r, array.get(dv, r))
+    array.set(meta, 0, array.get(meta, 0) + 1)
+    array.set(meta, 1, math.min(array.get(meta, 1) + 1, 8))
+
+// ─── SESSION CLOSE: COMPUTE + STORE (once, on the first confirmed out-of-session bar) ──
+if not in_asi and was_asi and barstate.isconfirmed
+    [p,h,l,sh,sl,uv,dv] = compute_vp(asi_h, asi_l, asi_o, asi_c, asi_v, VP_R, VP_V)
+    if not na(p)
+        asi_poc := p
+        asi_vah := h
+        asi_val := l
+        _save(asi_poc_s, asi_vah_s, asi_val_s, asi_shi_s, asi_slo_s, asi_st_s, asi_et_s, asi_uv_s, asi_dv_s, asi_meta, p, h, l, sh, sl, uv, dv, asi_s_t, time[1])
+
+if not in_lon and was_lon and barstate.isconfirmed
+    [p,h,l,sh,sl,uv,dv] = compute_vp(lon_h, lon_l, lon_o, lon_c, lon_v, VP_R, VP_V)
+    if not na(p)
+        lon_poc := p
+        lon_vah := h
+        lon_val := l
+        _save(lon_poc_s, lon_vah_s, lon_val_s, lon_shi_s, lon_slo_s, lon_st_s, lon_et_s, lon_uv_s, lon_dv_s, lon_meta, p, h, l, sh, sl, uv, dv, lon_s_t, time[1])
+
+if not in_ny and was_ny and barstate.isconfirmed
+    [p,h,l,sh,sl,uv,dv] = compute_vp(ny_h, ny_l, ny_o, ny_c, ny_v, VP_R, VP_V)
+    if not na(p)
+        ny_poc := p
+        ny_vah := h
+        ny_val := l
+        _save(ny_poc_s, ny_vah_s, ny_val_s, ny_shi_s, ny_slo_s, ny_st_s, ny_et_s, ny_uv_s, ny_dv_s, ny_meta, p, h, l, sh, sl, uv, dv, ny_s_t, time[1])
+
+was_asi := in_asi
+was_lon := in_lon
+was_ny  := in_ny
+
+// ─── DRAWING REGISTRY ────────────────────────────────────────────────────────
+var line[]  ALL_L = array.new_line()
+var box[]   ALL_B = array.new_box()
+var label[] ALL_X = array.new_label()
+
+_clear_all() =>
+    for ln in ALL_L
+        line.delete(ln)
+    array.clear(ALL_L)
+    for bx in ALL_B
+        box.delete(bx)
+    array.clear(ALL_B)
+    for lb in ALL_X
+        label.delete(lb)
+    array.clear(ALL_X)
+
+// ─── DRAW ONE SESSION (confined to [s_t, e_t] — no extension) ──────────────────
+draw_sess(int s_t, int e_t, float poc, float vah, float val, float s_hi, float s_lo, float[] uv, float[] dv, int rows, color c, string lname) =>
+    if not (na(poc) or na(s_hi) or na(s_lo) or s_hi <= s_lo or s_t >= e_t)
+        bord = BORD_W > 0 ? color.new(c, BORD_TR) : na
+        array.push(ALL_B, box.new(left=s_t, top=s_hi, right=e_t, bottom=s_lo, border_color=bord, border_width=BORD_W, bgcolor=color.new(c, BG_TR), xloc=xloc.bar_time))
+        rng = s_hi - s_lo
+        stp = rng / rows
+        // Histogram width = fixed fraction of session width → identical proportion at any zoom/TF.
+        wsc = float(e_t - s_t) * H_FRAC
+        gap = stp * 0.16    // vertical breathing room → crisp row separation
+        if SH_HIS
+            for r = 0 to rows - 1
+                rb     = s_lo + stp*r
+                rt     = rb + stp
+                rbp    = rb + gap*0.5
+                rtp    = rt - gap*0.5
+                in_va  = rb >= val and rt <= vah
+                is_poc = poc >= rb and poc < rt
+                // depth via opacity: POC row brightest → VA mid → outside faded
+                tr     = is_poc ? 8 : (in_va ? 24 : 60)
+                bcol   = is_poc ? C_PROW : na
+                ur     = s_t + int(array.get(uv,r) * wsc)
+                ur     := math.min(ur, e_t)
+                dr     = ur + int(array.get(dv,r) * wsc)
+                dr     := math.min(dr, e_t)
+                if ur > s_t
+                    array.push(ALL_B, box.new(left=s_t, top=rtp, right=ur, bottom=rbp, border_color=bcol, border_width=1, bgcolor=color.new(C_UP, tr), xloc=xloc.bar_time))
+                if dr > ur
+                    array.push(ALL_B, box.new(left=ur, top=rtp, right=dr, bottom=rbp, border_color=bcol, border_width=1, bgcolor=color.new(C_DN, tr), xloc=xloc.bar_time))
+        if SH_POC
+            array.push(ALL_L, line.new(x1=s_t, y1=poc, x2=e_t, y2=poc, xloc=xloc.bar_time, color=C_POC, width=W_POC))
+        if SH_VA
+            array.push(ALL_L, line.new(x1=s_t, y1=vah, x2=e_t, y2=vah, xloc=xloc.bar_time, color=color.new(c,30), width=W_VA, style=line.style_dashed))
+            array.push(ALL_L, line.new(x1=s_t, y1=val, x2=e_t, y2=val, xloc=xloc.bar_time, color=color.new(c,30), width=W_VA, style=line.style_dashed))
+        if SH_LBL
+            array.push(ALL_X, label.new(x=s_t, y=s_hi, text=lname, color=color.new(c,50), textcolor=color.white, style=label.style_label_down, size=size.small, xloc=xloc.bar_time))
+
+// ─── DRAW FROM RING BUFFER ───────────────────────────────────────────────────
+_draw_stored(float[] poc_s, float[] vah_s, float[] val_s, float[] shi_s, float[] slo_s,
+             int[] st_s, int[] et_s, float[] uv_s, float[] dv_s, int[] meta, color c, string nm) =>
+    cnt  = math.min(array.get(meta, 1), VP_N)
+    next = array.get(meta, 0)
+    for k = 0 to cnt - 1
+        slot = (next - 1 - k + 8 * 1000) % 8
+        p  = array.get(poc_s, slot)
+        h  = array.get(vah_s, slot)
+        l  = array.get(val_s, slot)
+        sh = array.get(shi_s, slot)
+        sl = array.get(slo_s, slot)
+        st = array.get(st_s,  slot)
+        et = array.get(et_s,  slot)
+        if not na(p) and st < et
+            uv = array.new_float(VP_R, 0.0)
+            dv = array.new_float(VP_R, 0.0)
+            for r = 0 to VP_R - 1
+                array.set(uv, r, array.get(uv_s, slot*20+r))
+                array.set(dv, r, array.get(dv_s, slot*20+r))
+            draw_sess(st, et, p, h, l, sh, sl, uv, dv, VP_R, c, nm)
+
+// ─── MAIN DRAW LOOP ──────────────────────────────────────────────────────────
+if barstate.islast
+    _clear_all()
+    // Completed sessions — from ring buffer (no historical re-read needed)
+    _draw_stored(asi_poc_s, asi_vah_s, asi_val_s, asi_shi_s, asi_slo_s, asi_st_s, asi_et_s, asi_uv_s, asi_dv_s, asi_meta, C_ASI, "Tokyo")
+    _draw_stored(lon_poc_s, lon_vah_s, lon_val_s, lon_shi_s, lon_slo_s, lon_st_s, lon_et_s, lon_uv_s, lon_dv_s, lon_meta, C_LON, "London")
+    _draw_stored(ny_poc_s,  ny_vah_s,  ny_val_s,  ny_shi_s,  ny_slo_s,  ny_st_s,  ny_et_s,  ny_uv_s,  ny_dv_s,  ny_meta,  C_NY,  "New York")
+
+// ─── ALERT CONDITIONS ────────────────────────────────────────────────────────
+// ta.cross() called unconditionally (must execute every bar for consistent history)
+x_a_poc = ta.cross(close, asi_poc)
+x_a_vah = ta.cross(close, asi_vah)
+x_a_val = ta.cross(close, asi_val)
+x_l_poc = ta.cross(close, lon_poc)
+x_l_vah = ta.cross(close, lon_vah)
+x_l_val = ta.cross(close, lon_val)
+x_n_poc = ta.cross(close, ny_poc)
+x_n_vah = ta.cross(close, ny_vah)
+x_n_val = ta.cross(close, ny_val)
+
+a_poc_cross = AL_A_P and not na(asi_poc) and x_a_poc
+a_vah_cross = AL_A_V and not na(asi_vah) and x_a_vah
+a_val_cross = AL_A_V and not na(asi_val) and x_a_val
+l_poc_cross = AL_L_P and not na(lon_poc) and x_l_poc
+l_vah_cross = AL_L_V and not na(lon_vah) and x_l_vah
+l_val_cross = AL_L_V and not na(lon_val) and x_l_val
+n_poc_cross = AL_N_P and not na(ny_poc)  and x_n_poc
+n_vah_cross = AL_N_V and not na(ny_vah)  and x_n_vah
+n_val_cross = AL_N_V and not na(ny_val)  and x_n_val
+
+alertcondition(a_poc_cross, "Tokyo POC Cross",     "Price crossed Tokyo session POC")
+alertcondition(a_vah_cross, "Tokyo VAH Cross",     "Price crossed Tokyo session VAH")
+alertcondition(a_val_cross, "Tokyo VAL Cross",     "Price crossed Tokyo session VAL")
+alertcondition(l_poc_cross, "London POC Cross",    "Price crossed London session POC")
+alertcondition(l_vah_cross, "London VAH Cross",    "Price crossed London session VAH")
+alertcondition(l_val_cross, "London VAL Cross",    "Price crossed London session VAL")
+alertcondition(n_poc_cross, "New York POC Cross",  "Price crossed New York session POC")
+alertcondition(n_vah_cross, "New York VAH Cross",  "Price crossed New York session VAH")
+alertcondition(n_val_cross, "New York VAL Cross",  "Price crossed New York session VAL")
+alertcondition(a_poc_cross or a_vah_cross or a_val_cross or l_poc_cross or l_vah_cross or l_val_cross or n_poc_cross or n_vah_cross or n_val_cross, "Any Session VP Level Cross", "Price crossed a session VP level (POC/VAH/VAL)")

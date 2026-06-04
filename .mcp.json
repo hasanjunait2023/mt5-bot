@@ -6,6 +6,10 @@
       "env": {
         "NOTEBOOKLM_PROFILE": "standard"
       }
+    },
+    "tradingview": {
+      "command": "node",
+      "args": ["C:\\Users\\Junait\\tradingview-mcp\\src\\server.js"]
     }
   }
 }

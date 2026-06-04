@@ -1,33 +1,48 @@
 {
-  "timestamp": "2026-05-21T14:48:03.007144+00:00",
+  "timestamp": "2026-06-02T08:04:03.002597+00:00",
   "trader_running": true,
   "mt5_connected": true,
   "nvidia_api_alive": true,
   "account": {
     "login": 415733764,
     "server": "Exness-MT5Trial14",
-    "balance": 1079.92,
-    "equity": 1076.34,
-    "margin": 11.13,
-    "free_margin": 1065.21,
-    "daily_pnl": 12.45,
+    "balance": 742.2,
+    "equity": 745.15,
+    "margin": 25.32,
+    "free_margin": 719.83,
+    "daily_pnl": 0.0,
     "daily_dd_pct": 0.0,
     "total_dd_pct": 0.0,
-    "start_balance": 1067.47
+    "start_balance": 742.2
   },
   "positions": [
     {
-      "ticket": 3156118990,
-      "symbol": "NZDJPY",
+      "ticket": 3206670038,
+      "symbol": "AUDCAD",
       "direction": "BUY",
-      "volume": 0.38,
-      "entry_price": 93.28,
-      "current_price": 93.265,
-      "sl": 93.234,
-      "tp": 93.371,
+      "volume": 0.24,
+      "entry_price": 0.9941300000000001,
+      "current_price": 0.99414,
+      "sl": 0.99371,
+      "tp": 0.99497,
       "swap": 0.0,
-      "profit": -3.58,
-      "open_time": 1779374764,
+      "profit": 0.17,
+      "open_time": 1780387263,
+      "magic": 20260100,
+      "ea_name": "MTF_EMA_Scalper"
+    },
+    {
+      "ticket": 3206670904,
+      "symbol": "AUDUSD",
+      "direction": "BUY",
+      "volume": 0.27,
+      "entry_price": 0.7183,
+      "current_price": 0.71835,
+      "sl": 0.71803,
+      "tp": 0.71884,
+      "swap": 0.0,
+      "profit": 1.35,
+      "open_time": 1780387266,
       "magic": 20260100,
       "ea_name": "MTF_EMA_Scalper"
     }
@@ -35,17 +50,32 @@
   "ea_positions": {
     "MTF_EMA_Scalper": [
       {
-        "ticket": 3156118990,
-        "symbol": "NZDJPY",
+        "ticket": 3206670038,
+        "symbol": "AUDCAD",
         "direction": "BUY",
-        "volume": 0.38,
-        "entry_price": 93.28,
-        "current_price": 93.265,
-        "sl": 93.234,
-        "tp": 93.371,
+        "volume": 0.24,
+        "entry_price": 0.9941300000000001,
+        "current_price": 0.99414,
+        "sl": 0.99371,
+        "tp": 0.99497,
         "swap": 0.0,
-        "profit": -3.58,
-        "open_time": 1779374764,
+        "profit": 0.17,
+        "open_time": 1780387263,
+        "magic": 20260100,
+        "ea_name": "MTF_EMA_Scalper"
+      },
+      {
+        "ticket": 3206670904,
+        "symbol": "AUDUSD",
+        "direction": "BUY",
+        "volume": 0.27,
+        "entry_price": 0.7183,
+        "current_price": 0.71835,
+        "sl": 0.71803,
+        "tp": 0.71884,
+        "swap": 0.0,
+        "profit": 1.35,
+        "open_time": 1780387266,
         "magic": 20260100,
         "ea_name": "MTF_EMA_Scalper"
       }
@@ -56,9 +86,8 @@
     "BTCUSD_Scalper": []
   },
   "daily_trades": {
-    "AUDCHF": 2,
-    "USDCAD": 1,
-    "NZDJPY": 1
+    "AUDCAD": 1,
+    "AUDUSD": 1
   },
   "last_signals": {
     "CADJPY": {
@@ -106,20 +135,20 @@
       "bar_time": null
     },
     "NZDJPY": {
-      "direction": "BUY",
-      "bar_time": "2026-05-21T14:45:00+00:00"
-    },
-    "AUDCAD": {
       "direction": null,
       "bar_time": null
+    },
+    "AUDCAD": {
+      "direction": "BUY",
+      "bar_time": "2026-06-02T08:00:00+00:00"
     },
     "GBPJPY": {
       "direction": null,
       "bar_time": null
     },
     "AUDUSD": {
-      "direction": null,
-      "bar_time": null
+      "direction": "BUY",
+      "bar_time": "2026-06-02T08:00:00+00:00"
     },
     "AUDJPY": {
       "direction": null,

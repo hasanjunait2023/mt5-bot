@@ -72,6 +72,11 @@ DEFAULT_CATEGORIES = {
     "alpha_brief":      "📰 Alpha · Session Briefs",
     "alpha_signal":     "🌊 Alpha · Live Signals",
     "alpha_confluence": "💎 Alpha · CONFLUENCE STACK 🔥🔥",
+    # TV Desk — TradingView chart agents (intraday + session scalps)
+    "analyst_daily":    "📈 TV · Intraday Plan",
+    "scalp_asia":       "🌏 TV · Asia Scalps",
+    "scalp_london":     "🌅 TV · London Scalps",
+    "scalp_ny":         "🗽 TV · New York Scalps",
 }
 
 CATEGORIES = list(DEFAULT_CATEGORIES.keys())
@@ -84,7 +89,35 @@ DEDUPE_SEC = 60                     # drop identical message within this window
 # don't spam Telegram every tick when the same condition stays true.
 SIGNAL_DEDUPE_SEC = 900             # 15 min per (symbol, side, signal type)
 _SIGNAL_CATS = {"signal_alignment", "signal_cross", "signal_touch", "signal_improved",
-                "alpha_brief", "alpha_signal", "alpha_confluence"}
+                "alpha_brief", "alpha_signal", "alpha_confluence",
+                "analyst_daily", "scalp_asia", "scalp_london", "scalp_ny"}
+
+OPERATIONAL_DEDUPE_SEC = 3600       # 1 hour for live-trading operational alerts
+_OPERATIONAL_CATS = {"live_trading"}  # DD hits, pauses — must not repeat every minute
+
+# Persistent dedupe: survives process restarts (stored on disk)
+_DEDUPE_PERSIST_PATH = BASE_DIR / "logs" / "telegram" / "_dedupe_state.json"
+_dedupe_persist: dict[str, float] = {}
+
+def _load_dedupe_persist() -> None:
+    global _dedupe_persist
+    try:
+        if _DEDUPE_PERSIST_PATH.exists():
+            _dedupe_persist = json.loads(_DEDUPE_PERSIST_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        _dedupe_persist = {}
+
+def _save_dedupe_persist(key: str, ts: float) -> None:
+    try:
+        _dedupe_persist[key] = ts
+        cutoff = ts - max(OPERATIONAL_DEDUPE_SEC, SIGNAL_DEDUPE_SEC) * 2
+        pruned = {k: v for k, v in _dedupe_persist.items() if v > cutoff}
+        _DEDUPE_PERSIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _DEDUPE_PERSIST_PATH.write_text(json.dumps(pruned), encoding="utf-8")
+    except Exception:
+        pass
+
+_load_dedupe_persist()
 
 
 # ───────────────────────── config ─────────────────────────
@@ -263,11 +296,21 @@ def send(category: str,
         # dedupe identical spam (mainly from log tailer)
         key = f"{category}|{message}"
         now = time.time()
-        last = _dedupe.get(key, 0)
-        if now - last < DEDUPE_SEC:
+        if category in _SIGNAL_CATS:
+            window = SIGNAL_DEDUPE_SEC
+            last = _dedupe.get(key, 0)
+        elif category in _OPERATIONAL_CATS:
+            window = OPERATIONAL_DEDUPE_SEC
+            last = max(_dedupe.get(key, 0), _dedupe_persist.get(key, 0))
+        else:
+            window = DEDUPE_SEC
+            last = _dedupe.get(key, 0)
+        if now - last < window:
             _append_outbox({**base_entry, "ok": False, "skipped": "deduped"})
             return False
         _dedupe[key] = now
+        if category in _OPERATIONAL_CATS:
+            _save_dedupe_persist(key, now)
 
     if not cat.get("enabled", True):
         _append_outbox({**base_entry, "ok": False, "skipped": "category_disabled"})

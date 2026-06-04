@@ -65,8 +65,13 @@ class IconicScore:
 
 
 class IconicConfluenceScorer:
-    def __init__(self, news_provider: Optional[NewsProvider] = None):
-        self.purpose = PurposeGate(news_provider=news_provider)
+    def __init__(self, news_provider: Optional[NewsProvider] = None,
+                 setup_tf: str = SETUP_TF, pullback_tf: str = PULLBACK_TF,
+                 purpose_window_min: int = 90):
+        self.purpose = PurposeGate(news_provider=news_provider,
+                                   open_window_min=purpose_window_min)
+        self._setup_tf   = setup_tf
+        self._pullback_tf = pullback_tf
 
     # ── single symbol ────────────────────────────────────────────────────
     def classify(self, symbol: str, snapshot: dict, strength: dict, *,
@@ -77,7 +82,7 @@ class IconicConfluenceScorer:
         tfs = snapshot.get("tfs", {})
 
         side = "BUY" if align == "bull" else ("SELL" if align == "bear" else "NONE")
-        if side == "NONE" or SETUP_TF not in tfs:
+        if side == "NONE" or self._setup_tf not in tfs:
             return IconicScore(symbol, "NONE", "none", 0.0, False, False,
                                "n/a", 0.0, 0.0, 0.0, False,
                                reasons=["[ ] No directional alignment"], ts=ts)
@@ -86,23 +91,23 @@ class IconicConfluenceScorer:
         flags: list[str] = []
 
         # 1) Volume Pop on the setup TF -------------------------------------
-        vs = vol.read(tfs[SETUP_TF])
+        vs = vol.read(tfs[self._setup_tf])
         volume_ok = vs.has_pop
         if vs.is_climax:
             flags.append("⚠️ Climax volume — possible reversal (cashing out)")
         if volume_ok:
-            reasons.append(f"[✓] Volume pop on {SETUP_TF} "
+            reasons.append(f"[✓] Volume pop on {self._setup_tf} "
                            f"(mean {vs.pop_mean_ratio}×, max {vs.pop_max_ratio}× MA)")
         else:
-            reasons.append(f"[ ] No volume pop on {SETUP_TF} "
+            reasons.append(f"[ ] No volume pop on {self._setup_tf} "
                            f"(mean {vs.pop_mean_ratio}× MA)")
         # digestion check: pullback TF should be quiet
-        if PULLBACK_TF in tfs:
-            pvs = vol.read(tfs[PULLBACK_TF])
+        if self._pullback_tf in tfs:
+            pvs = vol.read(tfs[self._pullback_tf])
             if pvs.is_low:
-                reasons.append(f"[✓] {PULLBACK_TF} pullback volume low (digesting)")
+                reasons.append(f"[✓] {self._pullback_tf} pullback volume low (digesting)")
             else:
-                flags.append(f"⚠️ {PULLBACK_TF} pullback volume not low "
+                flags.append(f"⚠️ {self._pullback_tf} pullback volume not low "
                              f"({pvs.last_ratio}× MA) — counter-flow risk")
 
         # 2) Purpose (news = strong; session open/overlap = weak) ──────────

@@ -435,9 +435,14 @@ def write_live_state(symbols: list, daily: DailyState,
     daily_dd  = daily.daily_loss_pct(acc.equity)
     total_dd  = max((initial_balance - acc.equity) / initial_balance * 100, 0.0)
 
-    # All known EA magic numbers: Python live trader + MQL5 EAs
+    # All known EA magic numbers: Python live traders + MQL5 EAs
     EA_MAGICS = {
         20260100: "MTF_EMA_Scalper",
+        20260700: "Iconic",
+        20260522: "Gold_Scalp",
+        20260603: "GS_VP",
+        20260600: "JTCC",
+        20260800: "Asia",
         20260516: "ScalpMaster_HFT",
         20260517: "ScalpMaster_HFT_Aggressive",
         20260002: "XAUUSD_Gold_Scalper",
@@ -460,8 +465,10 @@ def write_live_state(symbols: list, daily: DailyState,
             "open_time": int(p.time), "magic": p.magic,
             "ea_name": EA_MAGICS.get(p.magic, f"unknown_{p.magic}"),
         }
-        if p.magic == MAGIC:
-            positions.append(pos_dict)
+        # Show EVERY open position on the account, not just MTF's — the
+        # dashboard "Live Positions" page reads this list, so filtering to
+        # MAGIC hid every other agent's (Iconic/Scalp/GS-VP/JTCC/Asia/EA) trade.
+        positions.append(pos_dict)
         ea_name = EA_MAGICS.get(p.magic)
         if ea_name:
             ea_positions[ea_name].append(pos_dict)

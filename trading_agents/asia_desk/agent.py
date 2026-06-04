@@ -228,7 +228,8 @@ def secs_to_next_m15():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pairs", nargs="+", default=["XAUUSD", "BTCUSD", "AUDJPY", "USDJPY"])
+    ap.add_argument("--pairs", nargs="+",
+                    default=["XAUUSD", "BTCUSD", "AUDJPY", "USDJPY", "XAGUSD", "EURJPY", "GBPJPY"])
     ap.add_argument("--risk", type=float, default=0.5)
     ap.add_argument("--max-td", type=int, default=4, help="max entries/symbol/day")
     ap.add_argument("--dry", action="store_true", help="log signals, place NO orders")

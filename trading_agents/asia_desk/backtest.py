@@ -339,7 +339,8 @@ STRATS = {
     "S6_sweep":    (s6_sweep_reclaim, ["USDJPY", "AUDJPY", "EURJPY", "GBPJPY",
                                        "NZDJPY", "XAUUSD", "XAGUSD", "BTCUSD"]),
     "S1_metals_btc": (s1_fade,   ["XAUUSD", "XAGUSD", "BTCUSD"]),
-    "S1c_fade_atr": (s1c_fade_atr, ["USDJPY", "AUDJPY", "XAUUSD", "XAGUSD", "BTCUSD"]),
+    "S1c_fade_atr": (s1c_fade_atr, ["USDJPY", "AUDJPY", "XAUUSD", "XAGUSD", "BTCUSD",
+                                    "EURJPY", "GBPJPY"]),
 }
 
 

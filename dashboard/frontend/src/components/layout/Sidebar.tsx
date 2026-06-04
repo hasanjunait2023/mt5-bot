@@ -7,7 +7,7 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-[232px] shrink-0
                       bg-bg-surface/55 backdrop-blur-xl border-r border-border">
-      <nav className="flex-1 px-3 pt-4 space-y-1">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pt-4 pb-2 space-y-1">
         {NAV.map(({ to, label, icon }) => (
           <NavLink
             key={to}

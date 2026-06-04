@@ -69,8 +69,18 @@ new PID with `pgrep -af`.
 ssh mt5vps                         # see SSH config alias below
 cd /home/trader/mt5-bot
 
-# restart the whole stack (orchestrator re-reads services.yaml)
-#   find + restart however the orchestrator is supervised (systemd unit or start_vps.sh)
+# restart the whole stack (orchestrator re-reads services.yaml).
+# The orchestrator runs as user `trader`, launched by start_vps.sh from the
+# trader's `@reboot` crontab (nohup) — there is NO live supervisor, so if the
+# orchestrator process itself dies the whole stack stays down until reboot or a
+# manual relaunch. To restart cleanly (avoid double-spawned traders, since
+# start_vps.sh's own `sleep 2` is too short to let 26 children drain):
+#   sudo -u trader pkill -TERM -f trading_agents.orchestrator   # clean child shutdown
+#   # wait until `pgrep -u trader -fc /home/trader/mt5-bot/.venv/bin/python` ~= 0
+#   sudo -u trader bash -lc 'cd /home/trader/mt5-bot && setsid nohup bash start_vps.sh >/dev/null 2>&1 &'
+# NOTE: the `mt5-agents.service` systemd unit is STALE (points at /opt/mt5-bot +
+#   main_trading_system.py, an old launcher) and crash-loops — keep it stopped:
+#   `systemctl stop mt5-agents.service`. It is NOT the real orchestrator.
 # restart just the bridge (after bridge code change — picks up reconciler/self-heal):
 pkill -f api_server.py             # orchestrator auto-restarts it
 curl -s localhost:8090/reconciler/status   # verify reconciler running (closed_total rising)

@@ -555,13 +555,18 @@ def main():
             acc = mt5.account_info()
             if acc is None:
                 log.warning("MT5 disconnected — reconnecting...")
-                for _ in range(5):
-                    if mt5_connect(): break
-                    time.sleep(10)
+                # Never exit on a dropped link: the terminal can blip
+                # (IPC send failed) and recover minutes later. Exiting here is
+                # what silently stopped the trader on 2026-06-02. Retry forever
+                # with a capped backoff until the bridge/terminal comes back.
+                _bk = 10
+                while mt5.account_info() is None:
+                    mt5_connect()
+                    if mt5.account_info() is not None:
+                        break
+                    time.sleep(_bk)
+                    _bk = min(_bk * 2, 120)
                 acc = mt5.account_info()
-                if acc is None:
-                    log.error("Cannot reconnect. Stopping.")
-                    break
 
             daily.roll_if_new_day(acc.balance)
             _today = str(daily.date)

@@ -32,6 +32,18 @@ except Exception:
     raise
 
 BASE_DIR = Path(__file__).resolve().parents[1]
+
+# Load .env so DEPLOYMENT_MODE (and other config) is honoured even when the
+# orchestrator is launched bare (`python -m trading_agents.orchestrator`). Without
+# this, a bare launch on the local standby box defaulted to mode="vps" and started
+# the entire live profile locally — duplicating the VPS stack and spamming false
+# "trader offline / MT5 connection lost" alerts from a stale local _live_state.json.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / ".env")
+except Exception:
+    pass
+
 CONFIG = BASE_DIR / "configs" / "services.yaml"
 STATE_FILE = BASE_DIR / "logs" / "_orchestrator_state.json"
 LOCK_FILE = BASE_DIR / "logs" / "_orchestrator.lock"
@@ -276,13 +288,22 @@ class Service:
         _log(f"[{self.id}] UNHEALTHY ({reason}) fail={self.fails}/{self.max_retries}")
         if not self.restart_enabled:
             return
+        # Past max_retries we do NOT abandon the service forever. A trading agent
+        # whose MT5 link blips (terminal IPC drop) would otherwise stay dead until
+        # a human notices — exactly what kept the stack down after the 2026-06-02
+        # MT5 outage. Instead we keep restarting on a capped exponential cooldown,
+        # so the service self-recovers the moment MT5/the bridge comes back.
+        # fails resets to 0 as soon as a health probe passes again (see check()).
         if self.fails > self.max_retries:
             if self.status != "failed":
                 self.status = "failed"
-                _alert(f"❌ {self.name} failed after {self.max_retries} restarts ({reason})")
-            return
+                _alert(f"❌ {self.name} unhealthy after {self.max_retries} restarts "
+                       f"({reason}) — retrying on cooldown until it recovers")
+            cooldown = min(self.backoff * (2 ** (self.fails - self.max_retries)), 300.0)
+        else:
+            cooldown = self.backoff
         self.stop()
-        time.sleep(self.backoff)
+        time.sleep(cooldown)
         self.start()
         self.restarts += 1
 

@@ -37,6 +37,20 @@ WIN_MATCH = os.getenv("MT5_WINDOW_MATCH", "MetaTrader|MetaQuotes|Exness|Demo Acc
 STATE_DIR = Path(os.getenv("LOG_ROOT", "logs")) / "autotrading_guard"
 TOPIC = os.getenv("AUTOTRADING_GUARD_TOPIC", "tv_status")
 
+# Hung-terminal recovery: when the bridge reports MT5 down (status != "ok",
+# e.g. "IPC send failed") for several consecutive cycles, the wine terminal is
+# stuck and the bridge can't re-initialise against it — so we kill + relaunch it.
+# This is the root-cause fix for the 2026-06-02 outage, where a hung terminal
+# left every agent unable to reconnect.
+WINE_BIN = os.getenv("WINE_BIN", "/opt/wine-staging/bin/wine")
+WINEPREFIX = os.getenv("WINEPREFIX", "/home/trader/.wine")
+TERMINAL_EXE = os.getenv("MT5_TERMINAL_EXE", r"C:\Program Files\MetaTrader 5\terminal64.exe")
+TERM_RESTART_AFTER = int(os.getenv("MT5_TERM_RESTART_AFTER", "4"))   # consecutive down cycles
+TERM_RESTART_COOLDOWN = int(os.getenv("MT5_TERM_RESTART_COOLDOWN", "600"))  # min secs between restarts
+
+_down_streak = 0
+_last_term_restart = 0.0
+
 
 def _notify(msg: str, level: str = "INFO") -> None:
     try:
@@ -94,28 +108,81 @@ def _enable_autotrading() -> bool:
         return False
 
 
-def _trade_allowed() -> bool | None:
+def _health() -> dict | None:
+    """Full bridge /health dict, or None if the bridge itself is unreachable
+    (that case is the orchestrator's job — it restarts the bridge process)."""
     try:
         r = requests.get(f"{BRIDGE}/health", timeout=10)
-        if r.status_code >= 400:
-            return None
-        return r.json().get("trade_allowed")
+        return r.json()
     except Exception as e:
         log.warning("health check failed: %s", e)
         return None
 
 
+def _restart_terminal() -> bool:
+    """Kill a hung wine MT5 terminal and relaunch it. The bridge's _ensure_mt5
+    re-initialises against the fresh terminal on its next call (auto-login is
+    saved in the terminal profile)."""
+    env = _xenv()
+    env["WINEPREFIX"] = WINEPREFIX
+    try:
+        subprocess.run(["pkill", "-9", "-f", "terminal64.exe"],
+                       env=env, capture_output=True, timeout=15)
+    except Exception as e:
+        log.warning("pkill terminal64 failed: %s", e)
+    time.sleep(5)
+    try:
+        subprocess.Popen([WINE_BIN, TERMINAL_EXE, "/portable"], env=env,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         stdin=subprocess.DEVNULL)
+        log.info("relaunched MT5 terminal under wine")
+        return True
+    except Exception as e:
+        log.error("relaunch terminal failed: %s", e)
+        return False
+
+
 def run_once() -> dict:
+    global _down_streak, _last_term_restart
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    ta = _trade_allowed()
     now = datetime.now(timezone.utc).isoformat()
+    h = _health()
+    status = h.get("status") if isinstance(h, dict) else None
+
+    # Bridge reachable but MT5 link is down (hung terminal / IPC drop). The
+    # orchestrator can't see this (the /health HTTP call still returns 200), so
+    # recover the terminal here after it stays down for a few cycles.
+    if status is not None and status != "ok":
+        _down_streak += 1
+        log.warning("MT5 link down (status=%s) streak=%d/%d",
+                    status, _down_streak, TERM_RESTART_AFTER)
+        action = "mt5_down"
+        if _down_streak >= TERM_RESTART_AFTER and (time.time() - _last_term_restart) > TERM_RESTART_COOLDOWN:
+            _notify(f"MT5 link down {_down_streak}× (status={status}) — restarting terminal", "ERROR")
+            if _restart_terminal():
+                _last_term_restart = time.time()
+                _down_streak = 0
+                action = "terminal_restarted"
+            else:
+                action = "terminal_restart_failed"
+        state = {"ts": now, "trade_allowed": None, "mt5_status": status,
+                 "down_streak": _down_streak, "action": action, "running": True}
+        try:
+            (STATE_DIR / "_state.json").write_text(__import__("json").dumps(state))
+        except Exception:
+            pass
+        return state
+    _down_streak = 0
+
+    ta = h.get("trade_allowed") if isinstance(h, dict) else None
     action = "ok"
     if ta is False:
         log.warning("Algo Trading is OFF — re-enabling")
         # Toggle, wait, re-check. A single Ctrl+E flips OFF→ON.
         if _enable_autotrading():
             time.sleep(4)
-            if _trade_allowed():
+            h2 = _health()
+            if isinstance(h2, dict) and h2.get("trade_allowed"):
                 action = "re-enabled"
                 _notify("Algo Trading was OFF — re-enabled ✅", "WARNING")
             else:

@@ -167,7 +167,7 @@ export function Signals() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <MetricCard label="Live"        value={livePulse}            tone="accent" />
         <MetricCard label="Alignments"  value={counts.alignment}     tone="neutral" />
         <MetricCard label="Crosses M1"  value={counts.cross}         tone="profit"  />

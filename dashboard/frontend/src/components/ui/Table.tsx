@@ -23,7 +23,7 @@ export function Table<T>({ columns, data, keyFn, emptyText = 'No data' }: Props<
             {columns.map(col => (
               <th
                 key={col.key}
-                className={`px-3.5 py-2.5 text-text-secondary font-sans text-[11px] uppercase tracking-[0.12em] font-semibold whitespace-nowrap text-${col.align ?? 'left'} border-b border-border`}
+                className={`px-2.5 py-2 md:px-3.5 md:py-2.5 text-text-secondary font-sans text-[11px] uppercase tracking-[0.12em] font-semibold whitespace-nowrap text-${col.align ?? 'left'} border-b border-border`}
               >
                 {col.header}
               </th>
@@ -46,7 +46,7 @@ export function Table<T>({ columns, data, keyFn, emptyText = 'No data' }: Props<
                 {columns.map(col => (
                   <td
                     key={col.key}
-                    className={`px-3.5 py-2.5 font-mono font-tabular text-text-primary whitespace-nowrap text-${col.align ?? 'left'}`}
+                    className={`px-2.5 py-2 md:px-3.5 md:py-2.5 font-mono font-tabular text-text-primary whitespace-nowrap text-${col.align ?? 'left'}`}
                   >
                     {col.render(row)}
                   </td>

@@ -45,7 +45,7 @@ export function Settings() {
   const inputs  = fields.filter(f => f.type !== 'bool')
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-4 md:space-y-6">
       <PageHeader
         title="Settings"
         subtitle="Edit trading_system_config.json — changes apply on next agent cycle"

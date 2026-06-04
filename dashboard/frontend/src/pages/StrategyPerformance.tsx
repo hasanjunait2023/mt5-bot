@@ -126,8 +126,8 @@ export default function StrategyPerformance() {
   const stamp = recon?.last_run ? new Date(recon.last_run).toLocaleTimeString() : '—'
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="space-y-4 md:space-y-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <MetricCard hero label="Portfolio net (30d)" value={sc.portfolio.net_pnl}
           prefix={sc.portfolio.net_pnl >= 0 ? '+$' : '-$'}
           tone={sc.portfolio.net_pnl >= 0 ? 'profit' : 'loss'} />

@@ -56,7 +56,7 @@ export function TelegramHQ() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-4 md:space-y-6">
       <PageHeader
         title="Telegram HQ"
         subtitle="Every team posts to its own forum topic. Approvals and Maic chat work two-way."

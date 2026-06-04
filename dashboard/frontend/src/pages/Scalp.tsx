@@ -511,7 +511,7 @@ export function Scalp() {
       : 'text-text-muted bg-white/[0.03] ring-border'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>

@@ -21,7 +21,7 @@ export function Overview() {
   const eqDelta = account.equity - account.balance
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Page header */}
       <div className="flex items-end justify-between gap-4">
         <div>
@@ -70,7 +70,7 @@ export function Overview() {
       </div>
 
       {/* Risk strip — drawdown shown against its limit so risk is felt, not just read */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <RiskCard
           label="Daily Drawdown"
           pct={account.daily_dd_pct}
@@ -88,7 +88,7 @@ export function Overview() {
 
       {/* System status */}
       <Panel title="System Status" i={0}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <StatusDot
             status={traderStatus}
             label={

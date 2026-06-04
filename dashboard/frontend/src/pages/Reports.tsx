@@ -229,7 +229,7 @@ export function Reports() {
   const symRows = Object.entries(data.symbol_stats ?? {}).map(([sym, s]) => ({ sym, ...s }))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <PageHeader
         title="Reports & Analytics"
         subtitle="Live equity curve, drawdown, and EA backtest results"

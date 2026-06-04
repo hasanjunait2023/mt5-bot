@@ -196,7 +196,7 @@ function ICTWalkForward({ data }: { data: ICTResults | null }) {
       )}
 
       {/* Per-symbol cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {symbols.map(([sym, r], i) => {
           const pass = r.passed
           return (
@@ -403,7 +403,7 @@ export function EAs() {
   const { eas, summary } = data
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <PageHeader
         title="Expert Advisors"
         subtitle="All MQL5 EAs — live positions tracked by magic number"

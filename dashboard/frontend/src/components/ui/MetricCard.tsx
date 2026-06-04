@@ -63,7 +63,7 @@ export function MetricCard({
   return (
     <div
       className={clsx(
-        'glass glass-hover relative overflow-hidden p-5 flex flex-col gap-2.5 min-w-0 ring-1',
+        'glass glass-hover relative overflow-hidden p-3.5 md:p-5 flex flex-col gap-2 md:gap-2.5 min-w-0 ring-1',
         TONE_RING[tn],
         tn !== 'neutral' && TONE_GLOW[tn],
       )}
@@ -80,7 +80,7 @@ export function MetricCard({
         <span
           className={clsx(
             'font-mono font-bold leading-none tracking-tight font-tabular rounded px-1 -mx-1',
-            hero ? 'text-3xl md:text-[2.1rem]' : 'text-2xl',
+            hero ? 'text-2xl md:text-[2.1rem]' : 'text-xl md:text-2xl',
             tn === 'profit' && 'text-profit',
             tn === 'loss' && 'text-loss',
             tn === 'warning' && 'text-warning',

@@ -345,7 +345,7 @@ export function Hub() {
   const criticalDd = summary.any_critical
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+    <div className="p-6 space-y-4 md:space-y-6 max-w-6xl mx-auto">
 
       {/* page header */}
       <div className="flex items-center justify-between">

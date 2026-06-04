@@ -43,7 +43,7 @@ export function Positions() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <PageHeader
         title="Live Positions"
         subtitle={`${positions.length} open · updates every 5s`}

@@ -199,7 +199,7 @@ export function DeliveryControl() {
           {/* Channels */}
           <div>
             <div className="eyebrow mb-2">Signal Channels</div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {CHANNEL_GROUPS.map(g => (
                 <div key={g.group}>
                   <div className="text-[11px] uppercase tracking-wider text-text-tertiary mb-1.5">{g.group}</div>

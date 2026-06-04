@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTrading } from '../../contexts/TradingContext'
 import { useConnectionState } from '../../hooks/useWebSocket'
 import { SessionClock } from '../ui/SessionClock'
@@ -13,53 +14,63 @@ export function TopBar() {
     connState === 'open' ? 'bg-profit' : connState === 'connecting' ? 'bg-warning' : 'bg-loss'
 
   return (
-    <header className="h-14 shrink-0 flex items-center justify-between px-4 md:px-6
+    <header className="h-14 shrink-0 flex items-center justify-between gap-3 px-3 md:px-6
                        bg-bg-surface/70 backdrop-blur-xl border-b border-border shadow-topbar">
       {/* Brand + account identity */}
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="flex items-center gap-2.5">
-          <div className="relative grid place-items-center w-7 h-7 rounded-lg
-                          bg-gradient-to-br from-accent to-accent-dim shadow-glow-accent">
-            <span className="text-white text-[13px] font-bold leading-none">M</span>
-          </div>
-          <div className="leading-tight">
-            <div className="text-text-primary font-semibold text-sm tracking-tight">
-              MT5 Terminal
-            </div>
-            {account.server && account.server !== '—' && (
-              <div className="text-text-muted text-[11px] font-mono truncate">
-                #{account.login} · {account.server}
-              </div>
-            )}
-          </div>
+      <Link
+        to="/"
+        className="flex items-center gap-2.5 min-w-0 rounded-xl -ml-1 pl-1 pr-2 py-1
+                   hover:bg-white/[0.03] transition-colors"
+      >
+        <div className="relative grid place-items-center w-8 h-8 rounded-xl
+                        bg-gradient-to-br from-accent to-accent-dim shadow-glow-accent
+                        ring-1 ring-white/15">
+          <span className="text-white text-sm font-bold leading-none">M</span>
+          <span className="absolute inset-x-1 top-0.5 h-px bg-white/30 rounded-full" />
         </div>
-      </div>
+        <div className="leading-tight min-w-0">
+          <div className="text-text-primary font-semibold text-sm tracking-tight">
+            MT5&nbsp;Terminal
+          </div>
+          {account.server && account.server !== '—' && (
+            <div className="text-text-muted text-[11px] font-mono truncate">
+              #{account.login} · {account.server}
+            </div>
+          )}
+        </div>
+      </Link>
 
       {/* Live status cluster */}
-      <div className="flex items-center gap-2 md:gap-3">
-        <SessionClock />
+      <div className="flex items-center gap-2 md:gap-2.5 shrink-0">
+        <div className="hidden sm:block">
+          <SessionClock />
+        </div>
 
-        <Pill>
-          <span className={`relative flex w-2 h-2`}>
-            {connState === 'connecting' && (
-              <span className="absolute inset-0 rounded-full bg-warning animate-pulse2" />
-            )}
-            <span className={`relative w-2 h-2 rounded-full ${wsColor}`} />
+        {/* Connectivity — WS + AI in one segmented pill for a cohesive read */}
+        <div className="flex items-center h-8 px-2.5 gap-2.5 rounded-full bg-white/[0.04] ring-1 ring-border">
+          <span className="flex items-center gap-1.5" title={`WebSocket: ${connState}`}>
+            <span className="relative flex w-2 h-2">
+              {connState === 'connecting' && (
+                <span className="absolute inset-0 rounded-full bg-warning animate-pulse2" />
+              )}
+              <span className={`relative w-2 h-2 rounded-full ${wsColor}`} />
+            </span>
+            <span className="text-text-secondary text-[11px] font-semibold tracking-wide">WS</span>
           </span>
-          <span className="text-text-secondary text-[11px] font-medium">WS</span>
-        </Pill>
+          {nvidia_api_alive !== undefined && (
+            <>
+              <span className="w-px h-3.5 bg-border" />
+              <span className="flex items-center gap-1.5" title={`AI engine: ${nvidia_api_alive ? 'alive' : 'down'}`}>
+                <span className={`w-2 h-2 rounded-full ${nvidia_api_alive ? 'bg-profit' : 'bg-loss'}`} />
+                <span className="text-text-secondary text-[11px] font-semibold tracking-wide">AI</span>
+              </span>
+            </>
+          )}
+        </div>
 
-        {nvidia_api_alive !== undefined && (
-          <Pill>
-            <span
-              className={`w-2 h-2 rounded-full ${nvidia_api_alive ? 'bg-profit' : 'bg-loss'}`}
-            />
-            <span className="text-text-secondary text-[11px] font-medium">AI</span>
-          </Pill>
-        )}
-
+        {/* Trader run state */}
         <div
-          className={`flex items-center gap-1.5 pl-2.5 pr-3 h-7 rounded-full text-[11px] font-semibold
+          className={`flex items-center gap-1.5 pl-2.5 pr-3 h-8 rounded-full text-[11px] font-bold tracking-wide
             ${trader_running
               ? 'text-profit bg-profit/10 ring-1 ring-profit/30'
               : 'text-loss bg-loss/10 ring-1 ring-loss/25'}`}
@@ -83,14 +94,5 @@ export function TopBar() {
         )}
       </div>
     </header>
-  )
-}
-
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5 h-7 px-2.5 rounded-full
-                    bg-white/[0.04] ring-1 ring-border">
-      {children}
-    </div>
   )
 }

@@ -63,7 +63,7 @@ export function Pending() {
   const scanAge = data?.scan_age_minutes
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <header className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Operations</p>

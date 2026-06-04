@@ -215,7 +215,7 @@ export function Jtcc() {
   const criticalIssues = guardian.issues.filter(i => i.severity === 'CRITICAL').length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow">JTCC</p>

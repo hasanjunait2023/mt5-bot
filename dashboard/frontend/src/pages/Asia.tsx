@@ -61,7 +61,7 @@ export function Asia() {
   const ranges = Object.entries(state?.ranges ?? {})
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

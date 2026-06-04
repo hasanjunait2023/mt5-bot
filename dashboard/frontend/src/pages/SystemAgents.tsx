@@ -150,7 +150,7 @@ export function SystemAgents() {
   const sc = d.scout.scorecard
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <PageHeader
         title="System Agents"
         subtitle="Live activity & reports from every autonomous agent"
@@ -289,7 +289,7 @@ export function SystemAgents() {
 
       {/* EA Lifecycle */}
       <Panel title="EA Lifecycle Team" i={6}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div>
             <p className="eyebrow mb-2">Guardian</p>
             <StatusDot status={d.ea.guardian.status} label={`${d.ea.guardian.anomalies_found} anomalies`} />

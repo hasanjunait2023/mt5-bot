@@ -21,7 +21,7 @@ export function Layout() {
           <Sidebar />
           <main
             key={pathname}
-            className="flex-1 overflow-y-auto px-4 py-5 md:px-7 md:py-7 pb-24 md:pb-7 reveal"
+            className="flex-1 overflow-y-auto px-3 py-4 md:px-7 md:py-7 pb-24 md:pb-7 reveal"
           >
             <div className="mx-auto w-full max-w-[1500px]">
               <Outlet />

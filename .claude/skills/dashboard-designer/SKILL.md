@@ -31,9 +31,9 @@ highest-value improvement and ship it cleanly.
 
 ## Workflow (one cycle)
 
-### 0. Sync & orient
-- `git -C "<repo>" pull --ff-only origin master` (start from latest; if it can't
-  fast-forward, stop and log — don't fight divergence).
+### 0. Orient
+- You run in a DEDICATED clone that the runner already reset to pristine
+  origin/master — the tree is clean and current. Do NOT pull/reset/clean yourself.
 - Read `dashboard/UI_POLISH_LOG.md` (backlog + per-page state — avoid repeating
   recent work), `dashboard/DESIGN.md`, and `dashboard/frontend/tailwind.config.ts`.
 

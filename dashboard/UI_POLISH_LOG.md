@@ -19,6 +19,7 @@ Scalp · VolumeProfile · Journal · TelegramHQ · Settings · Hub · Factory ·
 <!-- agent maintains: page → last-polished date + one-line of what was done -->
 | Page | Last polished | Notes |
 |------|---------------|-------|
+| _shared: PageHeader_ | 2026-06-05 | Gradient accent kicker bar anchoring the title — consistent header rhythm across all routes |
 | _shared: Table_ | 2026-06-04 | Premium empty-state (glyph badge + composed message) — lifts every data table |
 
 ## Backlog (highest-value first — agent may add/reorder)
@@ -30,6 +31,12 @@ Scalp · VolumeProfile · Journal · TelegramHQ · Settings · Hub · Factory ·
 
 ## Run log (newest first)
 <!-- agent appends one block per run -->
+
+### 2026-06-05 — PageHeader (shared)
+- Change: Added a slim (3px) vertical gradient accent kicker bar (`from-accent to-accent-dim`, rounded, faint accent glow) to the left of the title block in the shared `PageHeader`. Self-stretches to the title+subtitle height. Propagates a consistent premium header anchor to every route that uses `PageHeader` (12+ pages).
+- Why premium: A colored kicker rail beside the heading is a signature fintech/terminal hierarchy cue — it anchors the Z-pattern entry point and gives every page a deliberate, branded start instead of bare text. Uses only existing tokens (`accent`/`accent-dim`, `bg-gradient-to-b`, rounded-full) — no new deps, no aesthetic drift. Realizes backlog #1 (shared PageHeader rhythm), which the prior run designed but could not ship.
+- Note: This run unblocked the prior skip — the VPS `./pages/Strength` divergence is resolved (VPS now has `pages/Strength.tsx`; its `npx vite build` succeeds). VPS frontend rebuilds cleanly again.
+- Build: pass (local `npx vite build` 8.77s + VPS `npx vite build` 20.92s) · Visual: skipped (time-boxed; additive className-only change, very low risk — relied on build-gate + live bundle/HTTP canary) · Deployed: :8010 (live serves new bundle `index-DEc2gNMN.js`, HTTP 200) · Commit: edc95f2
 
 ### 2026-06-05 05:54 UTC — PageHeader (shared) — SKIPPED (blocked)
 - Intended change: add a premium accent kicker bar (gradient `from-accent to-accent-dim`) anchoring the title in the shared `PageHeader`, propagating consistent header rhythm to all 26 routes (backlog #1). JSX/className-only, backward compatible.

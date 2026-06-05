@@ -63,15 +63,15 @@ TYPICAL_SPREAD = {  # price units
 }
 
 
-def _fetch(symbol: str, limit: int) -> pd.DataFrame | None:
+def _fetch(symbol: str, limit: int, timeframe: str = "H1") -> pd.DataFrame | None:
     url = os.getenv("MT5_BRIDGE_URL", "http://localhost:8090")
     try:
         r = requests.get(f"{url}/bars/{symbol}",
-                         params={"timeframe": "H1", "limit": limit}, timeout=60)
+                         params={"timeframe": timeframe, "limit": limit}, timeout=90)
         r.raise_for_status()
         d = r.json()
     except Exception as e:
-        log.warning("fetch %s failed: %s", symbol, e)
+        log.warning("fetch %s %s failed: %s", symbol, timeframe, e)
         return None
     df = pd.DataFrame({k: v for k, v in d.items() if isinstance(v, list)})
     for c in ("open", "high", "low", "close"):
@@ -82,19 +82,31 @@ def _fetch(symbol: str, limit: int) -> pd.DataFrame | None:
     return df
 
 
-def _load_board(limit: int) -> dict[str, pd.DataFrame]:
-    out = {}
+def _load_board(limit: int, *, with_m15: bool = False):
+    """Returns (h1_data, m15_data). m15_data empty unless with_m15."""
+    h1: dict[str, pd.DataFrame] = {}
+    m15: dict[str, pd.DataFrame] = {}
     for sym in board_mod.BOARD_PAIRS:
-        df = _fetch(sym, limit)
-        if df is not None and len(df) >= WARMUP + 50:
-            out[sym] = df.reset_index(drop=True)
-    log.info("loaded %d/%d pairs", len(out), len(board_mod.BOARD_PAIRS))
-    return out
+        df = _fetch(sym, limit, "H1")
+        if df is None or len(df) < WARMUP + 50:
+            continue
+        h1[sym] = df.reset_index(drop=True)
+        if with_m15:
+            d15 = _fetch(sym, limit * 4, "M15")   # ~same calendar span as the H1 set
+            if d15 is not None and "time" in d15.columns:
+                m15[sym] = d15.reset_index(drop=True)
+    log.info("loaded %d/%d pairs (m15: %d)", len(h1), len(board_mod.BOARD_PAIRS), len(m15))
+    return h1, m15
 
 
-def _simulate(data: dict[str, pd.DataFrame], lo: int, hi: int) -> dict:
+def _simulate(data: dict[str, pd.DataFrame], lo: int, hi: int, *,
+              m15_data: dict | None = None, m15_entry: bool = False) -> dict:
     """Walk bars [lo,hi); book leaders, exit on SL/tp_final. Returns stats."""
-    engine = IconicEngine(setup_tf="H1", pullback_tf="M15")
+    engine = IconicEngine(setup_tf="H1", pullback_tf="M15", m15_entry=m15_entry)
+    m15_data = m15_data or {}
+    # cache each M15 frame's time array for fast timestamp alignment
+    m15_times = {s: df["time"].values for s, df in m15_data.items() if "time" in df.columns}
+    M15_WIN = 60   # M15 bars fed to the entry-timing pivot hunt
     n = min(len(df) for df in data.values())
     hi = min(hi, n - 1)
     open_tr: dict[str, dict] = {}
@@ -139,7 +151,15 @@ def _simulate(data: dict[str, pd.DataFrame], lo: int, hi: int) -> dict:
             last = win.iloc[-1]
             align = ("bull" if last["close"] > last["ema200"]
                      else "bear" if last["close"] < last["ema200"] else "none")
-            snaps[sym] = {"align": align, "tfs": {"H1": win}}
+            tfs = {"H1": win}
+            # M15 slice up to this H1 bar's close time (for entry-timing)
+            if m15_entry and sym in m15_times:
+                import numpy as np
+                t_close = win.iloc[-1]["time"]
+                j = int(np.searchsorted(m15_times[sym], t_close, side="right"))
+                if j >= 30:
+                    tfs["M15"] = m15_data[sym].iloc[max(0, j - M15_WIN):j]
+            snaps[sym] = {"align": align, "tfs": tfs}
 
         strength = board_mod.compute_strength(snaps, setup_tf="H1")
         # classify the board ONCE, then select leaders + hard roll-over inline,
@@ -226,32 +246,39 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=5000)
     ap.add_argument("--walkforward", action="store_true")
+    ap.add_argument("--m15", action="store_true",
+                    help="also run the M15 entry-timing variant and compare vs H1")
     args = ap.parse_args()
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
 
-    data = _load_board(args.limit)
+    data, m15 = _load_board(args.limit, with_m15=args.m15)
     if len(data) < 10:
         log.error("not enough pairs (%d) — bridge/bars issue", len(data))
         sys.exit(1)
     n = min(len(df) for df in data.values())
     log.info("aligned bars: %d", n)
 
+    # variants to run: H1-entry baseline, plus M15-entry if requested
+    variants = [("H1", False)] + ([("M15", True)] if args.m15 else [])
+
+    def windows():
+        if args.walkforward and n > WF_IS_BARS + WF_OOS_BARS:
+            yield "IS", n - WF_IS_BARS - WF_OOS_BARS, n - WF_OOS_BARS
+            yield "OOS", n - WF_OOS_BARS, n
+        else:
+            yield "FULL", WARMUP, n
+
     report = {"generated_at": datetime.now(timezone.utc).isoformat(), "pairs": len(data),
               "bars": n, "gates": {"pf": 1.3, "min_trades": 15}}
-    if args.walkforward and n > WF_IS_BARS + WF_OOS_BARS:
-        is_lo, is_hi = n - WF_IS_BARS - WF_OOS_BARS, n - WF_OOS_BARS
-        log.info("IS  bars [%d,%d)", is_lo, is_hi)
-        report["IS"] = _simulate(data, is_lo, is_hi)
-        log.info("IS  -> %s", report["IS"])
-        log.info("OOS bars [%d,%d)", is_hi, n)
-        report["OOS"] = _simulate(data, is_hi, n)
-        log.info("OOS -> %s", report["OOS"])
-    else:
-        report["FULL"] = _simulate(data, WARMUP, n)
-        log.info("FULL -> %s", report["FULL"])
+    for vname, vflag in variants:
+        for wname, w_lo, w_hi in windows():
+            log.info("[%s] %s bars [%d,%d)", vname, wname, w_lo, w_hi)
+            res = _simulate(data, w_lo, w_hi, m15_data=m15, m15_entry=vflag)
+            report[f"{vname}_{wname}"] = res
+            log.info("[%s] %s -> %s", vname, wname, res)
 
     REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
     log.info("wrote %s", REPORT)

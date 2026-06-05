@@ -372,9 +372,19 @@ class Orchestrator:
         signal.signal(signal.SIGINT, self._sig)
         signal.signal(signal.SIGTERM, self._sig)
         _log(f"orchestrator up — {len(self.services)} services")
+        svc_map = {s.id: s for s in self.services}
         for svc in self.services:
-            for dep in svc.spec.get("depends_on", []):
-                pass  # already ordered; start sequentially
+            for dep_id in svc.spec.get("depends_on", []):
+                dep = svc_map.get(dep_id)
+                if not dep:
+                    continue
+                # Wait until dep process is alive (up to 600s) before starting this svc.
+                # Prevents Wine lock contention when terminal + bridge start simultaneously.
+                deadline = time.time() + 600
+                while time.time() < deadline:
+                    if dep.proc and dep.proc.poll() is None:
+                        break
+                    time.sleep(3)
             svc.start()
             time.sleep(2)  # stagger so deps settle
         try:

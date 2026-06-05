@@ -36,7 +36,7 @@ services:
     cmd: [bash, scripts/launch_terminal_wine.sh]
     # process-type health: orchestrator just checks the process is alive.
     # grace: 120 gives the terminal time to open its window before bridge starts.
-    health: {type: process, grace: 120}
+    health: {type: process, grace: 300}
     critical: true
 
   - id: bridge
@@ -48,7 +48,7 @@ services:
     # the [vps] entry doesn't lose supervision if the host ever flips back.
     profiles: [vps, linux]
     cmd: [bash, scripts/launch_bridge_wine.sh]
-    health: {type: http, url: "http://localhost:8090/health", timeout: 15, grace: 600}
+    health: {type: http, url: "http://localhost:8090/health", timeout: 15, grace: 1200}
     critical: true
     depends_on: [mt5_terminal]
 

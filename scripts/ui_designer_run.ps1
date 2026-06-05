@@ -57,9 +57,12 @@ try {
 
   $Prompt = 'Run ONE dashboard UI improvement cycle now by reading and strictly following .claude/skills/dashboard-designer/SKILL.md. Obey every guardrail: scope is dashboard/frontend only; ONE focused improvement; build-gate with `npx vite build`; visual verify is BEST-EFFORT and time-boxed (if the browser/login does not respond within ~3 minutes, skip it and rely on the build-gate plus post-deploy curl - do NOT block); stage and commit ONLY the specific files you edited (never git add whole directories); deploy to the VPS :8010; push; append to dashboard/UI_POLISH_LOG.md. If nothing is high-value or a gate fails twice, revert and log "skipped". Never touch trading/backend code. Finish within 20 minutes.'
 
-  $claudeArgs = @('-p', $Prompt, '--dangerously-skip-permissions')
-  $proc = Start-Process -FilePath $claude -ArgumentList $claudeArgs -WorkingDirectory $Work `
-            -NoNewWindow -PassThru -RedirectStandardOutput "$Log.out" -RedirectStandardError "$Log.err"
+  # Pass the prompt via STDIN (a file), NOT as an arg: Start-Process -ArgumentList
+  # mangles strings containing backticks/quotes, which silently emptied the prompt.
+  $PromptFile = "$Log.prompt"
+  $Prompt | Out-File -FilePath $PromptFile -Encoding ascii
+  $proc = Start-Process -FilePath $claude -ArgumentList @('-p','--dangerously-skip-permissions') -WorkingDirectory $Work `
+            -NoNewWindow -PassThru -RedirectStandardInput $PromptFile -RedirectStandardOutput "$Log.out" -RedirectStandardError "$Log.err"
   if (-not $proc.WaitForExit($TimeoutMin * 60 * 1000)) {
     Log "TIMEOUT after ${TimeoutMin}m - killing pid $($proc.Id) and its tree."
     taskkill /T /F /PID $proc.Id 2>&1 | Out-File -FilePath $Log -Append -Encoding utf8
@@ -68,7 +71,7 @@ try {
   }
   Get-Content "$Log.out" -ErrorAction SilentlyContinue | Out-File -FilePath $Log -Append -Encoding utf8
   Get-Content "$Log.err" -ErrorAction SilentlyContinue | Out-File -FilePath $Log -Append -Encoding utf8
-  Remove-Item "$Log.out","$Log.err" -ErrorAction SilentlyContinue
+  Remove-Item "$Log.out","$Log.err","$Log.prompt" -ErrorAction SilentlyContinue
 }
 finally {
   Remove-Item $Lock -ErrorAction SilentlyContinue

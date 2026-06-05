@@ -28,6 +28,7 @@ const VolumeProfile = lazy(() => import('./pages/VolumeProfile').then(m => ({ de
 const StrategyPerf = lazy(() => import('./pages/StrategyPerformance'))
 const StrategyLab  = lazy(() => import('./pages/StrategyLab').then(m => ({ default: m.StrategyLab })))
 const Pending      = lazy(() => import('./pages/Pending').then(m => ({ default: m.Pending })))
+const Console      = lazy(() => import('./pages/Console').then(m => ({ default: m.Console })))
 
 function PageLoader() {
   return <div className="min-h-[60vh] grid place-items-center text-text-muted text-sm animate-pulse">Loading…</div>
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="strategy"  element={<Suspense fallback={<PageLoader />}><StrategyPerf /></Suspense>} />
             <Route path="lab"       element={<Suspense fallback={<PageLoader />}><StrategyLab /></Suspense>} />
             <Route path="pending"   element={<Suspense fallback={<PageLoader />}><Pending /></Suspense>} />
+            <Route path="console"   element={<Suspense fallback={<PageLoader />}><Console /></Suspense>} />
           </Route>
         </Routes>
       </TradingProvider>

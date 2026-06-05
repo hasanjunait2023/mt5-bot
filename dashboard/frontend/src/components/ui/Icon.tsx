@@ -11,6 +11,7 @@ export type IconName =
   | 'fleet' | 'bots' | 'system' | 'iconic' | 'jtcc' | 'asia' | 'gold'
   | 'signals' | 'desk' | 'strategy' | 'reports' | 'cpp' | 'vp' | 'eas'
   | 'logs' | 'telegram' | 'settings' | 'hub' | 'star' | 'grip' | 'pin'
+  | 'terminal'
 
 const PATHS: Record<IconName, JSX.Element> = {
   overview: (
@@ -173,6 +174,13 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z" />
       <path d="M12 14v7" />
+    </>
+  ),
+  terminal: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M7 9l3 3-3 3" />
+      <path d="M13 15h4" />
     </>
   ),
 }

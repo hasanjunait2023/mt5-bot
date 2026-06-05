@@ -319,7 +319,7 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
             book.reconcile_real()
 
             dd_pct = daily.daily_loss_pct(equity)
-            breached, dd_usd = agent_dd_breached(mt5, MAGIC)
+            breached, dd_usd = agent_dd_breached(mt5, GSVP_MAGIC)
             if not daily.halted and breached:
                 log.warning("Daily DD $%.2f >= $%.2f — HALT for day", dd_usd, daily_dd_usd_limit())
                 _tg(f"GS-VP HALTED — daily DD ${dd_usd:.2f}", level="WARNING")

@@ -124,6 +124,28 @@ def _hash(text: str) -> str:
     return hashlib.sha1((text or "").strip().lower().encode()).hexdigest()[:16]
 
 
+_STOP = {"the", "a", "an", "of", "and", "on", "in", "for", "with", "to", "strategy",
+         "trading", "trade", "setup", "system", "based", "using"}
+
+
+def _tokset(title: str) -> set:
+    import re
+    return {w for w in re.split(r"[^a-z0-9]+", (title or "").lower()) if w and w not in _STOP}
+
+
+def _is_dup_title(title: str, existing: list, thresh: float = 0.6) -> bool:
+    """Jaccard token-overlap vs already-discovered titles — blocks rediscovering the
+    same edge under a slightly different name."""
+    a = _tokset(title)
+    if not a:
+        return False
+    for ex in existing:
+        b = _tokset(ex)
+        if b and len(a & b) / len(a | b) >= thresh:
+            return True
+    return False
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -346,7 +368,15 @@ def run_once() -> dict:
     max_text = cfg.get("max_text_jobs_per_run", 4)
     max_total = cfg.get("max_jobs_per_run", 5)
 
-    created, yt_n, text_n = [], 0, 0
+    # Titles already discovered (past runs) — don't rediscover the same edge.
+    known_titles = [r.get("title", "") for r in state.get("created_jobs", [])]
+    try:
+        known_titles += [j.get("title", "") for j in
+                         (json.loads((st.FACTORY_DIR / "_index.json").read_text(encoding="utf-8")) or {}).values()]
+    except Exception:
+        pass
+
+    created, yt_n, text_n, dup_skipped = [], 0, 0, 0
     for c in ranked:
         if len(created) >= max_total:
             break
@@ -356,9 +386,14 @@ def run_once() -> dict:
             continue
         if c["kind"] != "youtube" and text_n >= max_text:
             continue
+        if _is_dup_title(c["title"], known_titles):
+            dup_skipped += 1
+            log.info("skip dup-title: %s", c["title"])
+            continue
         job = _open_job(c)
         if not job:
             continue
+        known_titles.append(c["title"])  # block near-dupes within this same run too
         # Mark consumed (so we never reprocess even if the job later fails).
         if c["kind"] == "youtube":
             seen_videos.add(c["video_id"])
@@ -381,7 +416,8 @@ def run_once() -> dict:
     state["created_jobs"] = (state.get("created_jobs", []) + created)[-500:]
     scorecard = {
         "run": state["runs"], "collected": len(candidates), "fresh": len(fresh),
-        "opened": len(created), "top": [r["title"] for r in created[:5]],
+        "opened": len(created), "dup_skipped": dup_skipped,
+        "top": [r["title"] for r in created[:5]],
         "at": _now(),
     }
     state["last_scorecard"] = scorecard
@@ -389,8 +425,9 @@ def run_once() -> dict:
 
     if created:
         lines = "\n".join(f"• [{r['score']}] {r['title']} ({r['kind']})" for r in created)
+        dup_note = f" · {dup_skipped} dup-skipped" if dup_skipped else ""
         _notify(f"🔭 Source Hunter run #{state['runs']}: opened {len(created)} Factory job(s) "
-                f"(from {len(fresh)} fresh / {len(candidates)} scanned)\n{lines}\n"
+                f"(from {len(fresh)} fresh / {len(candidates)} scanned{dup_note})\n{lines}\n"
                 f"→ autonomous build→backtest→demo soak. Real-money still needs your OK in /factory.")
     else:
         log.info("run #%d: nothing cleared the bar (scanned %d)", state["runs"], len(candidates))

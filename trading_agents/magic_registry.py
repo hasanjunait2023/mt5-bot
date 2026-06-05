@@ -43,17 +43,28 @@ LEGACY_MAGICS: dict[int, str] = {
 
 OUR_MAGICS: dict[int, str] = {**AGENT_MAGICS, **EA_MAGICS, **LEGACY_MAGICS}
 
+# Factory-graduated strategies (the live_executor trades GATE_LIVE-approved strategies
+# on the demo account at probation size). One magic per graduated strategy, allocated
+# from this band. They all attribute to "factory_exec" for fleet/DD purposes; the
+# executor's own state file maps each magic → strategy_id.
+FACTORY_EXEC_BASE = 20262000
+FACTORY_EXEC_MAX = 20262099
+
 
 def agent_for_magic(magic: int) -> str | None:
     """Agent/EA name for a magic, or None if it's not one of ours (manual trade, other EA)."""
     try:
-        return OUR_MAGICS.get(int(magic))
+        m = int(magic)
     except (TypeError, ValueError):
         return None
+    if FACTORY_EXEC_BASE <= m <= FACTORY_EXEC_MAX:
+        return "factory_exec"
+    return OUR_MAGICS.get(m)
 
 
 def is_ours(magic: int) -> bool:
     try:
-        return int(magic) in OUR_MAGICS
+        m = int(magic)
     except (TypeError, ValueError):
         return False
+    return m in OUR_MAGICS or (FACTORY_EXEC_BASE <= m <= FACTORY_EXEC_MAX)

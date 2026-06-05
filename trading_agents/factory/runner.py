@@ -32,6 +32,11 @@ AUTONOMOUS = os.getenv("FACTORY_AUTONOMOUS", "0").strip().lower() in ("1", "true
 # Backtest must clear this to auto-advance to OPTIMIZE; below it the job is rejected.
 AUTO_BACKTEST_MIN_PF = float(os.getenv("FACTORY_AUTO_BACKTEST_PF", "1.15"))
 AUTO_BACKTEST_MIN_TRADES = int(os.getenv("FACTORY_AUTO_BACKTEST_TRADES", "10"))
+# Minimum history (days) the backtest must span to be trustworthy — blocks a
+# strategy "validated" on a noise-sized sample from auto-promoting. M1/M3 strategies
+# usually can't reach this inside the bar cap and are held (correct: can't trust a
+# fast-scalp edge on a few weeks).
+AUTO_BACKTEST_MIN_DAYS = float(os.getenv("FACTORY_AUTO_BACKTEST_DAYS", "45"))
 
 
 # ── Telegram notify (best-effort) ─────────────────────────────────────────────
@@ -149,7 +154,7 @@ def _h_backtest(job: dict) -> None:
         st.fail(job, f"backtest: strategy {sid} not registered (generated load failed)")
         return
     tf = bt.STRATEGIES[sid][0]
-    bars = bt._fetch_bars(symbol, tf, 5000)
+    bars = bt._fetch_bars(symbol, tf, bt.bars_for_tf(tf))
     if not bars or not bars.get("close"):
         st.fail(job, f"backtest: no bars for {symbol} {tf}")
         return
@@ -159,9 +164,10 @@ def _h_backtest(job: dict) -> None:
     job["artifacts"]["backtest_report"] = str(art / "backtest.json")
     job["metrics"]["backtest"] = {k: result.get(k) for k in
                                   ("trades", "win_rate_pct", "profit_factor",
-                                   "max_drawdown", "expectancy", "verdict")}
+                                   "max_drawdown", "expectancy", "days_covered", "verdict")}
     st.advance(job, st.GATE_BACKTEST, f"backtest: PF={result.get('profit_factor')} "
-               f"WR={result.get('win_rate_pct')}% trades={result.get('trades')}")
+               f"WR={result.get('win_rate_pct')}% trades={result.get('trades')} "
+               f"days={result.get('days_covered')}")
 
 
 def _h_gate_backtest(job: dict) -> None:
@@ -171,19 +177,20 @@ def _h_gate_backtest(job: dict) -> None:
     elif ap["state"] == "rejected":
         st.set_status(job, st.REJECTED, "backtest rejected")
     elif AUTONOMOUS:
-        # Threshold-based self-gate: clear the bar → optimize; below it → reject.
+        # Threshold-based self-gate: clear PF + trades + enough history → optimize.
         m = job["metrics"]["backtest"]
         pf = m.get("profit_factor") or 0
         tr = m.get("trades") or 0
-        if pf >= AUTO_BACKTEST_MIN_PF and tr >= AUTO_BACKTEST_MIN_TRADES:
+        days = m.get("days_covered") or 0
+        if pf >= AUTO_BACKTEST_MIN_PF and tr >= AUTO_BACKTEST_MIN_TRADES and days >= AUTO_BACKTEST_MIN_DAYS:
             ap["state"] = "approved"
             ap["by"] = "autonomous"
             ap["at"] = st._now()
-            st.advance(job, st.OPTIMIZE, f"backtest auto-approved (PF={pf} trades={tr})")
+            st.advance(job, st.OPTIMIZE, f"backtest auto-approved (PF={pf} trades={tr} days={days})")
         else:
             st.set_status(job, st.REJECTED,
-                          f"backtest auto-rejected (PF={pf} trades={tr} < bar "
-                          f"{AUTO_BACKTEST_MIN_PF}/{AUTO_BACKTEST_MIN_TRADES})")
+                          f"backtest auto-rejected (PF={pf} trades={tr} days={days} vs bar "
+                          f"PF{AUTO_BACKTEST_MIN_PF}/{AUTO_BACKTEST_MIN_TRADES}t/{AUTO_BACKTEST_MIN_DAYS}d)")
     else:
         st.wait_for_gate(job, "backtest", "awaiting backtest approval")
         m = job["metrics"]["backtest"]
@@ -268,9 +275,10 @@ def _h_gate_live(job: dict) -> None:
     if ap["state"] == "approved":
         if ready:
             st.set_status(job, st.DONE, "READY FOR REAL MONEY — human approved + soak gate pass")
-            _notify("ceo", f"✅ Factory {job['job_id']} {job['strategy_id']} READY FOR REAL MONEY "
+            _notify("ceo", f"✅ Factory {job['job_id']} {job['strategy_id']} APPROVED → graduating to live "
                            f"(PF={soak.get('pf')} trades={soak.get('trades')} days={soak.get('days')}). "
-                           f"Wire into the live agent when you choose.")
+                           f"factory_executor will trade it at probation size "
+                           f"(set FACTORY_LIVE_EXECUTOR=1 to arm real orders).")
         else:
             ap["state"] = "pending"  # fail-closed: metrics regressed since approval
             st.wait_for_gate(job, "live", f"approval held — soak gate fails: {reasons}")
@@ -278,9 +286,14 @@ def _h_gate_live(job: dict) -> None:
         st.set_status(job, st.REJECTED, "go-live rejected")
     else:
         st.wait_for_gate(job, "live", f"awaiting real-money approval (gate {'PASS' if ready else 'PENDING'}: {reasons})")
-        _notify("ceo", f"🏭 Factory {job['job_id']} {job['strategy_id']} soak {'PASSED' if ready else 'progress'} "
-                       f"— PF={soak.get('pf')} trades={soak.get('trades')} days={soak.get('days')}. "
-                       f"{'Approve real-money in /factory.' if ready else 'Still soaking: ' + str(reasons)}")
+        if ready:
+            _notify("ceo", f"🔔 ACTION NEEDED — Factory {job['job_id']} {job['strategy_id']} PASSED demo soak "
+                           f"(PF={soak.get('pf')} trades={soak.get('trades')} days={soak.get('days')}). "
+                           f"Approve real-money in /factory to graduate it.", level="WARNING")
+        else:
+            _notify("ceo", f"🏭 Factory {job['job_id']} {job['strategy_id']} soaking — "
+                           f"PF={soak.get('pf')} trades={soak.get('trades')} days={soak.get('days')}. "
+                           f"Still: {reasons}")
 
 
 _HANDLERS = {

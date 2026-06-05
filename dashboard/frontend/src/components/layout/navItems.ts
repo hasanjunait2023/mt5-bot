@@ -47,6 +47,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'System',
     items: [
+      { to: '/console',  label: 'Claude Console', icon: 'terminal' },
       { to: '/logs',     label: 'Logs',        icon: 'logs' },
       { to: '/telegram', label: 'Telegram HQ', icon: 'telegram' },
       { to: '/settings', label: 'Settings',    icon: 'settings' },

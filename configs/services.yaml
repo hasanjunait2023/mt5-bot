@@ -134,6 +134,21 @@ services:
     health: {type: file, path: "logs/scalp/_gsvp_agent_state.json", max_age: 600, grace: 120}
     depends_on: [bridge]
 
+  - id: m3strength
+    name: M3 Strength-Scalp (USDJPY/GBPUSD/EURJPY)
+    group: mt5
+    # Currency-strength biased M3 EMA/RSI scalper. Validated on 2yr MT5 Strategy
+    # Tester (strict config: MinDiff=5, RR=2.0): USDJPY PF 1.44, GBPUSD 1.47,
+    # EURJPY 1.34. The full 28-pair scan FAILED the gate, so it trades only the
+    # validated winners (M3STR_SYMBOLS). Demo execution via the bridge shim;
+    # $200/day DD halt. Also the producer of logs/strength/_strength_state.json
+    # that feeds the dashboard /strength page.
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.scalp.m3strength_agent,
+          --risk, "1.0", --dd, "6.0"]
+    health: {type: file, path: "logs/m3strength/_agent_state.json", max_age: 600, grace: 120}
+    depends_on: [bridge]
+
   - id: asia_fade
     name: Asia Desk (Asian Range Fade)
     group: mt5
@@ -177,6 +192,18 @@ services:
     profiles: [vps, linux]
     cmd: [python, -m, trading_agents.factory.paper_runner]
     health: {type: file, path: "logs/factory/_soak_state.json", max_age: 600}
+    depends_on: [bridge]
+
+  # Graduate-to-live: trades GATE_LIVE-approved factory strategies on the demo account
+  # with REAL bridge orders at probation size (0.25%), shared daily-DD halt + auto-
+  # rollback. SAFE BY DEFAULT — places NO orders unless FACTORY_LIVE_EXECUTOR=1 in .env
+  # (otherwise DRY: logs intended orders only). Flip env on to put approved strategies live.
+  - id: factory_executor
+    name: Strategy Factory Live Executor (graduate→live, DRY by default)
+    group: mt5
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.factory.live_executor]
+    health: {type: file, path: "logs/factory/_live_executor_state.json", max_age: 600, grace: 120}
     depends_on: [bridge]
 
   # Daily best-of-best strategy hunt: sweep YouTube channels + web feeds + arXiv

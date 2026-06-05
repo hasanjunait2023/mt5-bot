@@ -1079,6 +1079,27 @@ def refresh_generated() -> list[str]:
     return new
 
 
+# ── History sizing ───────────────────────────────────────────────────────────
+# backtest_one is O(n²) (each bar re-slices + recomputes indicators), and optimize
+# runs it across the param grid — so we can't just pull 2yr of M1 (~750k bars). We
+# pull a per-TF window capped for tolerable runtime, then enforce a MINIMUM history
+# in DAYS at the gate so a strategy "validated" on a noise-sized sample can never
+# auto-promote. Higher TFs (M15/M30/H1) reach 7mo–2yr inside the cap; M1/M3 stay
+# short and are held by the days gate (you can't trust an M1 edge on 2 weeks).
+MAX_BACKTEST_BARS = 25000
+_TF_MINUTES = {"M1": 1, "M3": 3, "M5": 5, "M15": 15, "M30": 30, "H1": 60}
+
+
+def bars_for_tf(tf: str, cap: int = MAX_BACKTEST_BARS) -> int:
+    return cap  # always pull the cap; days_covered() reports the real span
+
+
+def days_covered(tf: str, n_bars: int) -> float:
+    """Calendar-ish days a bar count spans on this TF (24h basis; FX trades ~5/7
+    so real wall-clock is a bit longer, this is the conservative floor)."""
+    return round(n_bars * _TF_MINUTES.get(tf, 5) / 1440.0, 1)
+
+
 # ── Backtest engine ──────────────────────────────────────────────────────────
 
 def backtest_one(strategy_id: str, symbol: str, bars: dict) -> dict:
@@ -1199,6 +1220,7 @@ def _summarize(strategy: str, symbol: str, tf: str,
         "expectancy": exp, "max_drawdown": round(max_dd, 5),
         "avg_win": avg_win, "avg_loss": avg_loss,
         "avg_hold_bars": avg_bars, "bars_tested": bars_tested,
+        "days_covered": days_covered(tf, bars_tested),
         "verdict": verdict,
     }
 

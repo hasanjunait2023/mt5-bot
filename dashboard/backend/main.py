@@ -42,6 +42,7 @@ from api import asia as asia_api
 from api import fleet as fleet_api
 from api import strength as strength_api
 from api import strategy_lab as strategy_lab_api
+from api import console as console_api
 
 logging.basicConfig(
     level=logging.INFO,
@@ -141,6 +142,11 @@ app.include_router(asia_api.router,       prefix="/api", dependencies=_protected
 app.include_router(fleet_api.router,      prefix="/api", dependencies=_protected)
 app.include_router(strength_api.router,   prefix="/api", dependencies=_protected)
 app.include_router(strategy_lab_api.router, prefix="/api", dependencies=_protected)
+
+# Claude Code Console — enforces its OWN auth (IP allowlist + dedicated token,
+# core/console_auth.py), NOT the dashboard token, since it grants code execution.
+# Fail-closed: every route 404s unless CONSOLE_PASSWORD is set.
+app.include_router(console_api.router, prefix="/api")
 
 # WebSocket validates the token itself (browsers can't set WS headers).
 app.include_router(ws.router)

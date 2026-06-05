@@ -7,13 +7,14 @@
     "papers": true
   },
   "youtube_channels": [
+    "https://www.youtube.com/@chart-fanatics",
     "https://www.youtube.com/@InnerCircleTrader",
     "https://www.youtube.com/@TheTradingChannel",
     "https://www.youtube.com/@PhotonTrading",
     "https://www.youtube.com/@SMBCapital",
     "https://www.youtube.com/@parttimelarry"
   ],
-  "videos_per_channel": 4,
+  "videos_per_channel": 8,
   "web_feeds": [
     "https://www.babypips.com/feed.rss",
     "https://www.forexlive.com/feed/news"
@@ -24,7 +25,8 @@
   "llm_ideas_per_run": 3,
   "target_symbols": ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"],
   "curation_min_score": 65,
-  "max_youtube_jobs_per_run": 3,
-  "max_text_jobs_per_run": 4,
-  "max_jobs_per_run": 5
+  "youtube_min_score": 40,
+  "max_youtube_jobs_per_run": 4,
+  "max_text_jobs_per_run": 3,
+  "max_jobs_per_run": 7
 }

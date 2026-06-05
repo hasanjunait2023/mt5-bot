@@ -283,31 +283,42 @@ def _collect_youtube(cfg: dict, state: dict) -> list[dict]:
 # ── curation ──────────────────────────────────────────────────────────────────
 
 def _curate(candidates: list[dict]) -> list[dict]:
-    """LLM-score candidates; attach score/verdict/symbols/clean title. Failures
-    keep the candidate at a neutral score so the pipeline still flows."""
+    """LLM-score TEXT candidates (web/llm/papers) on their full content. YouTube is
+    NOT curated here — a video's edge lives in the transcript, not the (often
+    clickbait) title, so title-curation wrongly rejects good strategy videos. Videos
+    pass through with a neutral score and are filtered downstream by the Factory's
+    CLASSIFY + transcript research."""
     if not candidates:
         return []
-    listing = "\n\n".join(
-        f"[{i}] ({c['kind']}) {c['title']}\n{c.get('text','')[:1200]}"
-        for i, c in enumerate(candidates)
-    )[:18000]
-    raw = _llm(_CURATE_SYSTEM, f"Candidates:\n\n{listing}", label="hunter_curate",
-               max_tokens=3000)
-    scores: dict[int, dict] = {}
-    if raw:
-        try:
-            arr = json.loads(raw[raw.find("["):raw.rfind("]") + 1])
-            for o in arr:
-                scores[int(o.get("i"))] = o
-        except Exception as e:  # noqa: BLE001
-            log.warning("curation parse failed: %s", e)
-    for i, c in enumerate(candidates):
-        s = scores.get(i, {})
-        c["score"] = int(s.get("score", 50))
-        c["verdict"] = s.get("verdict", "unscored")
-        c["symbols"] = s.get("symbols") or None
-        if s.get("title"):
-            c["title"] = s["title"][:120]
+    yt = [c for c in candidates if c["kind"] == "youtube"]
+    text = [c for c in candidates if c["kind"] != "youtube"]
+    for c in yt:
+        c["score"] = 50  # neutral; Factory CLASSIFY is the real filter for videos
+        c["verdict"] = "video — Factory will classify transcript"
+        c["symbols"] = None
+
+    if text:
+        listing = "\n\n".join(
+            f"[{i}] ({c['kind']}) {c['title']}\n{c.get('text','')[:1200]}"
+            for i, c in enumerate(text)
+        )[:18000]
+        raw = _llm(_CURATE_SYSTEM, f"Candidates:\n\n{listing}", label="hunter_curate",
+                   max_tokens=3000)
+        scores: dict[int, dict] = {}
+        if raw:
+            try:
+                arr = json.loads(raw[raw.find("["):raw.rfind("]") + 1])
+                for o in arr:
+                    scores[int(o.get("i"))] = o
+            except Exception as e:  # noqa: BLE001
+                log.warning("curation parse failed: %s", e)
+        for i, c in enumerate(text):
+            s = scores.get(i, {})
+            c["score"] = int(s.get("score", 50))
+            c["verdict"] = s.get("verdict", "unscored")
+            c["symbols"] = s.get("symbols") or None
+            if s.get("title"):
+                c["title"] = s["title"][:120]
     return sorted(candidates, key=lambda c: c["score"], reverse=True)
 
 
@@ -376,11 +387,16 @@ def run_once() -> dict:
     except Exception:
         pass
 
+    # YouTube is curated on TITLE only (cheap) → clickbait titles under-score real
+    # strategy videos. So videos use a LOW floor and lean on the Factory's CLASSIFY +
+    # transcript research (the real content filter); text sources keep the full bar.
+    yt_min = cfg.get("youtube_min_score", 40)
     created, yt_n, text_n, dup_skipped = [], 0, 0, 0
     for c in ranked:
         if len(created) >= max_total:
             break
-        if c["score"] < min_score:
+        floor = yt_min if c["kind"] == "youtube" else min_score
+        if c["score"] < floor:
             continue
         if c["kind"] == "youtube" and yt_n >= max_yt:
             continue
@@ -406,12 +422,12 @@ def run_once() -> dict:
         created.append(rec)
         log.info("opened %s [%s %d] %s", job["job_id"], c["kind"], c["score"], c["title"])
 
-    # Always remember seen YouTube ids (even rejected/low-score) so we don't relist.
-    for c in fresh:
-        if c["kind"] == "youtube":
-            seen_videos.add(c["video_id"])
+    # YouTube videos are marked "seen" ONLY when OPENED (in the loop above) — never by
+    # score, since they aren't title-scored. A backlog-rich channel (one video per
+    # big-trader strategy) therefore drains a few videos per run over many runs instead
+    # of being burned in one pass; the Factory CLASSIFY stage rejects non-strategies.
 
-    state["seen_videos"] = list(seen_videos)[-2000:]
+    state["seen_videos"] = list(seen_videos)[-3000:]
     state["seen_hashes"] = list(seen_hashes)[-4000:]
     state["created_jobs"] = (state.get("created_jobs", []) + created)[-500:]
     scorecard = {

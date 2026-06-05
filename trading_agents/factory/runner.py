@@ -36,7 +36,7 @@ AUTO_BACKTEST_MIN_TRADES = int(os.getenv("FACTORY_AUTO_BACKTEST_TRADES", "10"))
 # strategy "validated" on a noise-sized sample from auto-promoting. M1/M3 strategies
 # usually can't reach this inside the bar cap and are held (correct: can't trust a
 # fast-scalp edge on a few weeks).
-AUTO_BACKTEST_MIN_DAYS = float(os.getenv("FACTORY_AUTO_BACKTEST_DAYS", "45"))
+AUTO_BACKTEST_MIN_DAYS = float(os.getenv("FACTORY_AUTO_BACKTEST_DAYS", "25"))
 
 
 # ── Telegram notify (best-effort) ─────────────────────────────────────────────
@@ -337,6 +337,10 @@ def tick() -> dict:
         if status == st.RUNNING:
             log.info("[%s] stage=%s", job["job_id"], job["stage"])
             process_job(job)
+            # Heartbeat after EACH job, not just per-tick: a tick over many heavy
+            # jobs (YT research + codegen) can take minutes, and the orchestrator's
+            # file-health (max_age) would otherwise kill the runner mid-work.
+            _heartbeat(counts)
     return counts
 
 

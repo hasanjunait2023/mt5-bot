@@ -65,7 +65,7 @@ def _build_grid(spec: dict, params: dict) -> dict:
     return grid
 
 
-def optimize_generic(strategy_id: str, spec: dict, *, bars_n: int = 12000) -> dict:
+def optimize_generic(strategy_id: str, spec: dict, *, bars_n: int = 5000) -> dict:
     """Run the walk-forward optimization. Returns a result dict with full-sample
     metrics, best params, and the saved config path (or a no-op note)."""
     tf = bt.STRATEGIES[strategy_id][0]

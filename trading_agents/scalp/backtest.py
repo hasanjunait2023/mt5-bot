@@ -1086,7 +1086,12 @@ def refresh_generated() -> list[str]:
 # in DAYS at the gate so a strategy "validated" on a noise-sized sample can never
 # auto-promote. Higher TFs (M15/M30/H1) reach 7mo–2yr inside the cap; M1/M3 stay
 # short and are held by the days gate (you can't trust an M1 edge on 2 weeks).
-MAX_BACKTEST_BARS = 25000
+# 5000: the box is memory-tight (29 services + swap maxed) and backtest_one is O(n²)
+# with per-bar slicing — larger windows OOM-kill the runner. The REAL quality guard is
+# the days-gate (FACTORY_AUTO_BACKTEST_DAYS) which blocks short-history auto-promotion
+# regardless of bar count: at 5000 bars only M15/M30/H1 strategies (≥52d) clear it; M1-M5
+# are held (can't trust a fast-scalp edge on <25d anyway). Raise only if the box gets RAM.
+MAX_BACKTEST_BARS = 5000
 _TF_MINUTES = {"M1": 1, "M3": 3, "M5": 5, "M15": 15, "M30": 30, "H1": 60}
 
 

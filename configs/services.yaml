@@ -29,6 +29,16 @@ defaults:
 
 services:
   # ── Infrastructure ──────────────────────────────────────────────────────────
+  - id: mt5_terminal
+    name: MT5 Terminal (Wine)
+    group: mt5
+    profiles: [vps, linux]
+    cmd: [bash, scripts/launch_terminal_wine.sh]
+    # process-type health: orchestrator just checks the process is alive.
+    # grace: 120 gives the terminal time to open its window before bridge starts.
+    health: {type: process, grace: 120}
+    critical: true
+
   - id: bridge
     name: MT5 Bridge (api_server)
     group: mt5
@@ -40,6 +50,7 @@ services:
     cmd: [bash, scripts/launch_bridge_wine.sh]
     health: {type: http, url: "http://localhost:8090/health", timeout: 15, grace: 600}
     critical: true
+    depends_on: [mt5_terminal]
 
   - id: dashboard
     name: Dashboard backend (hub/signals/alpha)

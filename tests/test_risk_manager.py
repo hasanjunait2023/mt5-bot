@@ -23,6 +23,15 @@ def _no_kill_switch(tmp_path, monkeypatch):
     $200 default so a stray AGENT_DAILY_DD_USD in the env can't skew the math."""
     monkeypatch.setattr(rm, "KILL_SWITCH", tmp_path / "nope.json")
     monkeypatch.setenv("AGENT_DAILY_DD_USD", "200")
+    # check_daily_dd now derives today's loss from the live bridge via
+    # risk_limits.agent_daily_loss_usd (per-agent $200 demo cap) instead of the
+    # old account-wide `daily_pnl` field. There's no MT5 bridge in tests, so stub
+    # that one call to read the loss from the test's `daily_pnl` state — the rest
+    # of the DD path (limit compare, pct-from-balance) runs for real.
+    monkeypatch.setattr(
+        "trading_agents.risk_limits.agent_daily_loss_usd",
+        lambda mt5, magics: max(0.0, -float(rm._read_state().get("daily_pnl", 0.0) or 0.0)),
+    )
 
 
 def _state(monkeypatch, **kwargs):

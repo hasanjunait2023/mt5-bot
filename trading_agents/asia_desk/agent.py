@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
 
-from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
+from trading_agents.risk_limits import agent_dd_breached, daily_dd_usd_limit
 
 MAGIC = 20260800                      # Asia Desk fade
 RANGE_H0, RANGE_H1 = 0, 2             # Asian range build window (UTC)
@@ -265,7 +265,7 @@ def main():
             # Daily $ drawdown halt (AGENT_DAILY_DD_USD, default $200) — no new entries
             halted = False
             if acc is not None and start_bal:
-                halted, dd_usd = dd_usd_breached(start_bal, acc.equity)
+                halted, dd_usd = agent_dd_breached(mt5, MAGIC)
                 if halted:
                     log.warning("Asia Desk daily DD $%.2f >= $%.2f — no new entries",
                                 dd_usd, daily_dd_usd_limit())

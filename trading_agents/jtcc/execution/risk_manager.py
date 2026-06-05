@@ -45,15 +45,16 @@ def check_daily_dd() -> tuple[bool, float]:
     (AGENT_DAILY_DD_USD, default $200), not the old hardcoded 6%. dd_pct is
     still returned for display/messaging.
     """
-    from trading_agents.risk_limits import daily_dd_usd_limit
-    state = _read_state()
-    acc = state.get("account", {})
-    balance = acc.get("balance", acc.get("equity", 0))
-    if balance <= 0:
+    from trading_agents.risk_limits import agent_daily_loss_usd, daily_dd_usd_limit
+    # Per-agent: JTCC's OWN loss today (magic 20260600 only), not the shared
+    # account-wide daily_pnl from _live_state.json (which pooled every agent).
+    try:
+        from mt5_bridge import bridge_client as mt5
+        dd_usd = agent_daily_loss_usd(mt5, 20260600)
+    except Exception:
         return False, 0.0
-    daily_pnl = state.get("daily_pnl", 0.0)
-    dd_usd = abs(daily_pnl) if daily_pnl < 0 else 0.0
-    dd_pct = abs(daily_pnl / balance * 100) if daily_pnl < 0 else 0.0
+    balance = _read_state().get("account", {}).get("balance", 0) or 0
+    dd_pct = (dd_usd / balance * 100) if balance > 0 else 0.0
     return dd_usd >= daily_dd_usd_limit(), round(dd_pct, 2)
 
 

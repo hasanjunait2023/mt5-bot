@@ -63,7 +63,7 @@ log = logging.getLogger("GSVP.Agent")
 
 from trading_agents.scalp.backtest import _gsvp_adaptive, TYPICAL_SPREADS
 from trading_agents.scalp.agent import DailyState   # reuse DD/day-roll state
-from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
+from trading_agents.risk_limits import agent_dd_breached, daily_dd_usd_limit
 
 try:
     from trading_agents import telegram_hq as _tghq
@@ -319,7 +319,7 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
             book.reconcile_real()
 
             dd_pct = daily.daily_loss_pct(equity)
-            breached, dd_usd = dd_usd_breached(daily.start_balance, equity)
+            breached, dd_usd = agent_dd_breached(mt5, MAGIC)
             if not daily.halted and breached:
                 log.warning("Daily DD $%.2f >= $%.2f — HALT for day", dd_usd, daily_dd_usd_limit())
                 _tg(f"GS-VP HALTED — daily DD ${dd_usd:.2f}", level="WARNING")

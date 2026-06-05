@@ -219,10 +219,24 @@ def positions_get(symbol: Optional[str] = None, ticket: Optional[int] = None,
     return tuple(out)
 
 
-def history_deals_get(position: Optional[int] = None, **kwargs):
-    if position is None:
+def history_deals_get(date_from=None, date_to=None, position: Optional[int] = None, **kwargs):
+    """mt5-compatible. Either:
+      - history_deals_get(position=ticket)        -> deals for one position
+      - history_deals_get(date_from, date_to)     -> deals in a unix/datetime range
+    """
+    if position is not None:
+        d = _get(f"/history/deals/{position}")
+        if not d:
+            return ()
+        return tuple(SimpleNamespace(**deal) for deal in d.get("deals", []))
+    if date_from is None and date_to is None:
         return ()
-    d = _get(f"/history/deals/{position}")
+    params = {}
+    if date_from is not None:
+        params["from"] = int(date_from.timestamp()) if hasattr(date_from, "timestamp") else int(date_from)
+    if date_to is not None:
+        params["to"] = int(date_to.timestamp()) if hasattr(date_to, "timestamp") else int(date_to)
+    d = _get("/history/deals", **params)
     if not d:
         return ()
     return tuple(SimpleNamespace(**deal) for deal in d.get("deals", []))

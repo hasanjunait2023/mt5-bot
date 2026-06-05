@@ -86,7 +86,7 @@ from trading_agents.scalp.backtest import (
     GS12_PARAMS,
     TYPICAL_SPREADS,
 )
-from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
+from trading_agents.risk_limits import agent_dd_breached, daily_dd_usd_limit
 
 SYMBOL = "XAUUSD"
 # GS01 uses M3 bars; GS07/GS11 use M1 bars; GS12 timeframe set from its config
@@ -498,7 +498,7 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
             # Demo testing phase: halt on a fixed $ loss (AGENT_DAILY_DD_USD, default
             # $200), not the per-agent % (dd_limit kept for logging/state only).
             dd_pct = daily.daily_loss_pct(equity)
-            breached, dd_usd = dd_usd_breached(daily.start_balance, equity)
+            breached, dd_usd = agent_dd_breached(mt5, MAGIC)
             if not daily.halted and breached:
                 log.warning("Daily DD $%.2f >= limit $%.2f — HALTED for rest of day",
                             dd_usd, daily_dd_usd_limit())

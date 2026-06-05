@@ -38,7 +38,7 @@ from trading_agents.strength.strength import PAIRS28, SESSIONS
 from trading_agents.strength.entry import m3_signal, atr_expansion_ok, ADR_USED_MAX
 from trading_agents.scalp.indicators import adr, adr_used_frac
 from trading_agents.iconic.correlation import split_pair
-from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
+from trading_agents.risk_limits import agent_dd_breached, daily_dd_usd_limit
 
 LOG_DIR = BASE_DIR / "logs" / "m3strength"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -48,14 +48,19 @@ DAILY_PATH = LOG_DIR / "_agent_daily.json"
 PAPER_PATH = LOG_DIR / "_paper_trades.jsonl"
 
 MAGIC = 20260900
-SYMBOLS = list(PAIRS28)
+# Validated subset only (2yr MT5 Strategy Tester, strict config): USDJPY PF 1.44,
+# GBPUSD 1.47, EURJPY 1.34. The 28-pair scan at MinDiff=3 FAILED the gate (all
+# PF<1.3, over-trading); MinDiff=5 + RR 2.0 on these three cleared it. The full
+# 28-pair strength still drives the dashboard; the agent trades only the winners.
+SYMBOLS = [s.strip() for s in os.getenv(
+    "M3STR_SYMBOLS", "USDJPY,GBPUSD,EURJPY").split(",") if s.strip()]
 TF_ENTRY = "M3"
 TF_ADR = "D1"
 BARS_M3 = 300
 BARS_D1 = 30
 POLL_INTERVAL_S = 30
-BIAS_MIN_DIFF = 3
-MAX_OPEN = int(os.getenv("M3STR_MAX_OPEN", "6"))   # global concurrency cap
+BIAS_MIN_DIFF = 5          # validated: only strong currency divergence
+MAX_OPEN = int(os.getenv("M3STR_MAX_OPEN", "3"))   # global concurrency cap
 _INVALID_FILL = 10030
 
 logging.basicConfig(
@@ -331,7 +336,8 @@ def active_session_score(state: dict) -> tuple[str, dict]:
 def _write_state(mode: str, daily: DailyState, equity: float, sess_name: str,
                  score: dict, open_pos: dict, candidates: list, paper: Optional[PaperBook]) -> None:
     try:
-        breached, dd_usd = dd_usd_breached(daily.start_balance, equity)
+        from mt5_bridge import bridge_client as _mt5
+        breached, dd_usd = agent_dd_breached(_mt5, MAGIC)
         STATE_PATH.write_text(json.dumps({
             "mode": mode,
             "magic": MAGIC,
@@ -412,7 +418,7 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
             equity = acc.equity
             daily.roll_if_new_day(acc.balance)
 
-            breached, dd_usd = dd_usd_breached(daily.start_balance, equity)
+            breached, dd_usd = agent_dd_breached(mt5, MAGIC)
             if not daily.halted and breached:
                 log.warning("Daily DD $%.2f >= $%.2f — HALTED for the day",
                             dd_usd, daily_dd_usd_limit())

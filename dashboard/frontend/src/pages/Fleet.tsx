@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { apiFetch } from '../lib/api'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -104,7 +104,7 @@ function LiveTradeTag({ tone }: { tone: TradeTone }) {
   )
 }
 
-function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: string }) {
+function AgentCardBase({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: string }) {
   const r = a.stats.realized_pnl
   const stale = a.health !== 'live'
   const inTrade = a.open_count > 0
@@ -216,6 +216,11 @@ function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: st
     </div>
   )
 }
+
+// Skip re-render on the 5s poll unless this agent's data actually changed — keeps
+// scrolling smooth (idle polls re-render nothing).
+const AgentCard = memo(AgentCardBase, (p, n) =>
+  p.i === n.i && p.periodLabel === n.periodLabel && JSON.stringify(p.a) === JSON.stringify(n.a))
 
 export function Fleet() {
   const [data, setData] = useState<FleetData | null>(null)

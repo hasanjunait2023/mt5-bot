@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts'
 import { CHART, tooltipProps, emptyClass } from './chartTheme'
 
@@ -6,7 +7,9 @@ interface Props {
   losses: number
 }
 
-export function WinLossDonut({ wins, losses }: Props) {
+// memo: re-render only when wins/losses change (skip the dashboard's 5s idle polls).
+export const WinLossDonut = memo(WinLossDonutBase)
+function WinLossDonutBase({ wins, losses }: Props) {
   const total = wins + losses
   if (total === 0) {
     return <div className={`h-40 ${emptyClass}`}>No trades yet</div>

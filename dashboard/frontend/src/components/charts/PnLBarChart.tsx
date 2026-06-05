@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { CHART, tooltipProps } from './chartTheme'
 
@@ -8,7 +9,11 @@ interface Props {
   height?: number
 }
 
-export function PnLBarChart({ data, height = 180 }: Props) {
+// memo with value-compare: `data` is a fresh array each poll but usually identical —
+// skip the recharts re-render unless the values actually change.
+export const PnLBarChart = memo(PnLBarChartBase, (p, n) =>
+  p.height === n.height && JSON.stringify(p.data) === JSON.stringify(n.data))
+function PnLBarChartBase({ data, height = 180 }: Props) {
   if (!data.length) return null
 
   return (

@@ -50,6 +50,9 @@ export function AgentAvatar({ name, avatar, size = 52, tone }:
               src={`/agents/${avatar}.jpg`}
               alt={name}
               loading="lazy"
+              decoding="async"
+              width={size}
+              height={size}
               onError={() => setErrored(true)}
               className="w-full h-full object-cover"
             />

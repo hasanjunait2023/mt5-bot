@@ -35,6 +35,7 @@ BARS_M1      = 300
 BARS_M3      = 150
 BARS_M15     = 100
 BAR_WAIT_SEC = 3
+BE_BUFFER_R  = 0.05  # offset past entry (in R) when moving SL to breakeven — covers spread/commission
 LOG_PATH     = Path(__file__).parent / "_live_log.txt"
 STATE_PATH   = Path(__file__).parent / "_live_state.json"
 DAILY_PATH   = Path(__file__).parent / "_daily_persist.json"
@@ -188,6 +189,67 @@ def has_open_position(symbol: str) -> bool:
 def get_open_positions() -> list:
     all_pos = mt5.positions_get()
     return [p for p in all_pos if p.magic == MAGIC] if all_pos else []
+
+
+# ── Position management: breakeven stop ───────────────────────────────────────
+
+def manage_positions(positions: list, be_r: float):
+    """Ratchet SL to ~breakeven once a position gains >= be_r of its initial risk.
+
+    Initial risk R = abs(entry - original_SL). Once the trade is +be_r·R in
+    profit, move SL to entry + BE_BUFFER_R·R (favorable side) so a reversal
+    exits flat instead of full SL. Idempotent: only ever tightens the stop,
+    skips positions already protected. be_r<=0 disables.
+
+    Rationale: MTF trades repeatedly peaked +0.5–1.8R then reversed to full SL.
+    BE@0.5R back-tested on 2026-06-04's trades flips the day −$73 → +$4.
+    """
+    if be_r <= 0:
+        return
+    for p in positions:
+        try:
+            entry, sl = p.price_open, p.sl
+            if sl <= 0:
+                continue
+            risk = abs(entry - sl)
+            if risk <= 0:
+                continue
+            sym  = mt5.symbol_info(p.symbol)
+            tick = mt5.symbol_info_tick(p.symbol)
+            if sym is None or tick is None:
+                continue
+            digits = sym.digits
+
+            if p.type == mt5.ORDER_TYPE_BUY:
+                if sl >= entry:                          # already at/above breakeven
+                    continue
+                if (tick.bid - entry) < be_r * risk:     # not yet +be_r·R
+                    continue
+                new_sl = round(entry + BE_BUFFER_R * risk, digits)
+                if new_sl <= sl:                         # never loosen
+                    continue
+            else:
+                if sl <= entry:
+                    continue
+                if (entry - tick.ask) < be_r * risk:
+                    continue
+                new_sl = round(entry - BE_BUFFER_R * risk, digits)
+                if new_sl >= sl:
+                    continue
+
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_SLTP,
+                "position": p.ticket, "symbol": p.symbol,
+                "sl": new_sl, "tp": p.tp,
+            })
+            if res is not None and res.retcode == mt5.TRADE_RETCODE_DONE:
+                log.info(f"  [BE] {p.symbol} #{p.ticket} SL→breakeven "
+                         f"{new_sl:.{digits}f} (reached +{be_r:g}R)")
+            else:
+                code = res.retcode if res else "None"
+                log.warning(f"  [BE] {p.symbol} #{p.ticket} modify failed retcode={code}")
+        except Exception as e:
+            log.debug(f"  [BE] {p.symbol} error: {e}")
 
 
 # ── Signal detection ──────────────────────────────────────────────────────────
@@ -509,6 +571,7 @@ def main():
     parser.add_argument("--dd",     type=float, default=3.0,  help="Daily DD %% limit before skipping (default 3%%)")
     parser.add_argument("--maxdd",  type=float, default=20.0, help="Max total DD %% before halt (default 20%%)")
     parser.add_argument("--maxtd",  type=int,   default=6,    help="Max trades per symbol per day (default 6)")
+    parser.add_argument("--be-r",   type=float, default=0.5,  help="Move SL to breakeven once trade gains this many R (0=disable, default 0.5)")
     parser.add_argument("--news",   action="store_true")
     args = parser.parse_args()
 
@@ -545,6 +608,7 @@ def main():
     log.info("  MTF EMA Alignment Scalper — LIVE TRADER")
     log.info(f"  Symbols : {', '.join(symbols)}")
     log.info(f"  Risk    : {args.risk}% | RR 1:{rr} | DailyDD {args.dd}%")
+    log.info(f"  BE-stop : {'+%gR → breakeven' % args.be_r if args.be_r > 0 else 'OFF'}")
     log.info(f"  Log     : {LOG_PATH}")
     log.info(DIV)
     tg_alert(
@@ -580,6 +644,14 @@ def main():
             if _today != _last_alert_day:
                 _daily_dd_alerted = False
                 _last_alert_day = _today
+
+            # Ratchet stops to breakeven on qualifying open positions every cycle —
+            # runs before DD gating so trades stay protected even when new entries
+            # are paused for the day.
+            try:
+                manage_positions(get_open_positions(), args.be_r)
+            except Exception as e:
+                log.error(f"  [BE] manage cycle error: {e}")
 
             if args.news:
                 from news_filter import fetch_ff_calendar

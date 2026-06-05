@@ -42,6 +42,9 @@ LOG_PATH   = LOG_DIR / "_board_log.txt"
 STATE_PATH = LOG_DIR / "_board_state.json"
 DAILY_PATH = LOG_DIR / "_board_daily.json"
 POS_PATH   = LOG_DIR / "_board_positions.json"   # per-ticket management state
+# Canonical health + fleet file (orchestrator health + dashboard /fleet both read
+# this path). The board must keep it fresh or the service flaps + fleet shows stale.
+AGENT_PATH = LOG_DIR / "_agent_state.json"
 
 MAGIC           = 20260700      # Iconic magic (shared lineage; board is the new owner)
 SETUP_TF        = "H1"
@@ -111,6 +114,26 @@ except Exception:
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _write_agent_state(*, mode: str, equity: float, dd_pct: float,
+                       n_open: int, dry: bool) -> None:
+    """Keep _agent_state.json fresh — it is the orchestrator health file AND the
+    dashboard /fleet source. symbols = the whole board so the fleet shows the
+    28-pair board system, not the retired single pair."""
+    try:
+        AGENT_PATH.write_text(json.dumps({
+            "mode": mode,
+            "system": "board",
+            "live_mode": not dry,
+            "symbols": list(board_mod.BOARD_PAIRS),
+            "open_positions": n_open,
+            "equity": round(equity, 2),
+            "daily_loss_pct": round(dd_pct, 2),
+            "updated_at": _utcnow(),
+        }, indent=2), encoding="utf-8")
+    except Exception:
+        log.warning("failed to write agent state")
 
 
 def _dominant(symbol: str, strength: dict[str, float]) -> Optional[str]:
@@ -602,12 +625,16 @@ def run(*, once: bool, dry: bool):
                 except Exception: pass
                 last_news = time.time()
             dd = daily.dd_pct(acc.equity)
-            if dd >= DD_LIMIT and not dry:
+            halted = dd >= DD_LIMIT and not dry
+            if halted:
                 log.warning("daily DD %.1f%% >= %.1f%% — HALT new entries", dd, DD_LIMIT)
                 state = bt.scan(); state["halted"] = True
             else:
                 state = bt.scan()
             bt.write_state(state)
+            _write_agent_state(mode="HALTED" if halted else "SCANNING",
+                               equity=acc.equity, dd_pct=dd,
+                               n_open=len(state.get("open", [])), dry=dry)
             _print_state(state)
         except Exception:
             log.exception("board loop error")

@@ -28,6 +28,7 @@ from config import (MTF_BEST_PAIRS, MTF_DEFAULT_PARAMS, MTF_DEFAULT_FILTERS,
                     MTF_SYMBOL_PARAMS, MTF_SYMBOL_FILTERS)
 from mtf_strategy import (add_mtf_indicators, align_mtf_to_m1,
                            compute_mtf_signals, compute_sl_tp_arrays)
+from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
 
 MAGIC        = 20260100
 TRACKED_MAGICS = {20260100, 20260600, 20260500, 20260200}  # all bot magics
@@ -670,12 +671,13 @@ def main():
                 break
 
             daily_dd = daily.daily_loss_pct(acc.equity)
-            if daily_dd >= args.dd:
-                log.warning(f"Daily DD {daily_dd:.1f}% — skipping rest of day")
+            dd_breached, daily_dd_usd = dd_usd_breached(daily.start_balance, acc.equity)
+            if dd_breached:
+                log.warning(f"Daily DD ${daily_dd_usd:.2f} — skipping rest of day")
                 if not _daily_dd_alerted:
                     tg_alert(
                         f"⚠️ MTF DAILY LIMIT HIT\n"
-                        f"Daily loss {daily_dd:.1f}% (limit {args.dd}%)\n"
+                        f"Daily loss ${daily_dd_usd:.2f} (limit ${daily_dd_usd_limit():.0f})\n"
                         f"No new trades until tomorrow.\n"
                         f"Balance: ${acc.balance:.2f}",
                         level="WARNING"

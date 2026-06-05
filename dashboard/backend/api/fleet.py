@@ -44,20 +44,28 @@ _BRIDGE_HDRS = (
     if os.getenv("MT5_BRIDGE_SECRET") else {}
 )
 
+# Each agent carries a world-class personality codename + a `strategy` designation
+# (what it actually does) so the desk reads professionally. Personalities are matched
+# to the agent's character — Buffett=discipline, Newton=gold (Master of the Mint),
+# Soros=FX macro, Musk=momentum, Einstein=analytics, Son=Asia/JPY, Pichai=integrator.
+# Convention for FUTURE agents: pick a fitting great personality + a clear designation.
+# `avatar` = slug of the personality. Frontend renders /agents/<avatar>.jpg as a 3D
+# circular avatar; if the file is missing it falls back to a gradient + initials.
+# To use a real photo: drop a square image at dashboard/frontend/public/agents/<avatar>.jpg.
 AGENTS = [
-    {"id": "mtf_live",  "name": "MTF Scalper",   "strategy": "MTF EMA Alignment (M1/M3/M15)",
+    {"id": "mtf_live",  "name": "Elon Musk",       "avatar": "elon-musk",       "strategy": "Momentum Scalper · MTF EMA M1/M3/M15",
      "magic": 20260100, "orch_id": "mtf_live",   "state": LIVE_STATE_PATH,                 "pairs": []},
-    {"id": "jtcc",      "name": "JTCC",          "strategy": "JTCC ICT / SMC confluence",
+    {"id": "jtcc",      "name": "Warren Buffett",  "avatar": "warren-buffett",  "strategy": "Confluence Strategist · ICT/SMC, A+ only",
      "magic": 20260600, "orch_id": "jtcc",       "state": BASE_DIR / "logs/jtcc/_jtcc_state.json",        "pairs": []},
-    {"id": "iconic",    "name": "Iconic Board",  "strategy": "Urban Forex Iconic — Whole-Board (28 G7)",
+    {"id": "iconic",    "name": "George Soros",    "avatar": "george-soros",    "strategy": "FX Macro Desk · G7 strength, 28 pairs",
      "magic": 20260700, "orch_id": "iconic",     "state": BASE_DIR / "logs/iconic/_agent_state.json",     "pairs": []},
-    {"id": "scalp",     "name": "Gold Scalp",    "strategy": "Gold Scalp (GS11/07/01/12)",
+    {"id": "scalp",     "name": "Isaac Newton",    "avatar": "isaac-newton",    "strategy": "Gold Scalper · GS11/07/01/12",
      "magic": 20260522, "orch_id": "scalp_gs11", "state": BASE_DIR / "logs/scalp/_agent_state.json",      "pairs": ["XAUUSD"]},
-    {"id": "gsvp",      "name": "GS-VP",         "strategy": "Adaptive Volume Profile",
+    {"id": "gsvp",      "name": "Albert Einstein", "avatar": "albert-einstein", "strategy": "Volume-Profile Analyst · M15",
      "magic": 20260603, "orch_id": "gsvp",       "state": BASE_DIR / "logs/scalp/_gsvp_agent_state.json", "pairs": []},
-    {"id": "asia_fade", "name": "Asia Desk",     "strategy": "Asian Range Fade (S1)",
+    {"id": "asia_fade", "name": "Masayoshi Son",   "avatar": "masayoshi-son",   "strategy": "Asia Session Desk · JPY range fade",
      "magic": 20260800, "orch_id": "asia_fade",  "state": BASE_DIR / "logs/asia_desk/_state.json",        "pairs": []},
-    {"id": "confluence", "name": "Confluence Desk", "strategy": "S13 5-Way + S19 Pullback",
+    {"id": "confluence", "name": "Sundar Pichai",  "avatar": "sundar-pichai",   "strategy": "Multi-Strategy Desk · S13 + S19",
      "magic": 20261300, "orch_id": "confluence", "state": BASE_DIR / "logs/confluence/_agent_state.json", "pairs": ["XAUUSD", "GBPUSD", "USDJPY"]},
 ]
 
@@ -230,7 +238,7 @@ def _build(period: str, from_: Optional[int], to: Optional[int]):
             mode = "IN TRADE"
 
         agents_out.append({
-            "id": a["id"], "name": a["name"], "strategy": a["strategy"],
+            "id": a["id"], "name": a["name"], "avatar": a.get("avatar"), "strategy": a["strategy"],
             "magic": magic, "health": health, "orch_status": orch_status,
             "restarts": svc.get("restarts", 0), "pid": svc.get("pid"), "mode": mode,
             "pairs": _pairs(state, a["pairs"]),

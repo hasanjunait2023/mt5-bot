@@ -134,6 +134,63 @@ def new_job(youtube_url: str, *, chat_id: str = "", notebook_url: str = "",
     return job
 
 
+def new_job_from_text(research_text: str, *, title: str = "", source_kind: str = "text",
+                      source_ref: str = "", symbols: Optional[list[str]] = None,
+                      chat_id: str = "") -> dict:
+    """Create a spec-first job for sources that have no YouTube URL (LLM-generated
+    ideas, research papers, web/blog articles).
+
+    The raw research text is written to the job's `transcript` artifact so the
+    normal MERGE_SPEC stage synthesizes a canonical spec from it. The job starts
+    at MERGE_SPEC — INGEST/CLASSIFY/RESEARCH are skipped (already a known strategy).
+    """
+    job_id = "SF-" + datetime.now().strftime("%Y%m%d") + "-" + secrets.token_hex(3)
+    job = {
+        "job_id": job_id,
+        "schema_version": SCHEMA_VERSION,
+        "created_at": _now(),
+        "updated_at": _now(),
+        "source": {
+            "youtube_url": "",
+            "notebook_url": "",
+            "video_id": "",
+            "title": title or "Strategy idea",
+            "channel": source_kind,
+            "description": research_text[:1500],
+            "duration_s": 0,
+            "kind": source_kind,
+            "ref": source_ref,
+        },
+        "chat_id": chat_id,
+        "stage": MERGE_SPEC,
+        "prev_stage": "",
+        "status": RUNNING,
+        "strategy_id": None,
+        "is_strategy": True,
+        "classification_reason": f"spec-first ({source_kind})",
+        "retries": {"codegen": 0, "optimize_rounds": 0, "improve_code": 0},
+        "approvals": {
+            "plan": {"state": "none", "by": None, "at": None, "note": ""},
+            "backtest": {"state": "none", "by": None, "at": None, "note": ""},
+            "live": {"state": "none", "by": None, "at": None, "note": ""},
+        },
+        "artifacts": {},
+        "metrics": {"backtest": {}, "optimize": {}, "soak": {}},
+        "history": [],
+        "error": None,
+    }
+    if symbols:
+        job["source"]["symbols_hint"] = symbols
+    # Stash the research text where merge_spec reads it.
+    art = artifact_dir(job_id)
+    tpath = art / "transcript.txt"
+    tpath.write_text(research_text, encoding="utf-8")
+    job["artifacts"]["transcript"] = str(tpath)
+    append_history(job, MERGE_SPEC, f"spec-first job created ({source_kind})")
+    save_job(job)
+    return job
+
+
 def load_job(job_id: str) -> Optional[dict]:
     p = job_path(job_id)
     if not p.exists():

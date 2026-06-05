@@ -1,0 +1,30 @@
+{
+  "interval_hours": 24,
+  "sources": {
+    "youtube": true,
+    "web": true,
+    "llm": true,
+    "papers": true
+  },
+  "youtube_channels": [
+    "https://www.youtube.com/@InnerCircleTrader",
+    "https://www.youtube.com/@TheTradingChannel",
+    "https://www.youtube.com/@PhotonTrading",
+    "https://www.youtube.com/@SMBCapital",
+    "https://www.youtube.com/@parttimelarry"
+  ],
+  "videos_per_channel": 4,
+  "web_feeds": [
+    "https://www.babypips.com/feed.rss",
+    "https://www.forexlive.com/feed/news"
+  ],
+  "web_urls": [],
+  "arxiv_query": "cat:q-fin.TR OR cat:q-fin.PM OR cat:q-fin.ST",
+  "arxiv_max": 8,
+  "llm_ideas_per_run": 3,
+  "target_symbols": ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"],
+  "curation_min_score": 65,
+  "max_youtube_jobs_per_run": 3,
+  "max_text_jobs_per_run": 4,
+  "max_jobs_per_run": 5
+}

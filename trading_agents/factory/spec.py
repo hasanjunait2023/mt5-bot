@@ -85,6 +85,9 @@ def merge_spec(job: dict) -> dict:
     except Exception as e:  # noqa: BLE001
         log.warning("spec synthesis failed (%s) — using fallback spec", e)
 
+    hint = job.get("source", {}).get("symbols_hint")
+    if not spec.get("symbols") and hint:
+        spec["symbols"] = hint
     spec.setdefault("symbols", _DEFAULT_SYMBOLS)
     if not spec.get("symbols"):
         spec["symbols"] = _DEFAULT_SYMBOLS

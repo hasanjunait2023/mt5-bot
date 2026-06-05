@@ -31,6 +31,8 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
 
+from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
+
 LOG_DIR      = BASE_DIR / "logs" / "iconic"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_PATH     = LOG_DIR / "_agent_log.txt"
@@ -464,11 +466,13 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
                 _sync_news()
                 _last_news_sync = time.time()
 
-            # Daily DD guard
+            # Daily DD guard — fixed $ limit (AGENT_DAILY_DD_USD, default $200) for
+            # the demo testing phase; dd_limit % kept for logging/state only.
             dd_pct = daily.daily_loss_pct(equity)
-            if dd_pct >= dd_limit:
-                log.warning("Daily DD %.1f%% >= limit %.1f%% — HALTED", dd_pct, dd_limit)
-                _tg(f"Iconic Agent HALTED — daily DD {dd_pct:.1f}% >= {dd_limit:.1f}%", level="WARNING")
+            breached, dd_usd = dd_usd_breached(daily.start_balance, equity)
+            if breached:
+                log.warning("Daily DD $%.2f >= limit $%.2f — HALTED", dd_usd, daily_dd_usd_limit())
+                _tg(f"Iconic Agent HALTED — daily DD ${dd_usd:.2f} >= ${daily_dd_usd_limit():.0f}", level="WARNING")
                 _write_state("HALTED", daily, paper, live_mode, equity)
                 time.sleep(300)
                 continue

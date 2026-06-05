@@ -31,6 +31,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 
 from trading_agents.scalp.indicators import ema, atr, rsi  # battle-tested, reused
+from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
 
 LOG_DIR = BASE_DIR / "logs" / "confluence"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -376,10 +377,11 @@ def run(risk_pct: float, dd_limit: float) -> None:
                 for s in stats:
                     stats[s]["trades_today"] = 0
             dd_pct = max((start_balance - equity) / start_balance * 100, 0.0) if start_balance > 0 else 0.0
-            if not halted and dd_pct >= dd_limit:
+            breached, dd_usd = dd_usd_breached(start_balance, equity)
+            if not halted and breached:
                 halted = True
-                log.warning("Daily DD %.1f%% >= %.1f%% — HALT for day", dd_pct, dd_limit)
-                _tg(f"Confluence Desk HALTED — daily DD {dd_pct:.1f}%", level="WARNING")
+                log.warning("Daily DD $%.2f >= $%.2f — HALT for day", dd_usd, daily_dd_usd_limit())
+                _tg(f"Confluence Desk HALTED — daily DD ${dd_usd:.2f}", level="WARNING")
             if halted:
                 _write_state("HALTED", stats, equity, dd_pct, all_syms)
                 time.sleep(300); continue

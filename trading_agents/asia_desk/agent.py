@@ -28,6 +28,8 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
 
+from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
+
 MAGIC = 20260800                      # Asia Desk fade
 RANGE_H0, RANGE_H1 = 0, 2             # Asian range build window (UTC)
 ENTRY_H0, ENTRY_H1 = 2, 7            # entry window (UTC)
@@ -246,14 +248,27 @@ def main():
         try: mt5.symbol_select(s, True)
         except Exception: pass
 
-    daily, cur_date, prev_pos, flat_done = {}, None, {}, None
+    daily, cur_date, prev_pos, flat_done, start_bal = {}, None, {}, None, None
     while True:
         try:
             now = datetime.now(timezone.utc)
             today = now.date()
+            acc = mt5.account_info()
             if today != cur_date:
                 daily, cur_date, flat_done = {s: 0 for s in args.pairs}, today, False
+                if acc is not None:
+                    start_bal = acc.balance
                 log.info(f"New day {today} — daily reset")
+            if start_bal is None and acc is not None:
+                start_bal = acc.balance
+
+            # Daily $ drawdown halt (AGENT_DAILY_DD_USD, default $200) — no new entries
+            halted = False
+            if acc is not None and start_bal:
+                halted, dd_usd = dd_usd_breached(start_bal, acc.equity)
+                if halted:
+                    log.warning("Asia Desk daily DD $%.2f >= $%.2f — no new entries",
+                                dd_usd, daily_dd_usd_limit())
 
             # journal closes
             cur = {p.ticket: {"symbol": p.symbol, "sl": p.sl, "tp": p.tp,
@@ -280,7 +295,7 @@ def main():
             if hour >= FLATTEN_H and not flat_done:
                 flatten(mt5, args.pairs); flat_done = True
 
-            if ENTRY_H0 <= hour < ENTRY_H1:
+            if ENTRY_H0 <= hour < ENTRY_H1 and not halted:
                 for sym in args.pairs:
                     try:
                         df = get_m15(mt5, sym)

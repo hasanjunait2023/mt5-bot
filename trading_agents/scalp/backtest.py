@@ -45,6 +45,13 @@ from trading_agents.scalp.indicators import (
     detect_liquidity_sweep, find_fvg_zones, find_inverse_fvg,
     detect_trendline_break, session_volume_profile,
 )
+from trading_agents.strength.strength import (
+    PAIRS28, MAJORS, currency_strength, MIN_DIFF,
+)
+from trading_agents.strength.entry import (
+    adr_from_m3, atr_expansion_ok, m3_signal, ADR_USED_MAX,
+)
+from trading_agents.iconic.correlation import split_pair
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
 log = logging.getLogger("scalp.backtest")
@@ -59,6 +66,13 @@ TYPICAL_SPREADS = {
     "EURUSD": 0.00008, "GBPUSD": 0.0001, "USDJPY": 0.008,
     "USDCAD": 0.0001, "AUDUSD": 0.0001,
 }
+# Real-cost spreads for the 28 FX majors/crosses (GS13 strength-scalp). JPY pairs
+# quote to 3 digits → ~0.015 (1.5 pip); the rest ~0.0002 (2 pip). Conservative so
+# the 2yr backtest reflects honest demo costs.
+for _p in PAIRS28:
+    if _p in TYPICAL_SPREADS:
+        continue
+    TYPICAL_SPREADS[_p] = 0.015 if _p.endswith("JPY") else 0.0002
 
 # Symbols per strategy
 STRATEGY_SYMBOLS: dict[str, list[str]] = {
@@ -75,6 +89,7 @@ STRATEGY_SYMBOLS: dict[str, list[str]] = {
     "GS11": ["XAUUSD", "EURUSD", "GBPUSD"],
     "GS12": ["XAUUSD"],
     "GSVP": ["BTCUSD", "XAUUSD", "XAGUSD", "EURUSD", "GBPUSD"],
+    "GS13": list(PAIRS28),
 }
 
 
@@ -909,7 +924,103 @@ def _gsvp_adaptive(bars: dict, t_i: int,
     return None
 
 
+# ── GS13: Currency-Strength M3 scalper ───────────────────────────────────────
+# The harness is single-symbol, but strength needs all 28 pairs. We precompute a
+# causal strength history once (28 H1 series → trailing-session score at every H1
+# close), then each per-bar call does an asof lookup by timestamp (no lookahead).
+
+import bisect as _bisect
+
+_GS13_H1_LIMIT = int(os.getenv("GS13_H1_LIMIT", "20000"))  # ~830 days of H1
+_GS13_SESSION_WIN = 6                                      # trailing H1 bars ≈ session
+_STRENGTH_TS: dict[str, list] = {}
+_STRENGTH_VAL: dict[str, list] = {}
+_STRENGTH_BUILT = False
+
+
+def _build_strength_history(limit_h1: int = _GS13_H1_LIMIT) -> None:
+    """Fetch 28 H1 series once; compute trailing-session strength at each H1 close."""
+    global _STRENGTH_BUILT, _STRENGTH_TS, _STRENGTH_VAL
+    if _STRENGTH_BUILT:
+        return
+    log.info("GS13: building strength history (28 pairs, %d H1 bars)...", limit_h1)
+    series: dict[str, dict] = {}
+    for sym in PAIRS28:
+        b = _fetch_bars(sym, "H1", limit_h1)
+        if b and b.get("close") and len(b["close"]) >= 2:
+            series[sym] = b
+    if not series:
+        log.error("GS13: no H1 series fetched — strength history empty")
+        _STRENGTH_BUILT = True
+        return
+    sym_times = {s: series[s]["time"] for s in series}
+    spine = sorted(series[max(series, key=lambda s: len(series[s]["time"]))]["time"])
+    hx_ts = {c: [] for c in MAJORS}
+    hx_val = {c: [] for c in MAJORS}
+    for t in spine:
+        pb = {}
+        for s, ts in sym_times.items():
+            j = _bisect.bisect_right(ts, t)
+            if j < 2:
+                continue
+            i0 = max(0, j - _GS13_SESSION_WIN)
+            b = series[s]
+            pb[s] = {"high": b["high"][i0:j], "low": b["low"][i0:j],
+                     "close": b["close"][i0:j]}
+        score = currency_strength(pb)
+        for c, v in score.items():
+            hx_ts[c].append(t)
+            hx_val[c].append(v)
+    _STRENGTH_TS, _STRENGTH_VAL = hx_ts, hx_val
+    _STRENGTH_BUILT = True
+    log.info("GS13: strength history built (%d H1 points)", len(spine))
+
+
+def _strength_at(t: int) -> dict:
+    """Asof lookup: latest computed strength with H1-close time <= t (step-hold)."""
+    out = {}
+    for c in MAJORS:
+        ts = _STRENGTH_TS.get(c, [])
+        j = _bisect.bisect_right(ts, t) - 1
+        out[c] = _STRENGTH_VAL[c][j] if j >= 0 else 0
+    return out
+
+
+def _gs13_m3_strength_scalp(bars: dict, t_i: int, spread: float,
+                            symbol: str = "EURUSD") -> dict | None:
+    """M3 EMA200/9-15 + RSI scalp, biased by -7..+7 currency strength.
+
+    Bias from strength[base]-strength[quote] (skip |diff|<3); momentum gate via
+    ADR-used + ATR expansion; entry/SL/TP identical to the live agent (shared
+    trading_agents.strength.entry).
+    """
+    if not _STRENGTH_BUILT:
+        _build_strength_history()
+    times = bars.get("time", [])
+    if t_i < 200 or t_i >= len(times):
+        return None
+    score = _strength_at(int(times[t_i]))
+    base, quote = split_pair(symbol)
+    if base not in score or quote not in score:
+        return None
+    diff = score[base] - score[quote]
+    if abs(diff) < MIN_DIFF:
+        return None
+    bias = "BUY" if diff > 0 else "SELL"
+
+    c = bars["close"][:t_i + 1]
+    h = bars["high"][:t_i + 1]
+    l = bars["low"][:t_i + 1]
+    adr_val, used = adr_from_m3(times[:t_i + 1], h, l, 14)
+    if used > ADR_USED_MAX:
+        return None
+    if not atr_expansion_ok(h, l, c):
+        return None
+    return m3_signal(h, l, c, bias)
+
+
 STRATEGIES = {
+    "GS13": ("M3", _gs13_m3_strength_scalp),
     "GS01": ("M3", _gs01_gold_ema_rsi_stoch),
     "GS02": ("M1", _gs02_ict_silver_bullet),
     "GS03": ("M3", _gs03_vwap_macd),
@@ -932,6 +1043,40 @@ try:
     _gen_loader.register_into(STRATEGIES, STRATEGY_SYMBOLS)
 except Exception as _gen_e:  # noqa: BLE001
     log.warning("generated-strategy loader unavailable: %s", _gen_e)
+
+
+def refresh_generated() -> list[str]:
+    """Register factory-generated strategies written AFTER this module was imported.
+
+    Long-lived processes (factory runner, paper soak) import backtest once at start,
+    so a strategy the factory codegens later is absent from STRATEGIES until this is
+    called. Only NEW files are exec'd — the id is derived from the filename
+    (gs50_slug.py → GS50) so already-registered modules are skipped without re-exec.
+    Returns the ids newly registered.
+    """
+    new: list[str] = []
+    try:
+        from trading_agents.factory import generated_loader as _gl
+    except Exception:
+        return new
+    if not _gl.GENERATED_DIR.exists():
+        return new
+    for path in sorted(_gl.GENERATED_DIR.glob("gs*_*.py")):
+        sid_guess = path.stem.split("_")[0].upper()  # gs50_foo -> GS50
+        if sid_guess in STRATEGIES:
+            continue
+        try:
+            mod = _gl.load_module(path)
+            sid, tf, syms, fn = _gl._extract(mod)
+            if sid in STRATEGIES:
+                continue
+            STRATEGIES[sid] = (tf, fn)
+            STRATEGY_SYMBOLS[sid] = syms
+            new.append(sid)
+            log.info("[backtest] refreshed generated strategy %s from %s", sid, path.name)
+        except Exception as e:  # noqa: BLE001 — isolation is the point
+            log.error("[backtest] refresh skip %s: %s", path.name, e)
+    return new
 
 
 # ── Backtest engine ──────────────────────────────────────────────────────────

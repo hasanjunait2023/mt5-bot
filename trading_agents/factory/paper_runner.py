@@ -148,6 +148,8 @@ def _write_state(book: _Book, roster: list[dict]) -> None:
 
 def loop_once(book: _Book, last_bar: dict) -> None:
     roster = _read_roster()
+    if any(r["strategy_id"] not in bt.STRATEGIES for r in roster):
+        bt.refresh_generated()  # pick up strategies codegen'd after this process started
     for r in roster:
         sid = r["strategy_id"]
         if sid not in bt.STRATEGIES:

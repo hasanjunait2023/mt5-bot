@@ -39,22 +39,30 @@ def get_account() -> dict:
 
 
 def check_daily_dd() -> tuple[bool, float]:
-    """Returns (shutdown, current_dd_pct)."""
+    """Returns (shutdown, current_dd_pct).
+
+    Demo testing phase: shutdown is governed by a fixed $ loss
+    (AGENT_DAILY_DD_USD, default $200), not the old hardcoded 6%. dd_pct is
+    still returned for display/messaging.
+    """
+    from trading_agents.risk_limits import daily_dd_usd_limit
     state = _read_state()
     acc = state.get("account", {})
     balance = acc.get("balance", acc.get("equity", 0))
     if balance <= 0:
         return False, 0.0
     daily_pnl = state.get("daily_pnl", 0.0)
+    dd_usd = abs(daily_pnl) if daily_pnl < 0 else 0.0
     dd_pct = abs(daily_pnl / balance * 100) if daily_pnl < 0 else 0.0
-    return dd_pct >= 6.0, round(dd_pct, 2)
+    return dd_usd >= daily_dd_usd_limit(), round(dd_pct, 2)
 
 
 def can_trade(symbol: str, max_per_symbol: int = 2, max_total: int = 3) -> tuple[bool, str]:
     """Returns (allowed, reason)."""
     shutdown, dd_pct = check_daily_dd()
     if shutdown:
-        return False, f"Daily DD {dd_pct:.1f}% >= 6% — SHUTDOWN"
+        from trading_agents.risk_limits import daily_dd_usd_limit
+        return False, f"Daily DD {dd_pct:.1f}% — hit ${daily_dd_usd_limit():.0f} limit — SHUTDOWN"
 
     if KILL_SWITCH.exists():
         try:

@@ -128,6 +128,45 @@ def _detect_money_spot(df: pd.DataFrame, a: float) -> Optional[tuple[int, float,
     return None
 
 
+ENTRY_M15_LOOKBACK  = 40     # how many recent M15 bars to hunt the trigger swing in
+ENTRY_M15_PAD_ATR   = 0.10   # stop sits this * M15-ATR beyond the M15 Test 2 extreme
+
+
+def refine_entry_m15(m15_df: pd.DataFrame, side: Side, *,
+                     lookback: int = ENTRY_M15_LOOKBACK):
+    """Two-TF entry timing (Navin's "drop to the next TF down"): once the H1
+    setup is valid, time the entry on M15 — stop just beyond the most recent M15
+    swing extreme against the trade (the M15 Test 2 stop-hunt), entry at the last
+    closed M15 close. A tighter stop than the H1 spot → bigger R per trade.
+
+    Returns (entry, stop, test2_idx) or None if there's no clean M15 trigger.
+    """
+    if m15_df is None or len(m15_df) < 20:
+        return None
+    a = atr(m15_df)
+    if a <= 0:
+        return None
+    n = len(m15_df)
+    piv = [p for p in find_pivots(m15_df) if p.idx >= n - lookback]
+    entry = float(m15_df.iloc[-1]["close"])
+    pad = ENTRY_M15_PAD_ATR * a
+    if side == "SELL":
+        highs = [p for p in piv if p.kind == "high" and p.price > entry]
+        if not highs:
+            return None
+        t2 = max(highs, key=lambda p: p.price)     # highest recent = the stop-hunt
+        stop = t2.price + pad
+    else:
+        lows = [p for p in piv if p.kind == "low" and p.price < entry]
+        if not lows:
+            return None
+        t2 = min(lows, key=lambda p: p.price)
+        stop = t2.price - pad
+    if abs(entry - stop) <= 0:
+        return None
+    return entry, stop, t2.idx
+
+
 def detect_setup(df: pd.DataFrame, side: Side, *, symbol: str = "") -> Setup:
     """Detect a Set 1/Set 2 money-spot setup on the setup-TF dataframe."""
     base = Setup(symbol, side, False, None, None, None, None, None,

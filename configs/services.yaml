@@ -179,6 +179,20 @@ services:
     health: {type: file, path: "logs/factory/_soak_state.json", max_age: 600}
     depends_on: [bridge]
 
+  # Daily best-of-best strategy hunt: sweep YouTube channels + web feeds + arXiv
+  # q-fin + LLM-invented ideas → LLM curates to institutional grade → opens a
+  # Factory job per survivor. The Factory then runs each hands-free through
+  # codegen→backtest→optimize→demo soak (FACTORY_AUTONOMOUS=1 in .env auto-passes
+  # the plan + backtest gates); the demo→real-money gate stays human.
+  - id: source_hunter
+    name: Strategy Source Hunter (daily discovery)
+    group: core
+    profiles: [vps, linux]
+    cmd: [python, -m, trading_agents.factory.source_hunter, --loop, --interval, "24"]
+    # 24h cycle; max_age 25h (90000s) + grace tolerates a full LLM-heavy run.
+    health: {type: file, path: "logs/factory/_hunter_state.json", max_age: 90000, grace: 600}
+    depends_on: [bridge]
+
   # ── CEO / control ────────────────────────────────────────────────────────────
   # Single Telegram inbound poller for the whole system (telegram_bot.py). Running
   # a second poller on the same token (e.g. maic_telegram_bot.py) anywhere causes

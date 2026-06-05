@@ -40,6 +40,8 @@ from api import scalp as scalp_api
 from api import vp as vp_api
 from api import asia as asia_api
 from api import fleet as fleet_api
+from api import strength as strength_api
+from api import strategy_lab as strategy_lab_api
 
 logging.basicConfig(
     level=logging.INFO,
@@ -137,6 +139,8 @@ app.include_router(scalp_api.router,      prefix="/api", dependencies=_protected
 app.include_router(vp_api.router,         prefix="/api", dependencies=_protected)
 app.include_router(asia_api.router,       prefix="/api", dependencies=_protected)
 app.include_router(fleet_api.router,      prefix="/api", dependencies=_protected)
+app.include_router(strength_api.router,   prefix="/api", dependencies=_protected)
+app.include_router(strategy_lab_api.router, prefix="/api", dependencies=_protected)
 
 # WebSocket validates the token itself (browsers can't set WS headers).
 app.include_router(ws.router)

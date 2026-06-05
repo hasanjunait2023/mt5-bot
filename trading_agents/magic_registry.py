@@ -23,6 +23,7 @@ AGENT_MAGICS: dict[int, str] = {
     20260800: "asia_fade",  # Asia Desk — Asian Range Fade (S1)
     20261300: "confluence", # Confluence Desk — S13 5-Way Confluence (XAUUSD H1)
     20261900: "confluence", # Confluence Desk — S19 Confluence Pullback (EURUSD M15)
+    20260900: "m3strength", # M3 Strength-Scalp — 28-pair currency-strength biased M3 scalper
 }
 
 # MT5 Expert Advisors (compiled .mq5, separate from the python agents).

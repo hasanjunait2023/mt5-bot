@@ -33,6 +33,12 @@ def video_id(url: str) -> str:
 
 
 def _ytdlp() -> Optional[str]:
+    # Prefer one installed next to the running interpreter (venv/bin) — children
+    # spawned by the orchestrator may not have venv/bin on PATH.
+    import sys
+    sib = Path(sys.executable).parent / "yt-dlp"
+    if sib.exists():
+        return str(sib)
     return shutil.which("yt-dlp") or shutil.which("yt-dlp.exe")
 
 
@@ -65,6 +71,49 @@ def fetch_metadata(url: str) -> dict:
     except Exception as e:  # noqa: BLE001
         log.warning("yt-dlp metadata failed: %s", e)
     return out
+
+
+def list_channel_videos(channel_url: str, limit: int = 6) -> list[dict]:
+    """Return the most recent uploads of a channel/playlist as
+    [{video_id, title, url}], newest first. Flat listing (no per-video fetch),
+    so it is cheap. Never raises."""
+    exe = _ytdlp()
+    if not exe:
+        log.warning("yt-dlp not installed — channel listing unavailable")
+        return []
+    # /videos surfaces uploads for a channel handle/url; harmless for playlists.
+    url = channel_url
+    if "youtube.com/" in url and "/videos" not in url and "list=" not in url:
+        url = url.rstrip("/") + "/videos"
+    try:
+        r = subprocess.run(
+            [exe, "--flat-playlist", "--dump-json", "--playlist-end", str(limit), url],
+            capture_output=True, text=True, timeout=90,
+        )
+        if r.returncode != 0:
+            log.warning("yt-dlp channel rc=%s: %s", r.returncode, r.stderr[:200])
+            return []
+    except Exception as e:  # noqa: BLE001
+        log.warning("yt-dlp channel listing failed (%s): %s", channel_url, e)
+        return []
+    vids: list[dict] = []
+    for line in r.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            j = json.loads(line)
+        except Exception:
+            continue
+        vid = j.get("id", "")
+        if not vid:
+            continue
+        vids.append({
+            "video_id": vid,
+            "title": j.get("title", ""),
+            "url": j.get("url") or f"https://www.youtube.com/watch?v={vid}",
+        })
+    return vids
 
 
 def fetch_transcript(url: str, out_dir: Path) -> Optional[str]:

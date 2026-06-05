@@ -79,6 +79,28 @@ def atr(highs: list[float], lows: list[float], closes: list[float],
     return atr_val
 
 
+# ── ADR (Average Daily Range) ────────────────────────────────────────────────
+
+def adr(d1_highs: list[float], d1_lows: list[float], period: int = 14) -> float:
+    """Average Daily Range = mean of the last `period` COMPLETED daily H-L.
+
+    Pass D1 bars; the still-forming current day (last bar) is excluded so the
+    average reflects settled ranges only.
+    """
+    if len(d1_highs) < period + 1:
+        return 0.0
+    rngs = [d1_highs[i] - d1_lows[i]
+            for i in range(len(d1_highs) - period - 1, len(d1_highs) - 1)]
+    return sum(rngs) / len(rngs) if rngs else 0.0
+
+
+def adr_used_frac(today_high: float, today_low: float, adr_val: float) -> float:
+    """Fraction of ADR already covered by today's range (1.0 = exhausted)."""
+    if adr_val <= 0:
+        return 1.0
+    return (today_high - today_low) / adr_val
+
+
 # ── RSI ─────────────────────────────────────────────────────────────────────
 
 def rsi(closes: list[float], period: int = 14) -> float:

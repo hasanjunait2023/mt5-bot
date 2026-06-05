@@ -19,8 +19,10 @@ from trading_agents.jtcc.execution import risk_manager as rm
 @pytest.fixture(autouse=True)
 def _no_kill_switch(tmp_path, monkeypatch):
     """Point KILL_SWITCH at a non-existent file so can_trade() isn't blocked
-    by a stray kill-switch on the dev machine."""
+    by a stray kill-switch on the dev machine, and pin the daily DD limit to its
+    $200 default so a stray AGENT_DAILY_DD_USD in the env can't skew the math."""
     monkeypatch.setattr(rm, "KILL_SWITCH", tmp_path / "nope.json")
+    monkeypatch.setenv("AGENT_DAILY_DD_USD", "200")
 
 
 def _state(monkeypatch, **kwargs):
@@ -79,20 +81,22 @@ def test_vol_scalar_clamped(monkeypatch):
     assert scaled == pytest.approx(min(base * 5.0, 10.0))
 
 
-# ── check_daily_dd: 6% shutdown ────────────────────────────────────────────
+# ── check_daily_dd: fixed $200 shutdown (demo phase) ────────────────────────
 
-def test_dd_shutdown_at_six_percent(monkeypatch):
+def test_dd_shutdown_at_dollar_limit(monkeypatch):
+    # $600 loss is past the $200 limit -> shutdown; pct still reported for display
     _state(monkeypatch, account={"balance": 10_000}, daily_pnl=-600.0)
     shutdown, pct = rm.check_daily_dd()
     assert shutdown is True
     assert pct == 6.0
 
 
-def test_dd_no_shutdown_below_six(monkeypatch):
-    _state(monkeypatch, account={"balance": 10_000}, daily_pnl=-500.0)
+def test_dd_no_shutdown_below_dollar_limit(monkeypatch):
+    # $100 loss is under the $200 limit -> keep trading
+    _state(monkeypatch, account={"balance": 10_000}, daily_pnl=-100.0)
     shutdown, pct = rm.check_daily_dd()
     assert shutdown is False
-    assert pct == 5.0
+    assert pct == 1.0
 
 
 def test_dd_ignores_positive_pnl(monkeypatch):

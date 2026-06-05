@@ -1,0 +1,128 @@
+[
+  {
+    "time_utc": "2026-06-01T00:30:00Z",
+    "currency": "USD",
+    "impact": "medium",
+    "title": "FOMC Member Powell Speaks"
+  },
+  {
+    "time_utc": "2026-06-01T14:00:00Z",
+    "currency": "USD",
+    "impact": "high",
+    "title": "ISM Manufacturing PMI"
+  },
+  {
+    "time_utc": "2026-06-01T14:00:00Z",
+    "currency": "USD",
+    "impact": "medium",
+    "title": "ISM Manufacturing Prices"
+  },
+  {
+    "time_utc": "2026-06-02T09:00:00Z",
+    "currency": "EUR",
+    "impact": "medium",
+    "title": "Core CPI Flash Estimate y/y"
+  },
+  {
+    "time_utc": "2026-06-02T09:00:00Z",
+    "currency": "EUR",
+    "impact": "medium",
+    "title": "CPI Flash Estimate y/y"
+  },
+  {
+    "time_utc": "2026-06-02T14:00:00Z",
+    "currency": "GBP",
+    "impact": "high",
+    "title": "BOE Gov Bailey Speaks"
+  },
+  {
+    "time_utc": "2026-06-02T14:00:00Z",
+    "currency": "USD",
+    "impact": "medium",
+    "title": "JOLTS Job Openings"
+  },
+  {
+    "time_utc": "2026-06-03T01:30:00Z",
+    "currency": "AUD",
+    "impact": "high",
+    "title": "GDP q/q"
+  },
+  {
+    "time_utc": "2026-06-03T08:30:00Z",
+    "currency": "JPY",
+    "impact": "high",
+    "title": "BOJ Gov Ueda Speaks"
+  },
+  {
+    "time_utc": "2026-06-03T12:15:00Z",
+    "currency": "USD",
+    "impact": "high",
+    "title": "ADP Non-Farm Employment Change"
+  },
+  {
+    "time_utc": "2026-06-03T14:00:00Z",
+    "currency": "USD",
+    "impact": "high",
+    "title": "ISM Services PMI"
+  },
+  {
+    "time_utc": "2026-06-03T14:00:00Z",
+    "currency": "USD",
+    "impact": "medium",
+    "title": "Treasury Sec Bessent Speaks"
+  },
+  {
+    "time_utc": "2026-06-04T05:00:00Z",
+    "currency": "AUD",
+    "impact": "high",
+    "title": "RBA Gov Bullock Speaks"
+  },
+  {
+    "time_utc": "2026-06-04T06:30:00Z",
+    "currency": "CHF",
+    "impact": "medium",
+    "title": "CPI m/m"
+  },
+  {
+    "time_utc": "2026-06-04T08:00:00Z",
+    "currency": "EUR",
+    "impact": "medium",
+    "title": "ECB President Lagarde Speaks"
+  },
+  {
+    "time_utc": "2026-06-04T12:30:00Z",
+    "currency": "USD",
+    "impact": "medium",
+    "title": "Unemployment Claims"
+  },
+  {
+    "time_utc": "2026-06-04T15:40:00Z",
+    "currency": "GBP",
+    "impact": "high",
+    "title": "BOE Gov Bailey Speaks"
+  },
+  {
+    "time_utc": "2026-06-05T12:30:00Z",
+    "currency": "USD",
+    "impact": "high",
+    "title": "Average Hourly Earnings m/m"
+  },
+  {
+    "time_utc": "2026-06-05T12:30:00Z",
+    "currency": "USD",
+    "impact": "high",
+    "title": "Non-Farm Employment Change"
+  },
+  {
+    "time_utc": "2026-06-05T12:30:00Z",
+    "currency": "USD",
+    "impact": "high",
+    "title": "Unemployment Rate"
+  },
+  {
+    "time_utc": "2026-06-05T18:00:00Z",
+    "currency": "GBP",
+    "impact": "medium",
+    "title": "BOE Gov Bailey Speaks"
+  }
+]

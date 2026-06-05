@@ -25,6 +25,14 @@ log = logging.getLogger("factory.runner")
 HEARTBEAT = st.FACTORY_DIR / "_runner_state.json"
 DEFAULT_INTERVAL = 45
 
+# Autonomy: when FACTORY_AUTONOMOUS is truthy the plan + backtest gates self-approve
+# on threshold (discovery → demo runs hands-free). GATE_LIVE (real money) is NEVER
+# auto-approved — a human always approves the demo→real promotion.
+AUTONOMOUS = os.getenv("FACTORY_AUTONOMOUS", "0").strip().lower() in ("1", "true", "yes", "on")
+# Backtest must clear this to auto-advance to OPTIMIZE; below it the job is rejected.
+AUTO_BACKTEST_MIN_PF = float(os.getenv("FACTORY_AUTO_BACKTEST_PF", "1.15"))
+AUTO_BACKTEST_MIN_TRADES = int(os.getenv("FACTORY_AUTO_BACKTEST_TRADES", "10"))
+
 
 # ── Telegram notify (best-effort) ─────────────────────────────────────────────
 
@@ -105,6 +113,12 @@ def _h_gate_plan(job: dict) -> None:
         st.advance(job, st.CODEGEN, "plan approved")
     elif ap["state"] == "rejected":
         st.set_status(job, st.REJECTED, "plan rejected")
+    elif AUTONOMOUS and job.get("is_strategy") is not False:
+        # Auto-approve plan for real strategies; non-strategies still park for review.
+        ap["state"] = "approved"
+        ap["by"] = "autonomous"
+        ap["at"] = st._now()
+        st.advance(job, st.CODEGEN, "plan auto-approved (autonomous)")
     else:
         st.wait_for_gate(job, "plan", "awaiting plan approval (dashboard /factory)")
         _notify("ceo", f"🏭 Factory {job['job_id']}: build plan ready — approve in /factory.")
@@ -127,8 +141,13 @@ def _h_codegen(job: dict) -> None:
 def _h_backtest(job: dict) -> None:
     from trading_agents.scalp import backtest as bt
     sid = job["strategy_id"]
+    if sid not in bt.STRATEGIES:
+        bt.refresh_generated()  # codegen wrote it after this process imported backtest
     spec = _load_spec(job)
     symbol = (spec.get("symbols") or ["XAUUSD"])[0]
+    if sid not in bt.STRATEGIES:
+        st.fail(job, f"backtest: strategy {sid} not registered (generated load failed)")
+        return
     tf = bt.STRATEGIES[sid][0]
     bars = bt._fetch_bars(symbol, tf, 5000)
     if not bars or not bars.get("close"):
@@ -151,6 +170,20 @@ def _h_gate_backtest(job: dict) -> None:
         st.advance(job, st.OPTIMIZE, "backtest approved")
     elif ap["state"] == "rejected":
         st.set_status(job, st.REJECTED, "backtest rejected")
+    elif AUTONOMOUS:
+        # Threshold-based self-gate: clear the bar → optimize; below it → reject.
+        m = job["metrics"]["backtest"]
+        pf = m.get("profit_factor") or 0
+        tr = m.get("trades") or 0
+        if pf >= AUTO_BACKTEST_MIN_PF and tr >= AUTO_BACKTEST_MIN_TRADES:
+            ap["state"] = "approved"
+            ap["by"] = "autonomous"
+            ap["at"] = st._now()
+            st.advance(job, st.OPTIMIZE, f"backtest auto-approved (PF={pf} trades={tr})")
+        else:
+            st.set_status(job, st.REJECTED,
+                          f"backtest auto-rejected (PF={pf} trades={tr} < bar "
+                          f"{AUTO_BACKTEST_MIN_PF}/{AUTO_BACKTEST_MIN_TRADES})")
     else:
         st.wait_for_gate(job, "backtest", "awaiting backtest approval")
         m = job["metrics"]["backtest"]
@@ -194,6 +227,8 @@ def _h_demo_deploy(job: dict) -> None:
     from trading_agents.factory import paper_runner
     from trading_agents.scalp import backtest as bt
     sid = job["strategy_id"]
+    if sid not in bt.STRATEGIES:
+        bt.refresh_generated()
     spec = _load_spec(job)
     tf = bt.STRATEGIES[sid][0]
     syms = spec.get("symbols") or ["XAUUSD"]

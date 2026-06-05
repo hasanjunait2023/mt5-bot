@@ -124,11 +124,11 @@ def probe(health: dict) -> bool:
             return True  # caller already confirmed process alive
         if t == "http":
             req = urllib.request.Request(health["url"], method="GET")
-            with urllib.request.urlopen(req, timeout=5) as r:
+            with urllib.request.urlopen(req, timeout=float(health.get("timeout", 5))) as r:
                 return r.status < 400
         if t == "tcp":
             host = health.get("host") or os.getenv("MT5_BRIDGE_HOST", "localhost")
-            with socket.create_connection((host, int(health["port"])), timeout=4):
+            with socket.create_connection((host, int(health["port"])), timeout=float(health.get("timeout", 4))):
                 return True
         if t == "file":
             p = BASE_DIR / health["path"]

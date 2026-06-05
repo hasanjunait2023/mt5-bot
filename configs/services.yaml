@@ -38,7 +38,7 @@ services:
     # the [vps] entry doesn't lose supervision if the host ever flips back.
     profiles: [vps, linux]
     cmd: [bash, scripts/launch_bridge_wine.sh]
-    health: {type: http, url: "http://localhost:8090/health"}
+    health: {type: http, url: "http://localhost:8090/health", timeout: 15, grace: 600}
     critical: true
 
   - id: dashboard
@@ -183,7 +183,9 @@ services:
     group: core
     profiles: [vps, linux]
     cmd: [python, -m, trading_agents.factory.runner, --loop, --interval, "45"]
-    health: {type: file, path: "logs/factory/_runner_state.json", max_age: 300}
+    # max_age 900: a tick over many heavy jobs (YT research + codegen + optimize) can
+    # run minutes; runner heartbeats per-job so this is a generous safety ceiling.
+    health: {type: file, path: "logs/factory/_runner_state.json", max_age: 900, grace: 120}
     depends_on: [bridge]
 
   - id: factory_paper

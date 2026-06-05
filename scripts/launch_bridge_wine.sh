@@ -24,6 +24,11 @@ export PYTHONPATH='Z:\home\trader\mt5-bot'
 export WINEDEBUG="${WINEDEBUG:-fixme-all,err-toolbar}"
 
 cd "$REPO"
+# Kill any stale bridge process holding the port before launching a fresh one.
+# Prevents port-conflict orphans when the orchestrator restarts this service.
+pkill -f "api_server.py --port" 2>/dev/null || true
+sleep 2
+
 # Use script-form (not -m) so wine python adds the script's directory's parent
 # to sys.path automatically — no module-resolution pain.
 exec "$WINE_BIN" "$WINE_PY" mt5_bridge/api_server.py --port "$PORT"

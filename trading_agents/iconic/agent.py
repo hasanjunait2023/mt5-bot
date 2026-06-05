@@ -31,7 +31,7 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
 
-from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
+from trading_agents.risk_limits import agent_dd_breached, daily_dd_usd_limit
 
 LOG_DIR      = BASE_DIR / "logs" / "iconic"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -469,7 +469,7 @@ def run(symbols: list[str], risk_pct: float, dd_limit: float,
             # Daily DD guard — fixed $ limit (AGENT_DAILY_DD_USD, default $200) for
             # the demo testing phase; dd_limit % kept for logging/state only.
             dd_pct = daily.daily_loss_pct(equity)
-            breached, dd_usd = dd_usd_breached(daily.start_balance, equity)
+            breached, dd_usd = agent_dd_breached(mt5, MAGIC)
             if breached:
                 log.warning("Daily DD $%.2f >= limit $%.2f — HALTED", dd_usd, daily_dd_usd_limit())
                 _tg(f"Iconic Agent HALTED — daily DD ${dd_usd:.2f} >= ${daily_dd_usd_limit():.0f}", level="WARNING")

@@ -67,13 +67,19 @@ class IconicTradeSignal:
 class IconicEngine:
     def __init__(self, news_provider: Optional[NewsProvider] = None,
                  setup_tf: str = SETUP_TF, pullback_tf: str = "M15",
-                 purpose_window_min: int = 90, rr_a: float = RR_A, rr_b: float = RR_B):
+                 purpose_window_min: int = 90, rr_a: float = RR_A, rr_b: float = RR_B,
+                 m15_entry: bool = False):
         self.scorer = IconicConfluenceScorer(
             news_provider=news_provider, setup_tf=setup_tf,
             pullback_tf=pullback_tf, purpose_window_min=purpose_window_min)
         self._setup_tf = setup_tf
+        self._pullback_tf = pullback_tf
         self._rr_a = rr_a
         self._rr_b = rr_b
+        # Two-TF entry timing: validate the setup on H1, time the entry on M15
+        # (tighter stop). Off by default so the legacy single-pair agent is
+        # unchanged; the board system turns it on.
+        self._m15_entry = m15_entry
 
     def evaluate(self, snapshots: dict, strength: dict, *,
                  now: Optional[datetime] = None,
@@ -138,6 +144,18 @@ class IconicEngine:
         volume_dead = self._dead_at(setup_df, setup.test2_idx)
 
         entry, stop = float(setup.entry), float(setup.stop)
+
+        # Two-TF entry timing: drop to M15 to time the entry with a tighter stop
+        # at the M15 Test 2 (only if it tightens risk AND M15 Test 2 volume is dead).
+        if self._m15_entry:
+            m15 = tfs.get(self._pullback_tf)
+            refined = pattern.refine_entry_m15(m15, sc.side)
+            if refined is not None:
+                r_entry, r_stop, r_t2 = refined
+                if 0 < abs(r_entry - r_stop) < abs(entry - stop) and self._dead_at(m15, r_t2):
+                    entry, stop = r_entry, r_stop
+                    setup.reasons.append("[✓] M15 entry-timing: tighter stop at M15 Test 2")
+
         risk = abs(entry - stop)
         if risk <= 0:
             return None

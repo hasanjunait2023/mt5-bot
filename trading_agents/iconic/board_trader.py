@@ -35,7 +35,7 @@ sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
 from trading_agents.iconic import board as board_mod
 from trading_agents.iconic.engine import IconicEngine
 from trading_agents.iconic.correlation import split_pair, to_scale7
-from trading_agents.risk_limits import dd_usd_breached, daily_dd_usd_limit
+from trading_agents.risk_limits import agent_dd_breached, daily_dd_usd_limit
 
 LOG_DIR    = BASE_DIR / "logs" / "iconic"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -627,7 +627,7 @@ def run(*, once: bool, dry: bool):
                 except Exception: pass
                 last_news = time.time()
             dd = daily.dd_pct(acc.equity)
-            breached, dd_usd = dd_usd_breached(daily.start_balance, acc.equity)
+            breached, dd_usd = agent_dd_breached(mt5, MAGIC)
             halted = breached and not dry
             if halted:
                 log.warning("daily DD $%.2f >= $%.2f — HALT new entries", dd_usd, daily_dd_usd_limit())

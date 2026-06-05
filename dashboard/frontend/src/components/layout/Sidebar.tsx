@@ -72,7 +72,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="m-3 p-3 rounded-xl bg-white/[0.025] ring-1 ring-border">
+      <div className="m-3 p-3 rounded-xl bg-tint/[0.025] ring-1 ring-border">
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-profit animate-pulse2" />
           <p className="text-text-secondary text-[11px] font-medium">Monitor active</p>
@@ -113,7 +113,7 @@ function NavRow({
           'transition-all duration-200',
           isActive
             ? 'text-text-primary bg-gradient-to-r from-accent/[0.14] to-transparent ring-1 ring-accent/20'
-            : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]'
+            : 'text-text-secondary hover:text-text-primary hover:bg-tint/[0.04]'
         )
       }
     >
@@ -158,8 +158,8 @@ function NavRow({
             className={clsx(
               'shrink-0 grid place-items-center w-6 h-6 rounded-md transition-all',
               pinned
-                ? 'text-accent opacity-100 hover:bg-white/[0.06]'
-                : 'text-text-muted/70 opacity-0 group-hover:opacity-100 hover:text-text-secondary hover:bg-white/[0.06]'
+                ? 'text-accent opacity-100 hover:bg-tint/[0.06]'
+                : 'text-text-muted/70 opacity-0 group-hover:opacity-100 hover:text-text-secondary hover:bg-tint/[0.06]'
             )}
           >
             <Icon name="star" size={13} filled={pinned} />

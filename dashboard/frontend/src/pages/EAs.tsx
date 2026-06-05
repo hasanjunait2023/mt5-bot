@@ -100,7 +100,7 @@ function EACard({ ea, i }: { ea: EA; i: number }) {
             </div>
           )}
           <button onClick={() => setExpanded(e => !e)}
-            className="text-text-secondary hover:text-text-primary text-xs px-3 h-8 bg-white/[0.04] ring-1 ring-border rounded-lg transition-colors">
+            className="text-text-secondary hover:text-text-primary text-xs px-3 h-8 bg-tint/[0.04] ring-1 ring-border rounded-lg transition-colors">
             {expanded ? '▲ Less' : '▼ More'}
           </button>
         </div>
@@ -208,7 +208,7 @@ function ICTWalkForward({ data }: { data: ICTResults | null }) {
               )}
               style={{ ['--i' as string]: i + 6 }}
             >
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/15 to-transparent" />
 
               {/* Symbol header */}
               <div className="flex items-center justify-between">
@@ -339,7 +339,7 @@ function RealizedPerformance({ perf }: { perf: EAPerf | null }) {
             ].map((c, idx) => (
               <div key={c.label} className="glass reveal relative overflow-hidden p-5"
                    style={{ ['--i' as string]: idx }}>
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/15 to-transparent" />
                 <p className="eyebrow">{c.label}</p>
                 <p className={clsx('text-xl font-bold mt-2',
                   c.mono === false ? 'text-text-primary' : 'font-mono font-tabular',
@@ -423,7 +423,7 @@ export function EAs() {
             className="glass glass-hover reveal relative overflow-hidden p-5"
             style={{ ['--i' as string]: idx }}
           >
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/15 to-transparent" />
             <p className="eyebrow">{c.label}</p>
             <p className={clsx('text-2xl font-mono font-bold mt-2 font-tabular', c.color ?? 'text-text-primary')}>
               {c.value}

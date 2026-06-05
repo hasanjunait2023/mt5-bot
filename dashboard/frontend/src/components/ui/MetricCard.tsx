@@ -69,7 +69,7 @@ export function MetricCard({
       )}
     >
       {/* top sheen */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/15 to-transparent" />
 
       <div className="flex items-center justify-between gap-2">
         <p className="eyebrow truncate">{label}</p>

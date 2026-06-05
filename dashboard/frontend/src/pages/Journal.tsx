@@ -107,7 +107,7 @@ function StatsTable({ label, data }: { label: string; data: Record<string, Strat
           </thead>
           <tbody>
             {rows.sort(([, a], [, b]) => b.net_pnl - a.net_pnl).map(([name, s]) => (
-              <tr key={name} className="border-b border-border/40 hover:bg-white/[0.02]">
+              <tr key={name} className="border-b border-line/40 hover:bg-tint/[0.02]">
                 <td className="py-2 pr-4 font-medium text-text-primary truncate max-w-[200px]">{name}</td>
                 <td className="py-2 px-2 text-right text-text-secondary">{s.trades}</td>
                 <td className="py-2 px-2 text-right">
@@ -150,11 +150,11 @@ const MISTAKE_COLOR: Record<string, string> = {
   POOR_RR_SETUP:  'bg-red-500/20 text-red-300',
   DEAD_SESSION:   'bg-purple-500/20 text-purple-300',
   PREMATURE_SL:   'bg-blue-500/20 text-blue-300',
-  NORMAL_LOSS:    'bg-white/10 text-text-muted',
+  NORMAL_LOSS:    'bg-tint/10 text-text-muted',
 }
 
 function MistakeBadge({ type }: { type: string }) {
-  const cls = MISTAKE_COLOR[type] ?? 'bg-white/10 text-text-muted'
+  const cls = MISTAKE_COLOR[type] ?? 'bg-tint/10 text-text-muted'
   return (
     <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${cls}`}>
       {MISTAKE_LABEL[type] ?? type}
@@ -195,7 +195,7 @@ function LossAnalysisSection({ data }: { data: LossAnalysis }) {
               </thead>
               <tbody>
                 {rows.sort(([, a], [, b]) => b.loss_count - a.loss_count).map(([name, agg]) => (
-                  <tr key={name} className="border-b border-border/40 hover:bg-white/[0.02]">
+                  <tr key={name} className="border-b border-line/40 hover:bg-tint/[0.02]">
                     <td className="px-4 py-3 font-medium text-text-primary truncate max-w-[160px]">{name}</td>
                     <td className="px-3 py-3 text-right text-loss font-semibold">{agg.loss_count}</td>
                     <td className="px-3 py-3">
@@ -352,7 +352,7 @@ export function Journal() {
             {loading ? 'Loading…' : `${trades.length} trades · ${openCount} open · auto-refresh 30s`}
           </p>
         </div>
-        <button onClick={load} className="px-3 py-1.5 text-sm rounded-lg glass hover:bg-white/[0.06] transition">
+        <button onClick={load} className="px-3 py-1.5 text-sm rounded-lg glass hover:bg-tint/[0.06] transition">
           Refresh
         </button>
       </div>

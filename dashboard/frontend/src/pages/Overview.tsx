@@ -29,7 +29,7 @@ export function Overview() {
         title="Overview"
         subtitle="Real-time account & system snapshot"
         right={
-          <div className="hidden sm:flex items-center gap-2 px-3 h-8 rounded-full bg-white/[0.04] ring-1 ring-border">
+          <div className="hidden sm:flex items-center gap-2 px-3 h-8 rounded-full bg-tint/[0.04] ring-1 ring-border">
             <StatusDot status={traderStatus} />
             <span className="text-text-secondary text-xs font-medium">
               {trader_running ? (mt5_connected ? 'Trading live' : 'Bot up · MT5 down') : 'Bot offline'}
@@ -128,7 +128,7 @@ export function Overview() {
             {Object.entries(last_signals).map(([sym, sig]) => (
               <div
                 key={sym}
-                className="flex items-center gap-2 px-3 h-9 rounded-lg bg-white/[0.03] ring-1 ring-border"
+                className="flex items-center gap-2 px-3 h-9 rounded-lg bg-tint/[0.03] ring-1 ring-border"
               >
                 <span className="text-text-secondary text-xs font-mono">{sym}</span>
                 {sig.direction ? (
@@ -156,7 +156,7 @@ export function Overview() {
             {positions.map(p => (
               <div
                 key={p.ticket}
-                className="flex items-center justify-between text-sm font-mono py-2 px-1 rounded-md hover:bg-white/[0.03] transition-colors"
+                className="flex items-center justify-between text-sm font-mono py-2 px-1 rounded-md hover:bg-tint/[0.03] transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <Badge variant={p.direction === 'BUY' ? 'buy' : 'sell'}>
@@ -216,7 +216,7 @@ function RiskCard({
           {v.toFixed(2)}%
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1.5 rounded-full bg-tint/[0.06] overflow-hidden">
         <div
           className={clsx('h-full rounded-full transition-all duration-700', barColor)}
           style={{ width: `${fill}%` }}

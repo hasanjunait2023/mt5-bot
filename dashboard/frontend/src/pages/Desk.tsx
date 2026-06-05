@@ -82,7 +82,7 @@ function sessionStyles(session: string) {
   if (session === 'london') return 'bg-amber-500/20 text-amber-300 ring-amber-500/30'
   if (session === 'ny')     return 'bg-sky-500/20    text-sky-300    ring-sky-500/30'
   if (session === 'asia')   return 'bg-violet-500/20 text-violet-300 ring-violet-500/30'
-  return 'bg-white/[0.05] text-text-secondary ring-border'
+  return 'bg-tint/[0.05] text-text-secondary ring-border'
 }
 
 function sessionLabel(s: string) {
@@ -134,7 +134,7 @@ function ZoneRow({ z, currentPrice }: { z: Zone; currentPrice?: number }) {
   const inside = currentPrice !== undefined && currentPrice >= z.bottom && currentPrice <= z.top
   return (
     <div className={`p-2 rounded-md ring-1 transition-all ${
-      inside ? 'bg-amber-500/10 ring-amber-500/40' : 'bg-white/[0.025] ring-border'
+      inside ? 'bg-amber-500/10 ring-amber-500/40' : 'bg-tint/[0.025] ring-border'
     }`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ function PoolRow({ p, currentPrice }: { p: Pool; currentPrice?: number }) {
   const dist = currentPrice ? Math.abs(p.price - currentPrice) : 0
   return (
     <div className={`p-2 rounded-md ring-1 ring-border transition-all ${
-      p.swept ? 'bg-white/[0.01] opacity-60' : 'bg-white/[0.025]'
+      p.swept ? 'bg-tint/[0.01] opacity-60' : 'bg-tint/[0.025]'
     }`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -251,7 +251,7 @@ export function Desk() {
             className={`px-3 h-8 rounded-md text-[12px] font-mono font-semibold whitespace-nowrap transition-all ring-1 ${
               s === symbol
                 ? 'bg-accent/15 text-text-primary ring-accent/40'
-                : 'bg-white/[0.025] text-text-secondary ring-border hover:text-text-primary hover:bg-white/[0.05]'
+                : 'bg-tint/[0.025] text-text-secondary ring-border hover:text-text-primary hover:bg-tint/[0.05]'
             }`}
           >
             {s.length === 6 ? `${s.slice(0,3)}/${s.slice(3)}` : s}
@@ -276,7 +276,7 @@ export function Desk() {
             ) : (
               <div className="space-y-2 max-h-[200px] overflow-y-auto">
                 {symSignals.map((s, i) => (
-                  <div key={i} className="p-2 rounded-md bg-white/[0.025] ring-1 ring-border">
+                  <div key={i} className="p-2 rounded-md bg-tint/[0.025] ring-1 ring-border">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge variant={s.side === 'BUY' ? 'buy' : 'sell'}>{s.side}</Badge>
@@ -323,7 +323,7 @@ export function Desk() {
             <Panel i={4} title={`Order Blocks (${symOBs.length})`}>
               <div className="space-y-1.5 max-h-[180px] overflow-y-auto">
                 {symOBs.map((ob, i) => (
-                  <div key={i} className="p-2 rounded-md bg-white/[0.025] ring-1 ring-border">
+                  <div key={i} className="p-2 rounded-md bg-tint/[0.025] ring-1 ring-border">
                     <div className="flex items-center justify-between">
                       <Badge variant={ob.side === 'bull' ? 'buy' : 'sell'}>{ob.side.toUpperCase()} OB</Badge>
                       <span className="text-[10px] text-text-tertiary">{ob.timeframe} {ob.mitigated ? '· mitigated' : '· fresh'}</span>

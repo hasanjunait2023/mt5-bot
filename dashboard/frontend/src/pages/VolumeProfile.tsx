@@ -89,7 +89,7 @@ function GateGrid({ perSym }: { perSym: Record<string, PerSym> }) {
             <div key={sym} className={`rounded-lg p-3 space-y-2 ring-1 ${
               s.gate_ready ? 'bg-profit/10 ring-profit/30'
                 : s.open ? 'bg-accent/10 ring-accent/30'
-                : 'bg-white/[0.03] ring-white/[0.06]'
+                : 'bg-tint/[0.03] ring-tint/[0.06]'
             }`}>
               <div className="flex items-center justify-between">
                 <div>
@@ -123,13 +123,13 @@ function GateGrid({ perSym }: { perSym: Record<string, PerSym> }) {
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-1">
-                  <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="flex-1 h-1 rounded-full bg-tint/[0.06] overflow-hidden">
                     <div className="h-full rounded-full bg-accent/50 transition-all" style={{ width: `${tradesProg}%` }} />
                   </div>
                   <span className="text-[9px] text-text-muted font-mono w-9 text-right">{s.trades}/{MIN_TRADES}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="flex-1 h-1 rounded-full bg-tint/[0.06] overflow-hidden">
                     <div className={`h-full rounded-full transition-all ${s.gate_ready ? 'bg-profit' : 'bg-accent/50'}`}
                          style={{ width: `${pfProg}%` }} />
                   </div>
@@ -155,7 +155,7 @@ function TradesTable({ trades }: { trades: VpTrade[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-[11px] font-mono border-collapse">
         <thead>
-          <tr className="text-text-muted border-b border-white/[0.06]">
+          <tr className="text-text-muted border-b border-tint/[0.06]">
             {['Symbol', 'Side', 'Entry', 'SL', 'TP', 'PnL', 'Exit', 'Mode', 'Time'].map(h => (
               <th key={h} className="text-left px-2 py-1.5 font-medium eyebrow">{h}</th>
             ))}
@@ -165,7 +165,7 @@ function TradesTable({ trades }: { trades: VpTrade[] }) {
           {trades.map((t, i) => {
             const pnlPos = (t.pnl ?? 0) >= 0
             return (
-              <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+              <tr key={i} className="border-b border-tint/[0.03] hover:bg-tint/[0.02]">
                 <td className="px-2 py-1.5 text-accent">{t.symbol}</td>
                 <td className="px-2 py-1.5"><Badge variant={t.side === 'BUY' ? 'buy' : 'sell'}>{t.side}</Badge></td>
                 <td className="px-2 py-1.5 text-text-secondary">{fmtPrice(t.entry)}</td>
@@ -217,7 +217,7 @@ export function VolumeProfile() {
   const modeColor = isHalted
     ? 'text-loss bg-loss/10 ring-loss/30'
     : isRunning ? 'text-emerald-400 bg-emerald-500/10 ring-emerald-500/30'
-      : 'text-text-muted bg-white/[0.03] ring-border'
+      : 'text-text-muted bg-tint/[0.03] ring-border'
 
   return (
     <div className="space-y-4 md:space-y-6">

@@ -46,7 +46,7 @@ function AgentCard({
       className="glass glass-hover reveal relative overflow-hidden p-5"
       style={{ ['--i' as string]: i }}
     >
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/15 to-transparent" />
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-text-primary font-semibold text-sm">{title}</h3>
         <StatusDot status={status} />

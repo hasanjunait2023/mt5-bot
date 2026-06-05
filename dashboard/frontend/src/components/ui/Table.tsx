@@ -35,7 +35,7 @@ export function Table<T>({ columns, data, keyFn, emptyText = 'No data' }: Props<
             <tr>
               <td colSpan={columns.length} className="px-3 py-14 text-center">
                 <div className="reveal flex flex-col items-center gap-3">
-                  <div className="grid h-11 w-11 place-items-center rounded-full border border-border bg-white/[0.03] text-text-muted">
+                  <div className="grid h-11 w-11 place-items-center rounded-full border border-border bg-tint/[0.03] text-text-muted">
                     <svg
                       width="18" height="18" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" strokeWidth="1.5"
@@ -53,7 +53,7 @@ export function Table<T>({ columns, data, keyFn, emptyText = 'No data' }: Props<
             data.map(row => (
               <tr
                 key={keyFn(row)}
-                className="border-b border-white/[0.05] last:border-0 hover:bg-white/[0.035] transition-colors"
+                className="border-b border-tint/[0.05] last:border-0 hover:bg-tint/[0.035] transition-colors"
               >
                 {columns.map(col => (
                   <td

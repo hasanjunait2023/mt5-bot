@@ -186,7 +186,7 @@ export function SystemAgents() {
               <p className="text-text-muted text-sm">No incidents — system clean.</p>
             )}
             {inc.incidents.map(it => (
-              <div key={it.id} className="glass !bg-white/[0.02] p-3 text-sm">
+              <div key={it.id} className="glass !bg-tint/[0.02] p-3 text-sm">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="font-medium text-text-primary">
                     {it.component}

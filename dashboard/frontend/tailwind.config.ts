@@ -1,33 +1,41 @@
 import type { Config } from 'tailwindcss'
 
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Cinematic near-black with a faint cool undertone (not flat gray)
+        // Theme-driven tokens — values live as rgb-channel CSS vars in index.css
+        // (:root = light "Finexy", .dark = dark). rgb(var(--x) / <alpha-value>)
+        // keeps every Tailwind opacity modifier (bg-accent/10, text-muted/70…) working.
         bg: {
-          base:     '#070809',
-          surface:  '#0e1014',
-          elevated: '#15181f',
-          overlay:  '#1c212b',
+          base:     'rgb(var(--bg-base) / <alpha-value>)',
+          surface:  'rgb(var(--bg-surface) / <alpha-value>)',
+          elevated: 'rgb(var(--bg-elevated) / <alpha-value>)',
+          overlay:  'rgb(var(--bg-overlay) / <alpha-value>)',
+          ink:      'rgb(var(--bg-ink) / <alpha-value>)',
         },
-        // Glass strokes — subtle light alpha reads as "premium edge"
         border: {
-          DEFAULT: 'rgba(255,255,255,0.07)',
-          strong:  'rgba(255,255,255,0.12)',
-          focus:   '#3b82f6',
+          DEFAULT: 'rgb(var(--line) / 0.12)',
+          strong:  'rgb(var(--line) / 0.20)',
+          focus:   'rgb(var(--accent) / <alpha-value>)',
         },
         text: {
-          primary:   '#eef1f7',
-          secondary: '#9aa6b8',
-          muted:     '#5a6577',
+          primary:   'rgb(var(--text-primary) / <alpha-value>)',
+          secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
+          muted:     'rgb(var(--text-muted) / <alpha-value>)',
+          onink:     'rgb(var(--text-onink) / <alpha-value>)',
         },
-        profit:  '#22c55e',
-        loss:    '#f43f5e',
-        warning: '#f59e0b',
-        accent:  '#3b82f6',
-        'accent-dim': '#1d4ed8',
+        // Surface tint (was bg-white/x), gradient sheen (was via-white/x), hairline
+        tint:  'rgb(var(--tint) / <alpha-value>)',
+        sheen: 'rgb(var(--sheen) / <alpha-value>)',
+        line:  'rgb(var(--line) / <alpha-value>)',
+        profit:  'rgb(var(--profit) / <alpha-value>)',
+        loss:    'rgb(var(--loss) / <alpha-value>)',
+        warning: 'rgb(var(--warning) / <alpha-value>)',
+        accent:  'rgb(var(--accent) / <alpha-value>)',
+        'accent-dim': 'rgb(var(--accent-dim) / <alpha-value>)',
       },
       fontFamily: {
         mono: ['"JetBrains Mono"', '"Fira Code"', 'Consolas', 'monospace'],
@@ -36,18 +44,19 @@ export default {
       borderRadius: {
         xl: '0.875rem',
         '2xl': '1.125rem',
+        '3xl': '1.5rem',
       },
       boxShadow: {
-        card:        '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 24px -12px rgba(0,0,0,0.7)',
-        'card-hover':'0 1px 0 0 rgba(255,255,255,0.07) inset, 0 16px 40px -16px rgba(0,0,0,0.85)',
-        'glow-accent': '0 0 0 1px rgba(59,130,246,0.35), 0 8px 30px -8px rgba(59,130,246,0.45)',
-        'glow-profit': '0 0 18px -4px rgba(34,197,94,0.55)',
-        'glow-loss':   '0 0 18px -4px rgba(244,63,94,0.55)',
-        topbar:      '0 1px 0 0 rgba(255,255,255,0.05), 0 6px 24px -12px rgba(0,0,0,0.8)',
+        card:        'var(--shadow-card)',
+        'card-hover':'var(--shadow-card-hover)',
+        'glow-accent': '0 0 0 1px rgb(var(--accent) / 0.30), 0 8px 30px -8px rgb(var(--accent) / 0.40)',
+        'glow-profit': '0 0 18px -4px rgb(var(--profit) / 0.45)',
+        'glow-loss':   '0 0 18px -4px rgb(var(--loss) / 0.45)',
+        topbar:      'var(--shadow-topbar)',
       },
       backgroundImage: {
-        'glass': 'linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012))',
-        'glass-hover': 'linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.02))',
+        'glass': 'linear-gradient(180deg, rgb(var(--sheen) / 0.05), rgb(var(--sheen) / 0.012))',
+        'glass-hover': 'linear-gradient(180deg, rgb(var(--sheen) / 0.075), rgb(var(--sheen) / 0.02))',
       },
       animation: {
         pulse2:    'pulse2 2s ease-in-out infinite',

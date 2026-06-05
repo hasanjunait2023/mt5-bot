@@ -32,7 +32,7 @@ export function LogLine({ entry }: Props) {
   return (
     <div
       className={clsx(
-        'flex items-start gap-3 py-1 pl-2.5 font-mono text-xs border-l-2 rounded-r transition-colors hover:bg-white/[0.025]',
+        'flex items-start gap-3 py-1 pl-2.5 font-mono text-xs border-l-2 rounded-r transition-colors hover:bg-tint/[0.025]',
         getRowClass(entry),
       )}
     >

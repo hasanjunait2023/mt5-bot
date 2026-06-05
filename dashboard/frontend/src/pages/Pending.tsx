@@ -104,7 +104,7 @@ export function Pending() {
               </thead>
               <tbody>
                 {stalled.map((s) => (
-                  <tr key={s.id} className="border-t border-border/60">
+                  <tr key={s.id} className="border-t border-line/60">
                     <td className="py-2.5 pr-4">
                       <span className="font-mono text-text-primary">{s.id}</span>
                       <span className="block text-xs text-text-muted">{s.name}</span>
@@ -131,7 +131,7 @@ export function Pending() {
               <li
                 key={t.id}
                 className={clsx(
-                  'flex items-start gap-3 rounded-lg p-3 bg-white/[0.02] ring-1 ring-border',
+                  'flex items-start gap-3 rounded-lg p-3 bg-tint/[0.02] ring-1 ring-border',
                 )}
               >
                 <span className="mt-0.5 shrink-0 w-6 h-6 grid place-items-center rounded-md

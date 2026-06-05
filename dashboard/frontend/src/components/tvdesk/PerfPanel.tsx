@@ -22,7 +22,7 @@ export interface PerfData {
 function Bar({ rate }: { rate: number }) {
   const tone = rate >= 55 ? 'bg-profit' : rate >= 45 ? 'bg-accent' : 'bg-loss'
   return (
-    <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+    <div className="h-1.5 rounded-full bg-tint/[0.06] overflow-hidden">
       <div className={`h-full ${tone}`} style={{ width: `${Math.max(2, Math.min(100, rate))}%` }} />
     </div>
   )
@@ -76,7 +76,7 @@ export function PerfPanel({ perf, showSession = false, i = 1 }: { perf: PerfData
             <div className="eyebrow">Recent closed</div>
             <div className="space-y-1 max-h-72 overflow-auto pr-1">
               {closed.map(tr => (
-                <div key={tr.id} className="flex items-center justify-between text-xs font-mono rounded-md bg-white/[0.03] ring-1 ring-border px-2.5 py-1.5">
+                <div key={tr.id} className="flex items-center justify-between text-xs font-mono rounded-md bg-tint/[0.03] ring-1 ring-border px-2.5 py-1.5">
                   <div className="flex items-center gap-2">
                     <Badge variant={tr.side === 'BUY' ? 'buy' : 'sell'}>{tr.side}</Badge>
                     <span className="text-text-secondary">{tr.symbol}</span>

@@ -58,7 +58,7 @@ export function AnalysisCard({ ev, agent }: { ev: TvEvent; agent: 'intraday' | '
   const dr = ev.dealing_range
 
   return (
-    <div className="glass rounded-xl overflow-hidden ring-1 ring-border hover:ring-white/20 transition-all duration-300">
+    <div className="glass rounded-xl overflow-hidden ring-1 ring-border hover:ring-tint/20 transition-all duration-300">
       <div className="p-4 space-y-3">
         {/* header */}
         <div className="flex items-center justify-between">
@@ -100,7 +100,7 @@ export function AnalysisCard({ ev, agent }: { ev: TvEvent; agent: 'intraday' | '
         {/* entries */}
         <div className="space-y-1.5">
           {ev.entries.map((e, i) => (
-            <div key={i} className="rounded-lg bg-white/[0.03] ring-1 ring-border px-3 py-2">
+            <div key={i} className="rounded-lg bg-tint/[0.03] ring-1 ring-border px-3 py-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Badge variant={e.side === 'BUY' ? 'buy' : 'sell'}>{e.side}</Badge>

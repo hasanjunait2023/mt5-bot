@@ -6,6 +6,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { MetricCard } from '../components/ui/MetricCard'
 import { StatusDot } from '../components/ui/StatusDot'
 import { Badge } from '../components/ui/Badge'
+import { AgentAvatar } from '../components/ui/AgentAvatar'
 import { WinLossDonut } from '../components/charts/WinLossDonut'
 import { PnLBarChart } from '../components/charts/PnLBarChart'
 
@@ -14,7 +15,7 @@ interface Position { symbol: string; type: string; volume: number; profit: numbe
 interface StratStat { name: string; trades: number; pf: number | null; wr: number | null; live: boolean }
 interface Stats { opened: number; closed: number; realized_pnl: number; wins: number; losses: number; win_rate: number | null }
 interface Agent {
-  id: string; name: string; strategy: string; magic: number
+  id: string; name: string; avatar?: string | null; strategy: string; magic: number
   health: 'live' | 'warning' | 'offline'; orch_status: string
   restarts: number; pid: number | null; mode: string; pairs: string[]
   open_count: number; open_pnl: number; positions: Position[]
@@ -54,7 +55,7 @@ function Seg({ active, onClick, children }: { active: boolean; onClick: () => vo
   return (
     <button onClick={onClick}
       className={clsx('px-3 h-8 rounded-md text-xs font-semibold tracking-wide transition-all',
-        active ? 'bg-accent/15 text-accent ring-1 ring-accent/40' : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.04]')}>
+        active ? 'bg-accent/15 text-accent ring-1 ring-accent/40' : 'text-text-secondary hover:text-text-primary hover:bg-tint/[0.04]')}>
       {children}
     </button>
   )
@@ -63,7 +64,7 @@ function Seg({ active, onClick, children }: { active: boolean; onClick: () => vo
 function StrategyChip({ s }: { s: StratStat }) {
   const pfCol = s.pf == null ? '' : s.pf >= 1.3 ? 'text-profit' : s.pf < 1 ? 'text-loss' : 'text-warning'
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md bg-white/[0.025] ring-1 ring-border px-2.5 py-1.5">
+    <div className="flex items-center justify-between gap-2 rounded-md bg-tint/[0.025] ring-1 ring-border px-2.5 py-1.5">
       <div className="flex items-center gap-2 min-w-0">
         <span className="font-mono text-xs font-semibold text-text-primary">{s.name}</span>
         <Badge tone={s.live ? 'green' : 'gray'}>{s.live ? 'LIVE' : 'PAPER'}</Badge>
@@ -118,12 +119,15 @@ function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: st
           ? TRADE_GLOW[tone]
           : clsx('ring-1', a.health === 'live' ? 'ring-profit/15' : a.health === 'warning' ? 'ring-warning/25' : 'ring-border'))}
       style={{ '--i': i } as React.CSSProperties}>
-      <div className={clsx('absolute inset-x-0 top-0 h-px', inTrade ? clsx(TRADE_BAR[tone], 'animate-pulse2') : 'bg-gradient-to-r from-transparent via-white/15 to-transparent')} />
+      <div className={clsx('absolute inset-x-0 top-0 h-px', inTrade ? clsx(TRADE_BAR[tone], 'animate-pulse2') : 'bg-gradient-to-r from-transparent via-sheen/15 to-transparent')} />
 
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="eyebrow truncate">{a.strategy}</p>
-          <h3 className="text-text-primary text-lg font-bold tracking-tight truncate">{a.name}</h3>
+        <div className="flex items-start gap-3 min-w-0">
+          <AgentAvatar name={a.name} avatar={a.avatar} size={52} tone={inTrade ? tone : undefined} />
+          <div className="min-w-0">
+            <p className="eyebrow truncate">{a.strategy}</p>
+            <h3 className="text-text-primary text-lg font-bold tracking-tight truncate">{a.name}</h3>
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">
           <StatusDot status={HEALTH_DOT[a.health]} label={a.health === 'live' ? 'live' : a.health} />
@@ -132,7 +136,7 @@ function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: st
       </div>
 
       {/* realized P&L over the selected period */}
-      <div className="rounded-lg bg-white/[0.02] ring-1 ring-border px-4 py-3 flex items-end justify-between">
+      <div className="rounded-lg bg-tint/[0.02] ring-1 ring-border px-4 py-3 flex items-end justify-between">
         <div>
           <p className="eyebrow">P&L · {periodLabel}</p>
           <p className={clsx('font-mono font-bold text-3xl leading-none tracking-tight mt-1 font-tabular', pnlCls(r))}>
@@ -175,7 +179,7 @@ function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: st
       </div>
 
       {a.open_count > 0 && (
-        <div className="rounded-lg bg-white/[0.025] ring-1 ring-border p-3 flex flex-col gap-1.5">
+        <div className="rounded-lg bg-tint/[0.025] ring-1 ring-border p-3 flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <p className="eyebrow">Open now</p>
@@ -200,7 +204,7 @@ function AgentCard({ a, i, periodLabel }: { a: Agent; i: number; periodLabel: st
         </div>
       )}
 
-      <div className="flex items-center justify-between text-[11px] text-text-muted mt-auto pt-1 border-t border-border/60">
+      <div className="flex items-center justify-between text-[11px] text-text-muted mt-auto pt-1 border-t border-line/60">
         <span>updated {ago(a.state_age_sec)}{stale ? ' · stale' : ''}
           {a.daily_dd_pct != null && a.daily_dd_pct > 0 && <span className={a.daily_dd_pct >= 3 ? 'text-loss' : ''}> · DD {a.daily_dd_pct.toFixed(1)}%</span>}
         </span>

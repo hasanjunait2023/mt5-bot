@@ -59,7 +59,7 @@ function ConfluenceBar({ symbol, data }: { symbol: string; data: ConfluenceData 
         </div>
         {data.session && <span className="font-mono text-xs text-text-secondary">{data.session.toUpperCase()}</span>}
       </div>
-      <div className="relative h-3 rounded-full overflow-hidden bg-white/[0.05]">
+      <div className="relative h-3 rounded-full overflow-hidden bg-tint/[0.05]">
         <div className="absolute left-0 top-0 h-full bg-emerald-500/60 transition-all duration-500" style={{ width: `${buyPct}%` }} />
         <div className="absolute right-0 top-0 h-full bg-red-500/60 transition-all duration-500" style={{ width: `${sellPct}%` }} />
       </div>
@@ -89,7 +89,7 @@ function EquitySparkline({ points }: { points: EquityPoint[] }) {
     <div className="space-y-2">
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32">
         <line x1="0" y1={height - ((0 - min) / range) * height} x2={width} y2={height - ((0 - min) / range) * height}
-              stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
+              stroke="rgba(120,130,150,0.20)" strokeDasharray="3 3" />
         <polyline points={points_str} fill="none" stroke={last.equity >= 0 ? '#10b981' : '#ef4444'} strokeWidth="2" />
       </svg>
       <div className="flex justify-between text-xs text-text-secondary">
@@ -130,7 +130,7 @@ function StrategyHeatmap({ matrix }: { matrix: HeatmapState['matrix'] }) {
                   ? `rgba(16, 185, 129, ${0.15 + intensity * 0.5})`
                   : pnl < 0
                     ? `rgba(239, 68, 68, ${0.15 + intensity * 0.5})`
-                    : 'rgba(255,255,255,0.04)'
+                    : 'rgba(120,130,150,0.08)'
                 return (
                   <td key={sym} className="p-2 text-center rounded" style={{ background: bg }}>
                     <div className={`font-mono ${pnl >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
@@ -154,7 +154,7 @@ function LatencyTable({ stats }: { stats: LatencyState['stats'] }) {
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-text-secondary text-xs border-b border-border/40">
+        <tr className="text-text-secondary text-xs border-b border-line/40">
           <th className="text-left py-2">Component</th>
           <th className="text-right py-2 px-2">Calls</th>
           <th className="text-right py-2 px-2">p50</th>
@@ -164,7 +164,7 @@ function LatencyTable({ stats }: { stats: LatencyState['stats'] }) {
       </thead>
       <tbody>
         {entries.map(([label, s]) => (
-          <tr key={label} className="border-b border-border/20 last:border-0">
+          <tr key={label} className="border-b border-line/20 last:border-0">
             <td className="py-2 text-text-primary font-mono text-xs">{label}</td>
             <td className="py-2 px-2 text-right text-text-secondary">{s.calls}</td>
             <td className="py-2 px-2 text-right font-mono text-text-secondary">{s.p50_ms}ms</td>
@@ -227,7 +227,7 @@ export function Jtcc() {
         <div className="flex gap-2">
           {criticalIssues > 0 && <Badge tone="red">{criticalIssues} CRITICAL</Badge>}
           {guardian.issues_count > 0 && criticalIssues === 0 && <Badge tone="orange">{guardian.issues_count} issues</Badge>}
-          <div className="flex items-center gap-2 px-3 h-8 rounded-full bg-white/[0.04] ring-1 ring-border">
+          <div className="flex items-center gap-2 px-3 h-8 rounded-full bg-tint/[0.04] ring-1 ring-border">
             <StatusDot status={isRunning ? 'running' : isOffline ? 'offline' : 'warning'} />
             <span className="text-text-secondary text-xs font-medium">
               {isOffline ? 'Offline' : isRunning ? `Running${state.dry_run ? ' (dry)' : ''}` : state.status}
@@ -328,7 +328,7 @@ export function Jtcc() {
             <span>{state.daily_api_calls} used</span>
             <span>{state.api_calls_limit - state.daily_api_calls} remaining</span>
           </div>
-          <div className="h-2 rounded-full bg-white/[0.05] overflow-hidden">
+          <div className="h-2 rounded-full bg-tint/[0.05] overflow-hidden">
             <div className={`h-full rounded-full transition-all duration-500 ${apiUsagePct > 80 ? 'bg-red-500' : apiUsagePct > 50 ? 'bg-yellow-500' : 'bg-emerald-500'}`}
                  style={{ width: `${Math.min(100, apiUsagePct)}%` }} />
           </div>

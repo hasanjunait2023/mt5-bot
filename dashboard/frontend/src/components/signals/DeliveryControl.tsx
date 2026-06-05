@@ -53,13 +53,13 @@ function Toggle({ on, onClick, label, sub }: { on: boolean; onClick: () => void;
     <button
       onClick={onClick}
       className="flex items-center justify-between gap-3 w-full p-2.5 rounded-lg
-                 bg-white/[0.025] ring-1 ring-border hover:bg-white/[0.04] transition-all text-left"
+                 bg-tint/[0.025] ring-1 ring-border hover:bg-tint/[0.04] transition-all text-left"
     >
       <div className="min-w-0">
         <div className="text-sm text-text-primary font-medium truncate">{label}</div>
         {sub && <div className="text-[11px] text-text-tertiary">{sub}</div>}
       </div>
-      <span className={`relative shrink-0 w-9 h-5 rounded-full transition-colors ${on ? 'bg-emerald-500/70' : 'bg-white/[0.08]'}`}>
+      <span className={`relative shrink-0 w-9 h-5 rounded-full transition-colors ${on ? 'bg-emerald-500/70' : 'bg-tint/[0.08]'}`}>
         <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${on ? 'left-[18px]' : 'left-0.5'}`} />
       </span>
     </button>
@@ -129,7 +129,7 @@ export function DeliveryControl() {
             <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ring-1 ${
               status.in_window
                 ? 'text-emerald-300 ring-emerald-500/30 bg-emerald-500/10'
-                : 'text-text-tertiary ring-border bg-white/[0.03]'
+                : 'text-text-tertiary ring-border bg-tint/[0.03]'
             }`}>
               {status.now_bd} BD · {status.in_window ? 'IN WINDOW' : 'OUTSIDE WINDOW'}
             </span>
@@ -137,7 +137,7 @@ export function DeliveryControl() {
           <span className="text-[11px] text-text-tertiary">{liveCount}/{totalCh} live</span>
           <button
             onClick={() => setOpen(o => !o)}
-            className="text-[11px] px-2 h-6 rounded-md bg-white/[0.05] ring-1 ring-border
+            className="text-[11px] px-2 h-6 rounded-md bg-tint/[0.05] ring-1 ring-border
                        text-text-secondary hover:text-text-primary"
           >
             {open ? 'Collapse' : 'Expand'}
@@ -169,11 +169,11 @@ export function DeliveryControl() {
             <div className="space-y-2">
               {cfg.windows.map(w => (
                 <div key={w.id} className={`flex items-center gap-3 p-2.5 rounded-lg ring-1 transition-all ${
-                  w.enabled ? 'bg-white/[0.03] ring-border' : 'bg-white/[0.01] ring-border/50 opacity-60'
+                  w.enabled ? 'bg-tint/[0.03] ring-border' : 'bg-tint/[0.01] ring-line/50 opacity-60'
                 }`}>
                   <button
                     onClick={() => setWindow(w.id, { enabled: !w.enabled })}
-                    className={`relative shrink-0 w-9 h-5 rounded-full transition-colors ${w.enabled ? 'bg-emerald-500/70' : 'bg-white/[0.08]'}`}
+                    className={`relative shrink-0 w-9 h-5 rounded-full transition-colors ${w.enabled ? 'bg-emerald-500/70' : 'bg-tint/[0.08]'}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${w.enabled ? 'left-[18px]' : 'left-0.5'}`} />
                   </button>

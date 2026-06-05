@@ -93,8 +93,8 @@ export function SessionScalp() {
             {(['all', 'asia', 'london', 'ny'] as const).map(t => (
               <button key={t} onClick={() => setFilter(t)}
                 className={`px-3 h-7 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-all ${
-                  filter === t ? 'bg-white/[0.08] text-text-primary ring-1 ring-border'
-                               : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]'}`}>
+                  filter === t ? 'bg-tint/[0.08] text-text-primary ring-1 ring-border'
+                               : 'text-text-secondary hover:text-text-primary hover:bg-tint/[0.03]'}`}>
                 {t}
               </button>
             ))}

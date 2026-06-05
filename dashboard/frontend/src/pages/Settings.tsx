@@ -5,7 +5,7 @@ import { Panel } from '../components/ui/Panel'
 import { PageHeader } from '../components/ui/PageHeader'
 
 const inputCls =
-  'w-full h-9 bg-white/[0.04] ring-1 ring-border rounded-lg px-3 text-sm ' +
+  'w-full h-9 bg-tint/[0.04] ring-1 ring-border rounded-lg px-3 text-sm ' +
   'text-text-primary font-mono placeholder-text-muted ' +
   'focus:outline-none focus:ring-accent transition-shadow'
 
@@ -87,7 +87,7 @@ export function Settings() {
             return (
               <div
                 key={f.key}
-                className="flex items-center justify-between py-2.5 border-b border-white/[0.05] last:border-0"
+                className="flex items-center justify-between py-2.5 border-b border-tint/[0.05] last:border-0"
               >
                 <label className="text-text-primary text-sm">{f.label}</label>
                 <button
@@ -96,7 +96,7 @@ export function Settings() {
                   onClick={() => set(f.key, !val)}
                   className={clsx(
                     'w-11 h-6 rounded-full transition-colors relative shrink-0',
-                    val ? 'bg-profit shadow-glow-profit' : 'bg-white/[0.06] ring-1 ring-border',
+                    val ? 'bg-profit shadow-glow-profit' : 'bg-tint/[0.06] ring-1 ring-border',
                   )}
                 >
                   <span

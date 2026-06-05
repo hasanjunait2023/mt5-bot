@@ -1,32 +1,47 @@
 /**
- * Single source of truth for recharts styling — kept in sync with the
- * premium token palette in tailwind.config.ts / index.css.
+ * Single source of truth for recharts styling. Values are read from the live
+ * theme CSS vars (index.css) via getters, so charts follow the light/dark
+ * toggle on the next render (the whole tree re-renders when the theme flips).
  */
-export const CHART = {
-  profit: '#22c55e',
-  loss:   '#f43f5e',
-  accent: '#3b82f6',
-  axis:       '#5a6577', // text.muted — minor tick labels
-  axisStrong: '#9aa6b8', // text.secondary — primary axis labels
-  grid:       'rgba(255,255,255,0.055)',
-} as const
+function v(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return raw ? `rgb(${raw})` : fallback
+}
+function va(name: string, alpha: number, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return raw ? `rgb(${raw} / ${alpha})` : fallback
+}
 
-/** Spread onto <Tooltip /> for a glass tooltip that matches surfaces. */
+export const CHART = {
+  get profit() { return v('--profit', '#16a34a') },
+  get loss() { return v('--loss', '#e14348') },
+  get accent() { return v('--accent', '#f1592b') },
+  get axis() { return v('--text-muted', '#969da8') },        // minor tick labels
+  get axisStrong() { return v('--text-secondary', '#646b78') }, // primary axis labels
+  get grid() { return va('--line', 0.12, 'rgba(120,130,150,0.14)') },
+}
+
+/** Spread onto <Tooltip /> — getters re-evaluate per render so it tracks theme. */
 export const tooltipProps = {
-  cursor: { stroke: 'rgba(255,255,255,0.12)', strokeWidth: 1 },
-  contentStyle: {
-    background: 'rgba(20,24,31,0.92)',
-    border: '1px solid rgba(255,255,255,0.10)',
-    borderRadius: 10,
-    boxShadow: '0 12px 32px -12px rgba(0,0,0,0.85)',
-    backdropFilter: 'blur(8px)',
-    padding: '8px 10px',
-  } as const,
-  labelStyle: { color: '#9aa6b8', fontSize: 11, marginBottom: 2 } as const,
-  itemStyle: { color: '#eef1f7', fontFamily: 'JetBrains Mono, monospace', fontSize: 12 } as const,
+  get cursor() { return { stroke: va('--line', 0.18, 'rgba(120,130,150,0.2)'), strokeWidth: 1 } },
+  get contentStyle() {
+    return {
+      background: v('--bg-surface', '#ffffff'),
+      border: `1px solid ${va('--line', 0.12, 'rgba(0,0,0,0.1)')}`,
+      borderRadius: 12,
+      boxShadow: '0 14px 36px -16px rgba(17,20,28,0.35)',
+      padding: '8px 10px',
+    }
+  },
+  get labelStyle() { return { color: v('--text-muted', '#969da8'), fontSize: 11, marginBottom: 2 } },
+  get itemStyle() {
+    return { color: v('--text-primary', '#17191e'), fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }
+  },
 }
 
 /** Shared empty-state shell so "no data" reads like the rest of the UI. */
 export const emptyClass =
   'flex items-center justify-center text-text-muted text-sm rounded-xl ' +
-  'bg-white/[0.025] ring-1 ring-white/[0.06]'
+  'bg-tint/[0.04] ring-1 ring-line/[0.08]'

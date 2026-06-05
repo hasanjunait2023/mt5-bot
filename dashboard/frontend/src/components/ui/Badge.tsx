@@ -13,7 +13,7 @@ interface Props {
 const STYLES: Record<Variant, string> = {
   buy:     'text-profit ring-1 ring-profit/30 bg-profit/10',
   sell:    'text-loss ring-1 ring-loss/30 bg-loss/10',
-  neutral: 'text-text-secondary ring-1 ring-border bg-white/[0.04]',
+  neutral: 'text-text-secondary ring-1 ring-border bg-tint/[0.04]',
   info:    'text-accent ring-1 ring-accent/30 bg-accent/10',
 }
 
@@ -22,7 +22,7 @@ const TONE_STYLES: Record<Tone, string> = {
   red:    'text-loss ring-1 ring-loss/30 bg-loss/10',
   yellow: 'text-warning ring-1 ring-warning/30 bg-warning/10',
   orange: 'text-orange-400 ring-1 ring-orange-400/30 bg-orange-400/10',
-  gray:   'text-text-secondary ring-1 ring-border bg-white/[0.04]',
+  gray:   'text-text-secondary ring-1 ring-border bg-tint/[0.04]',
   blue:   'text-accent ring-1 ring-accent/30 bg-accent/10',
 }
 

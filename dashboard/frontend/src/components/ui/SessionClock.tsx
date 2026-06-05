@@ -22,7 +22,7 @@ const SESSION_STYLES: Record<string, string> = {
   london: 'bg-amber-500/15 text-amber-300 ring-amber-500/30',
   ny:     'bg-sky-500/15    text-sky-300    ring-sky-500/30',
   asia:   'bg-violet-500/15 text-violet-300 ring-violet-500/30',
-  off:    'bg-white/[0.05] text-text-secondary ring-border',
+  off:    'bg-tint/[0.05] text-text-secondary ring-border',
 }
 
 function fmtCountdown(mins: number): string {

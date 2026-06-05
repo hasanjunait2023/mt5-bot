@@ -80,7 +80,7 @@ function HourGrid({ hourly }: { hourly: EABacktest['symbols'][string]['hourly'] 
       <p className="eyebrow mb-2">Hour-by-Hour Win Rate (Server Time)</p>
       <div className="flex flex-wrap gap-1.5">
         {hourly.map(h => (
-          <div key={h.hour} className="bg-white/[0.04] ring-1 ring-border rounded-lg px-2 py-1.5 text-center min-w-[56px]">
+          <div key={h.hour} className="bg-tint/[0.04] ring-1 ring-border rounded-lg px-2 py-1.5 text-center min-w-[56px]">
             <p className="text-text-muted text-[10px]">{String(h.hour).padStart(2,'0')}:00</p>
             <p className={clsx('font-mono font-bold text-xs',
               h.wr >= 60 ? 'text-profit' : h.wr >= 45 ? 'text-warning' : 'text-loss')}>
@@ -103,10 +103,10 @@ function SymbolBacktest({ sym, result }: { sym: string; result: BacktestSymbol }
   const dd = m.max_drawdown_pct ?? 0
 
   return (
-    <div className="rounded-xl ring-1 ring-border overflow-hidden bg-white/[0.015]">
+    <div className="rounded-xl ring-1 ring-border overflow-hidden bg-tint/[0.015]">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.04] transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-tint/[0.04] transition-colors text-left"
       >
         <div className="flex items-center gap-3">
           <Badge variant="neutral">{sym}</Badge>
@@ -139,7 +139,7 @@ function SymbolBacktest({ sym, result }: { sym: string; result: BacktestSymbol }
               { label: 'Sharpe Ratio',   val: num(m.sharpe_ratio),color: (m.sharpe_ratio ?? 0) >= 1 ? 'text-profit' : 'text-warning' },
               { label: 'Final Balance',  val: `$${num(m.final_balance)}`, color: 'text-text-primary' },
             ].map(c => (
-              <div key={c.label} className="bg-white/[0.04] ring-1 ring-border rounded-lg p-2.5">
+              <div key={c.label} className="bg-tint/[0.04] ring-1 ring-border rounded-lg p-2.5">
                 <p className="eyebrow mb-1">{c.label}</p>
                 <p className={clsx('font-mono font-bold text-sm font-tabular', c.color)}>{c.val}</p>
               </div>

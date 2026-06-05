@@ -90,7 +90,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
             value={password}
             onChange={e => setPassword(e.target.value)}
             placeholder="Password"
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 h-11
+            className="w-full bg-tint/[0.04] border border-tint/[0.08] rounded-lg px-3 h-11
                        text-text-primary text-sm outline-none focus:border-accent/60
                        focus:ring-1 focus:ring-accent/30 transition"
           />

@@ -13,7 +13,7 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
       onClick={onClick}
       className={clsx(
         'w-11 h-6 rounded-full transition-colors relative shrink-0',
-        on ? 'bg-profit shadow-glow-profit' : 'bg-white/[0.06] ring-1 ring-border',
+        on ? 'bg-profit shadow-glow-profit' : 'bg-tint/[0.06] ring-1 ring-border',
       )}
     >
       <span
@@ -85,7 +85,7 @@ export function TelegramHQ() {
           {cats.map(([key, c]) => (
             <div
               key={key}
-              className="flex items-center justify-between gap-3 py-2.5 border-b border-white/[0.05] last:border-0"
+              className="flex items-center justify-between gap-3 py-2.5 border-b border-tint/[0.05] last:border-0"
             >
               <div className="min-w-0">
                 <p className="text-text-primary text-sm truncate">{c.label}</p>
@@ -98,7 +98,7 @@ export function TelegramHQ() {
                   onClick={() => runTest(key)}
                   disabled={testing === key || !data.setup_complete}
                   className="px-2.5 h-7 rounded-md text-[11px] font-semibold ring-1 ring-border
-                             text-text-secondary hover:text-text-primary hover:bg-white/[0.04]
+                             text-text-secondary hover:text-text-primary hover:bg-tint/[0.04]
                              disabled:opacity-40 transition-colors"
                 >
                   {testing === key ? 'Sending…' : 'Test'}
@@ -155,7 +155,7 @@ export function TelegramHQ() {
               <div
                 key={idx}
                 className="flex items-start gap-3 py-1.5 font-mono text-xs border-l-2 pl-2.5 rounded-r
-                           border-transparent hover:bg-white/[0.025]"
+                           border-transparent hover:bg-tint/[0.025]"
               >
                 <span className="text-text-muted shrink-0 w-36 tabular-nums">
                   {e.ts.replace('T', ' ').slice(0, 19)}
@@ -192,7 +192,7 @@ export function TelegramHQ() {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5 border-b border-white/[0.05] last:border-0">
+    <div className="flex items-center justify-between gap-3 py-2.5 border-b border-tint/[0.05] last:border-0">
       <label className="text-text-primary text-sm">{label}</label>
       {children}
     </div>
@@ -212,7 +212,7 @@ function NumberStepper({
         const v = parseInt(e.target.value, 10)
         if (!Number.isNaN(v) && v >= min && v <= max) onChange(v)
       }}
-      className="w-20 h-8 bg-white/[0.04] ring-1 ring-border rounded-lg px-2 text-sm
+      className="w-20 h-8 bg-tint/[0.04] ring-1 ring-border rounded-lg px-2 text-sm
                  text-text-primary font-mono text-center focus:outline-none focus:ring-accent"
     />
   )

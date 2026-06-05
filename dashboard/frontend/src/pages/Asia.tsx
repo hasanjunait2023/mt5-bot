@@ -67,7 +67,7 @@ export function Asia() {
         <div>
           <p className="eyebrow">Asia Desk</p>
           <h1 className="text-2xl font-semibold">Asian Range Fade</h1>
-          <p className="text-sm text-white/50 mt-1">
+          <p className="text-sm text-tint/50 mt-1">
             Mean-reversion fade · gold · BTC · JPY pairs · session {state?.session_window_utc ?? '02:00-07:00'} UTC ·
             flattens before London
           </p>
@@ -101,16 +101,16 @@ export function Asia() {
       <Panel className="p-5">
         <h2 className="text-lg font-medium mb-3">Open positions</h2>
         {positions.length === 0 ? (
-          <p className="text-sm text-white/40">No open positions.</p>
+          <p className="text-sm text-tint/40">No open positions.</p>
         ) : (
           <table className="w-full text-sm">
-            <thead className="text-white/50 text-left">
+            <thead className="text-tint/50 text-left">
               <tr><th className="py-1">Symbol</th><th>Dir</th><th>Vol</th><th>Entry</th>
                 <th>SL</th><th>TP</th><th>P&L</th></tr>
             </thead>
             <tbody>
               {positions.map((p, i) => (
-                <tr key={i} className="border-t border-white/5">
+                <tr key={i} className="border-t border-tint/5">
                   <td className="py-1.5 font-medium">{p.symbol}</td>
                   <td><Badge tone={p.dir === 'BUY' ? 'green' : 'red'}>{p.dir}</Badge></td>
                   <td>{p.volume}</td><td>{p.entry}</td><td>{p.sl}</td><td>{p.tp}</td>
@@ -128,14 +128,14 @@ export function Asia() {
       <Panel className="p-5">
         <h2 className="text-lg font-medium mb-3">Today's Asian range (00:00–02:00 UTC)</h2>
         {ranges.length === 0 ? (
-          <p className="text-sm text-white/40">Range not yet formed.</p>
+          <p className="text-sm text-tint/40">Range not yet formed.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {ranges.map(([sym, r]) => (
-              <div key={sym} className="rounded-lg bg-white/5 p-3">
+              <div key={sym} className="rounded-lg bg-tint/5 p-3">
                 <p className="font-medium">{sym}</p>
-                <p className="text-xs text-white/50">H {r.high} · L {r.low}</p>
-                <p className="text-xs text-white/40">width {r.width}</p>
+                <p className="text-xs text-tint/50">H {r.high} · L {r.low}</p>
+                <p className="text-xs text-tint/40">width {r.width}</p>
               </div>
             ))}
           </div>
@@ -146,15 +146,15 @@ export function Asia() {
       {bt && (
         <Panel className="p-5">
           <h2 className="text-lg font-medium">Validated backtest</h2>
-          <p className="text-xs text-white/40 mb-3">{bt.window}</p>
+          <p className="text-xs text-tint/40 mb-3">{bt.window}</p>
           <table className="w-full text-sm">
-            <thead className="text-white/50 text-left">
+            <thead className="text-tint/50 text-left">
               <tr><th className="py-1">Pair</th><th>PF</th><th>PF (oos)</th><th>WR</th>
                 <th>Trades</th><th>DD</th><th>Status</th></tr>
             </thead>
             <tbody>
               {bt.pairs.map((p) => (
-                <tr key={p.symbol} className="border-t border-white/5">
+                <tr key={p.symbol} className="border-t border-tint/5">
                   <td className="py-1.5 font-medium">{p.symbol}</td>
                   <td>{p.pf.toFixed(2)}</td>
                   <td className={p.pf_oos >= 1.3 ? 'text-emerald-400' : 'text-amber-400'}>
@@ -170,10 +170,10 @@ export function Asia() {
               ))}
             </tbody>
           </table>
-          <p className="text-xs text-white/40 mt-4 mb-1">Rejected (failed real-cost / long-history):</p>
-          <ul className="text-xs text-white/50 space-y-0.5">
+          <p className="text-xs text-tint/40 mt-4 mb-1">Rejected (failed real-cost / long-history):</p>
+          <ul className="text-xs text-tint/50 space-y-0.5">
             {bt.rejected.map((r) => (
-              <li key={r.strategy}>· <span className="text-white/70">{r.strategy}</span> — {r.note}</li>
+              <li key={r.strategy}>· <span className="text-tint/70">{r.strategy}</span> — {r.note}</li>
             ))}
           </ul>
         </Panel>

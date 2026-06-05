@@ -140,7 +140,7 @@ function PaperGateBar({ gate }: { gate: PaperGate }) {
           <span>Trades {gate.trades_done}/{gate.trades_needed}</span>
           <span>{tradePct}%</span>
         </div>
-        <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
+        <div className="h-1 rounded-full bg-tint/[0.06] overflow-hidden">
           <div
             className="h-full rounded-full bg-accent transition-all duration-700"
             style={{ width: `${tradePct}%` }}
@@ -175,7 +175,7 @@ function SystemCard({ sys }: { sys: HubSystem }) {
       isHalted ? 'ring-loss/30' : isStale ? 'ring-amber-400/20' : 'ring-border'
     }`}>
       {/* top sheen */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sheen/12 to-transparent" />
 
       {/* header row */}
       <div className="flex items-start justify-between gap-2">
@@ -294,7 +294,7 @@ function ControlPlane({ orch }: { orch: OrchData }) {
           const ok = svc.status === 'running'
           const bad = svc.status === 'failed' || svc.status === 'dead'
           return (
-            <div key={svc.id} className="flex items-center gap-2 text-[11px] bg-white/[0.03] rounded px-2 py-1.5">
+            <div key={svc.id} className="flex items-center gap-2 text-[11px] bg-tint/[0.03] rounded px-2 py-1.5">
               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                 ok ? 'bg-profit' : bad ? 'bg-loss animate-pulse2' : 'bg-amber-400/80'
               }`} />

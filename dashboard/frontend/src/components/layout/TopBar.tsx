@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTrading } from '../../contexts/TradingContext'
 import { useConnectionState } from '../../hooks/useWebSocket'
 import { SessionClock } from '../ui/SessionClock'
+import { ThemeToggle } from '../ui/ThemeToggle'
 
 export function TopBar() {
   const { trader_running, mt5_connected, nvidia_api_alive, account } = useTrading()
@@ -20,7 +21,7 @@ export function TopBar() {
       <Link
         to="/"
         className="flex items-center gap-2.5 min-w-0 rounded-xl -ml-1 pl-1 pr-2 py-1
-                   hover:bg-white/[0.03] transition-colors"
+                   hover:bg-tint/[0.05] transition-colors"
       >
         <div className="relative grid place-items-center w-8 h-8 rounded-xl
                         bg-gradient-to-br from-accent to-accent-dim shadow-glow-accent
@@ -42,12 +43,13 @@ export function TopBar() {
 
       {/* Live status cluster */}
       <div className="flex items-center gap-2 md:gap-2.5 shrink-0">
+        <ThemeToggle />
         <div className="hidden sm:block">
           <SessionClock />
         </div>
 
         {/* Connectivity — WS + AI in one segmented pill for a cohesive read */}
-        <div className="flex items-center h-8 px-2.5 gap-2.5 rounded-full bg-white/[0.04] ring-1 ring-border">
+        <div className="flex items-center h-8 px-2.5 gap-2.5 rounded-full bg-tint/[0.05] ring-1 ring-border">
           <span className="flex items-center gap-1.5" title={`WebSocket: ${connState}`}>
             <span className="relative flex w-2 h-2">
               {connState === 'connecting' && (

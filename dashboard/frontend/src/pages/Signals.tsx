@@ -53,7 +53,7 @@ function SignalCard({ ev }: { ev: SignalEvent }) {
   const accent = TYPE_ACCENT[ev.type as Exclude<SignalType, 'all'>] ?? TYPE_ACCENT.alignment
   const src = chartSrc(ev)
   return (
-    <div className="glass rounded-xl overflow-hidden ring-1 ring-border hover:ring-white/20 transition-all duration-300">
+    <div className="glass rounded-xl overflow-hidden ring-1 ring-border hover:ring-tint/20 transition-all duration-300">
       <div className={`relative h-1 bg-gradient-to-r ${accent}`} />
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -187,8 +187,8 @@ export function Signals() {
                 onClick={() => setFilter(t)}
                 className={`px-3 h-7 rounded-md text-[11px] font-semibold uppercase tracking-wider transition-all ${
                   filter === t
-                    ? 'bg-white/[0.08] text-text-primary ring-1 ring-border'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]'
+                    ? 'bg-tint/[0.08] text-text-primary ring-1 ring-border'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-tint/[0.03]'
                 }`}
               >
                 {t}

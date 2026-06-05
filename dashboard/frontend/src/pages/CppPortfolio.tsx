@@ -113,7 +113,7 @@ export function CppPortfolio() {
                 <tr><td colSpan={4} className="py-4 text-text-secondary text-center">No closed trades yet today</td></tr>
               )}
               {Object.entries(day?.per_symbol ?? {}).map(([s, v]) => (
-                <tr key={s} className="border-b border-border/50">
+                <tr key={s} className="border-b border-line/50">
                   <td className="py-2 text-text-primary font-medium">{s}</td>
                   <td className="text-right text-profit">{v.wins}</td>
                   <td className="text-right text-loss">{v.losses}</td>

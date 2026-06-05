@@ -124,7 +124,7 @@ function StratCard({ name, stats }: { name: string; stats: StratStats }) {
               <span>Trades to gate</span>
               <span>{stats.trades}/{PAPER_MIN_TRADES}</span>
             </div>
-            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className="h-1.5 rounded-full bg-tint/[0.06] overflow-hidden">
               <div className="h-full rounded-full bg-accent/60 transition-all duration-500"
                    style={{ width: `${progress}%` }} />
             </div>
@@ -134,7 +134,7 @@ function StratCard({ name, stats }: { name: string; stats: StratStats }) {
               <span>PF to gate</span>
               <span>{stats.pf.toFixed(2)}/{PAPER_MIN_PF}</span>
             </div>
-            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className="h-1.5 rounded-full bg-tint/[0.06] overflow-hidden">
               <div className={`h-full rounded-full transition-all duration-500 ${isReady ? 'bg-profit' : 'bg-accent/60'}`}
                    style={{ width: `${pfProgress}%` }} />
             </div>
@@ -160,7 +160,7 @@ function TradesTable({ trades }: { trades: PaperTrade[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-[11px] font-mono border-collapse">
         <thead>
-          <tr className="text-text-muted border-b border-white/[0.06]">
+          <tr className="text-text-muted border-b border-tint/[0.06]">
             {['Strategy', 'Side', 'Entry', 'SL', 'TP', 'PnL', 'Exit', 'Time'].map(h => (
               <th key={h} className="text-left px-2 py-1.5 font-medium eyebrow">{h}</th>
             ))}
@@ -170,7 +170,7 @@ function TradesTable({ trades }: { trades: PaperTrade[] }) {
           {trades.map((t, i) => {
             const pnlPos = (t.pnl ?? 0) >= 0
             return (
-              <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+              <tr key={i} className="border-b border-tint/[0.03] hover:bg-tint/[0.02]">
                 <td className="px-2 py-1.5">
                   <span className="text-accent text-[10px]">{t.strategy}</span>
                 </td>
@@ -269,7 +269,7 @@ function SymPromotionGrid({
                 ? 'bg-profit/10 ring-profit/30'
                 : gateReady
                   ? 'bg-accent/10 ring-accent/30'
-                  : 'bg-white/[0.03] ring-white/[0.06]'
+                  : 'bg-tint/[0.03] ring-tint/[0.06]'
             }`}>
               <div className="flex items-center justify-between">
                 <div>
@@ -311,7 +311,7 @@ function SymPromotionGrid({
               {!live && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-1">
-                    <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="flex-1 h-1 rounded-full bg-tint/[0.06] overflow-hidden">
                       <div className="h-full rounded-full bg-accent/50 transition-all"
                            style={{ width: `${tradesProg}%` }} />
                     </div>
@@ -320,7 +320,7 @@ function SymPromotionGrid({
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="flex-1 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="flex-1 h-1 rounded-full bg-tint/[0.06] overflow-hidden">
                       <div className={`h-full rounded-full transition-all ${gateReady ? 'bg-profit' : 'bg-accent/50'}`}
                            style={{ width: `${pfProg}%` }} />
                     </div>
@@ -352,7 +352,7 @@ function IconicScalpPanel({ state, trades }: { state: IconicScalpAgentState; tra
       ? 'text-loss bg-loss/10 ring-loss/30'
       : isRunning
         ? 'text-amber-400 bg-amber-500/10 ring-amber-500/30'
-        : 'text-text-muted bg-white/[0.03] ring-border'
+        : 'text-text-muted bg-tint/[0.03] ring-border'
 
   return (
     <div className="space-y-4">
@@ -402,7 +402,7 @@ function IconicScalpPanel({ state, trades }: { state: IconicScalpAgentState; tra
           <p className="eyebrow mb-2">Open Positions</p>
           {state.paper_pending.map((pos, i) => (
             <div key={i} className="flex items-center justify-between text-[11px] font-mono
-                                    bg-white/[0.03] rounded-lg px-3 py-2">
+                                    bg-tint/[0.03] rounded-lg px-3 py-2">
               <div className="flex items-center gap-2">
                 <Badge variant={pos.side === 'BUY' ? 'buy' : 'sell'}>{pos.side}</Badge>
                 <span className="text-text-primary">{pos.symbol}</span>
@@ -430,7 +430,7 @@ function IconicScalpPanel({ state, trades }: { state: IconicScalpAgentState; tra
           <div className="overflow-x-auto">
             <table className="w-full text-[11px] font-mono border-collapse">
               <thead>
-                <tr className="text-text-muted border-b border-white/[0.06]">
+                <tr className="text-text-muted border-b border-tint/[0.06]">
                   {['Side', 'Entry', 'SL', 'TP', 'PnL', 'Exit', 'Partial', 'Time'].map(h => (
                     <th key={h} className="text-left px-2 py-1.5 font-medium eyebrow">{h}</th>
                   ))}
@@ -441,7 +441,7 @@ function IconicScalpPanel({ state, trades }: { state: IconicScalpAgentState; tra
                   const pnlPos = (t.pnl ?? 0) >= 0
                   const exitColor = t.exit === 'TP' ? 'text-profit' : t.exit === 'BE_SL' ? 'text-amber-400' : 'text-loss'
                   return (
-                    <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                    <tr key={i} className="border-b border-tint/[0.03] hover:bg-tint/[0.02]">
                       <td className="px-2 py-1.5">
                         <Badge variant={t.side === 'BUY' ? 'buy' : 'sell'}>{t.side}</Badge>
                       </td>
@@ -508,7 +508,7 @@ export function Scalp() {
     ? 'text-loss bg-loss/10 ring-loss/30'
     : isRunning
       ? 'text-emerald-400 bg-emerald-500/10 ring-emerald-500/30'
-      : 'text-text-muted bg-white/[0.03] ring-border'
+      : 'text-text-muted bg-tint/[0.03] ring-border'
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -606,7 +606,7 @@ export function Scalp() {
       </Panel>
 
       {/* Divider */}
-      <div className="border-t border-white/[0.06] pt-2" />
+      <div className="border-t border-tint/[0.06] pt-2" />
 
       {/* Iconic Scalp section */}
       <IconicScalpPanel state={iconicState} trades={iconicTrades} />

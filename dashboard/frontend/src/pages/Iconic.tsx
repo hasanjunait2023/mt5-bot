@@ -80,13 +80,13 @@ interface IconicAgentState {
 const KLASS_BADGE: Record<string, string> = {
   A: 'text-amber-300 bg-amber-500/15 ring-amber-500/30',
   B: 'text-sky-300 bg-sky-500/15 ring-sky-500/30',
-  C: 'text-text-tertiary bg-white/[0.03] ring-border',
+  C: 'text-text-tertiary bg-tint/[0.03] ring-border',
 }
 
 const KLASS_BAR: Record<string, string> = {
   A: 'bg-amber-400',
   B: 'bg-sky-400',
-  C: 'bg-white/20',
+  C: 'bg-tint/20',
 }
 
 function fmtPrice(p: number): string {
@@ -111,7 +111,7 @@ function AgentPanel({ agent }: { agent: IconicAgentState | null }) {
 
   if (!agent || agent.mode === 'NOT_RUNNING') {
     return (
-      <div className="p-4 rounded-lg ring-1 ring-border bg-white/[0.02] text-center">
+      <div className="p-4 rounded-lg ring-1 ring-border bg-tint/[0.02] text-center">
         <p className="text-text-tertiary text-sm">
           Agent not running — start <code className="font-mono text-[11px] text-text-secondary">START_ICONIC_AGENT.bat</code>
         </p>
@@ -148,7 +148,7 @@ function AgentPanel({ agent }: { agent: IconicAgentState | null }) {
 
       {/* Paper promotion progress (only in paper mode) */}
       {!isLive && (
-        <div className="p-3 rounded-lg bg-white/[0.02] ring-1 ring-border space-y-2">
+        <div className="p-3 rounded-lg bg-tint/[0.02] ring-1 ring-border space-y-2">
           <p className="text-[10px] uppercase tracking-widest text-text-muted font-semibold">
             Paper → Live promotion gate
           </p>
@@ -160,7 +160,7 @@ function AgentPanel({ agent }: { agent: IconicAgentState | null }) {
                   {agent.paper_trades} / {PAPER_MIN_TRADES}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/[0.06]">
+              <div className="h-1.5 rounded-full bg-tint/[0.06]">
                 <div
                   className="h-full rounded-full bg-sky-400 transition-all duration-500"
                   style={{ width: `${progress}%` }}
@@ -174,7 +174,7 @@ function AgentPanel({ agent }: { agent: IconicAgentState | null }) {
                   {agent.paper_pf.toFixed(2)} / {PAPER_MIN_PF}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/[0.06]">
+              <div className="h-1.5 rounded-full bg-tint/[0.06]">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${agent.paper_pf >= PAPER_MIN_PF ? 'bg-emerald-400' : 'bg-amber-400'}`}
                   style={{ width: `${pfProgress}%` }}
@@ -197,7 +197,7 @@ function AgentPanel({ agent }: { agent: IconicAgentState | null }) {
         <div className="flex flex-wrap gap-2">
           {Object.entries(agent.trades_today).map(([sym, n]) => (
             <span key={sym}
-              className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/[0.04] ring-1 ring-border text-text-secondary">
+              className="text-[11px] font-mono px-2 py-0.5 rounded bg-tint/[0.04] ring-1 ring-border text-text-secondary">
               {sym} ×{n}
             </span>
           ))}
@@ -210,13 +210,13 @@ function AgentPanel({ agent }: { agent: IconicAgentState | null }) {
 // ── ScoreRow ──────────────────────────────────────────────────────────────────
 function ScoreRow({ sym, sc }: { sym: string; sc: IconicScore }) {
   return (
-    <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md bg-white/[0.02] ring-1 ring-border hover:bg-white/[0.04] transition-colors">
+    <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md bg-tint/[0.02] ring-1 ring-border hover:bg-tint/[0.04] transition-colors">
       <span className="font-mono text-[12px] font-semibold text-text-primary w-16 shrink-0">{sym}</span>
       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ring-1 shrink-0 ${KLASS_BADGE[sc.klass] ?? KLASS_BADGE.C}`}>
         {sc.klass}
       </span>
       {/* Score bar */}
-      <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] min-w-0">
+      <div className="flex-1 h-1.5 rounded-full bg-tint/[0.06] min-w-0">
         <div
           className={`h-full rounded-full transition-all duration-500 ${KLASS_BAR[sc.klass] ?? KLASS_BAR.C}`}
           style={{ width: `${Math.min(100, sc.score)}%` }}
@@ -238,7 +238,7 @@ function ScoreRow({ sym, sc }: { sym: string; sc: IconicScore }) {
 // ── SignalCard ────────────────────────────────────────────────────────────────
 function SignalCard({ sig }: { sig: IconicSignal }) {
   return (
-    <div className="p-3 rounded-lg ring-1 ring-border bg-white/[0.025] space-y-2">
+    <div className="p-3 rounded-lg ring-1 ring-border bg-tint/[0.025] space-y-2">
       {/* Header row */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -319,8 +319,8 @@ function StrengthMeter({ rows }: { rows: BoardStrength[] }) {
         return (
           <div key={r.currency} className="flex items-center gap-2">
             <span className="font-mono text-xs font-semibold w-10 shrink-0">{r.currency}</span>
-            <div className="relative flex-1 h-3 rounded bg-white/[0.04] ring-1 ring-border">
-              <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/20" />
+            <div className="relative flex-1 h-3 rounded bg-tint/[0.04] ring-1 ring-border">
+              <div className="absolute top-0 bottom-0 left-1/2 w-px bg-tint/20" />
               <div
                 className={`absolute top-0 bottom-0 ${strong ? 'bg-emerald-400/70' : 'bg-rose-400/70'}`}
                 style={strong
@@ -367,7 +367,7 @@ function BoardPanel({ board }: { board: BoardState | null }) {
           )}
           {board.groups.map(g => (
             <div key={g.dominant}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/[0.02] ring-1 ring-border">
+              className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-tint/[0.02] ring-1 ring-border">
               <span className="font-mono text-[11px] font-semibold w-9 shrink-0">{g.dominant}</span>
               <Badge variant={g.side === 'BUY' ? 'buy' : 'sell'}>{g.side}</Badge>
               <span className="text-[11px] text-text-secondary flex-1 truncate">
@@ -377,7 +377,7 @@ function BoardPanel({ board }: { board: BoardState | null }) {
               <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ring-1 shrink-0 ${
                 g.rolled_over
                   ? 'text-emerald-300 bg-emerald-500/10 ring-emerald-500/30'
-                  : 'text-text-muted bg-white/[0.03] ring-border'}`}>
+                  : 'text-text-muted bg-tint/[0.03] ring-border'}`}>
                 {g.rolled_over ? 'ROLLED OVER' : 'no sister'}
               </span>
             </div>
@@ -391,7 +391,7 @@ function BoardPanel({ board }: { board: BoardState | null }) {
             <div className="flex flex-wrap gap-1.5">
               {board.open.map(o => (
                 <span key={o.ticket}
-                  className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/[0.03] ring-1 ring-border">
+                  className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-tint/[0.03] ring-1 ring-border">
                   {o.symbol} <span className={o.side === 'BUY' ? 'text-emerald-300' : 'text-rose-300'}>{o.side}</span>
                 </span>
               ))}
@@ -485,7 +485,7 @@ export function Iconic() {
           { label: 'Scanning',    value: sortedScores.length,      color: 'text-text-primary' },
           { label: 'Leaders',     value: leaderCount,              color: 'text-amber-300' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="p-3 rounded-lg bg-white/[0.025] ring-1 ring-border text-center">
+          <div key={label} className="p-3 rounded-lg bg-tint/[0.025] ring-1 ring-border text-center">
             <p className={`text-xl font-bold font-mono ${color}`}>{value}</p>
             <p className="text-[11px] text-text-tertiary mt-0.5">{label}</p>
           </div>
@@ -563,7 +563,7 @@ export function Iconic() {
               <div className="space-y-1.5 max-h-[340px] overflow-y-auto pr-0.5">
                 {history.map((sig, i) => (
                   <div key={i}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/[0.02] ring-1 ring-border">
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-tint/[0.02] ring-1 ring-border">
                     <span className="font-mono text-[11px] font-semibold w-14 shrink-0 text-text-primary">
                       {sig.symbol}
                     </span>

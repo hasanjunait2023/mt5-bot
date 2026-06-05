@@ -50,7 +50,7 @@ export function Logs() {
                 'px-3 h-8 rounded-lg text-xs font-semibold transition-all',
                 level === l
                   ? activeLevel[l]
-                  : 'bg-white/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary hover:bg-white/[0.07]',
+                  : 'bg-tint/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary hover:bg-tint/[0.07]',
               )}
             >
               {l}
@@ -62,7 +62,7 @@ export function Logs() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search logs…"
-          className="flex-1 min-w-[200px] h-8 bg-white/[0.04] ring-1 ring-border rounded-lg px-3 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-accent font-mono transition-shadow"
+          className="flex-1 min-w-[200px] h-8 bg-tint/[0.04] ring-1 ring-border rounded-lg px-3 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:ring-accent font-mono transition-shadow"
         />
         <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer select-none px-2">
           <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}

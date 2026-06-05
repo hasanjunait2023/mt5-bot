@@ -2,6 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================================================================
+   THEME TOKENS — rgb channel triplets so Tailwind `rgb(var(--x) / <alpha>)`
+   keeps every opacity modifier working. :root = light ("Finexy"), .dark = dark.
+   ======================================================================== */
+:root {
+  /* Light — soft fintech: light-gray canvas, white cards, orange accent */
+  --bg-base:      236 237 240;   /* #ECEDF0 page canvas */
+  --bg-surface:   255 255 255;   /* card */
+  --bg-elevated:  247 248 250;   /* #F7F8FA raised tint */
+  --bg-overlay:   241 242 245;   /* popovers / inputs */
+  --bg-ink:        24  25  28;   /* #18191C near-black surfaces (dark cards/buttons) */
+
+  --text-primary:   23  25  30;  /* #17191E */
+  --text-secondary:100 107 120;  /* #646B78 */
+  --text-muted:    150 157 168;  /* #969DA8 */
+  --text-onink:    244 245 248;  /* text on ink/accent surfaces */
+
+  --line:  20 24 33;             /* hairlines/borders — near-black, low alpha */
+  --tint:  20 24 33;             /* surface tint (was bg-white/x) */
+  --sheen: 255 255 255;          /* top highlight (decorative, faint on light) */
+
+  --accent:      241  89  43;    /* #F1592B */
+  --accent-dim:  211  67  26;    /* #D3431A */
+  --profit:       22 163  74;    /* #16A34A */
+  --loss:        225  67  72;    /* #E14348 */
+  --warning:     217 119   6;    /* #D97706 */
+
+  --shadow-card:       0 1px 2px rgba(17,20,28,0.04), 0 10px 28px -16px rgba(17,20,28,0.20);
+  --shadow-card-hover: 0 2px 6px rgba(17,20,28,0.07), 0 20px 44px -18px rgba(17,20,28,0.26);
+  --shadow-topbar:     0 1px 0 rgba(17,20,28,0.04), 0 10px 28px -20px rgba(17,20,28,0.16);
+
+  color-scheme: light;
+}
+
+.dark {
+  --bg-base:       13  14  16;   /* #0D0E10 */
+  --bg-surface:    22  24  28;   /* #16181C */
+  --bg-elevated:   30  33  38;   /* #1E2126 */
+  --bg-overlay:    39  43  50;
+  --bg-ink:         8   9  11;
+
+  --text-primary: 238 241 247;
+  --text-secondary:154 166 184;
+  --text-muted:   109 120 138;
+  --text-onink:   238 241 247;
+
+  --line:  255 255 255;
+  --tint:  255 255 255;
+  --sheen: 255 255 255;
+
+  --accent:      245 101  56;    /* a touch brighter on dark */
+  --accent-dim:  211  67  26;
+  --profit:       34 197  94;
+  --loss:        244  63  94;
+  --warning:     245 158  11;
+
+  --shadow-card:       0 1px 0 0 rgba(255,255,255,0.04) inset, 0 8px 24px -12px rgba(0,0,0,0.7);
+  --shadow-card-hover: 0 1px 0 0 rgba(255,255,255,0.07) inset, 0 16px 40px -16px rgba(0,0,0,0.85);
+  --shadow-topbar:     0 1px 0 0 rgba(255,255,255,0.05), 0 6px 24px -12px rgba(0,0,0,0.8);
+
+  color-scheme: dark;
+}
+
 @layer base {
   * { box-sizing: border-box; }
 
@@ -9,8 +72,8 @@
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: #070809;
-    color: #eef1f7;
+    background-color: rgb(var(--bg-base));
+    color: rgb(var(--text-primary));
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
     font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
@@ -18,33 +81,35 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Cross-fade colours when the theme flips */
+  html { transition: background-color 0.3s ease; }
+  body * { transition-property: background-color, border-color, color, box-shadow, fill, stroke; transition-duration: 0.22s; }
+
   ::-webkit-scrollbar { width: 7px; height: 7px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.10);
+    background: rgb(var(--line) / 0.20);
     border-radius: 4px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--line) / 0.32); }
 
-  ::selection { background: rgba(59,130,246,0.35); color: #fff; }
+  ::selection { background: rgb(var(--accent) / 0.28); color: rgb(var(--text-primary)); }
 
   :focus-visible {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid rgb(var(--accent));
     outline-offset: 2px;
     border-radius: 4px;
   }
 }
 
 @layer components {
-  /* ---- Premium glass surface — the core "card" language ---- */
+  /* ---- Core "card" surface — solid surface + faint sheen + hairline + soft shadow ---- */
   .glass {
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)),
-                      linear-gradient(180deg, #0e1014, #0e1014);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 0.875rem;
-    box-shadow: 0 1px 0 0 rgba(255,255,255,0.04) inset,
-                0 8px 24px -12px rgba(0,0,0,0.7);
-    backdrop-filter: blur(6px);
+    background-color: rgb(var(--bg-surface));
+    background-image: linear-gradient(180deg, rgb(var(--sheen) / 0.04), rgb(var(--sheen) / 0.01));
+    border: 1px solid rgb(var(--line) / 0.10);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-card);
   }
   .glass-hover {
     transition: transform 0.25s cubic-bezier(0.22,1,0.36,1),
@@ -53,25 +118,24 @@
   }
   .glass-hover:hover {
     transform: translateY(-2px);
-    border-color: rgba(255,255,255,0.12);
-    box-shadow: 0 1px 0 0 rgba(255,255,255,0.07) inset,
-                0 16px 40px -16px rgba(0,0,0,0.85);
+    border-color: rgb(var(--line) / 0.18);
+    box-shadow: var(--shadow-card-hover);
   }
 
-  /* Eyebrow label — small, tracked, secondary. Used everywhere for hierarchy. */
+  /* Eyebrow label — small, tracked, muted. Used everywhere for hierarchy. */
   .eyebrow {
     font-size: 0.6875rem;
     line-height: 1;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #9aa6b8;
+    color: rgb(var(--text-muted));
     font-weight: 600;
   }
 
   /* Hairline gradient divider */
   .hairline {
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+    background: linear-gradient(90deg, transparent, rgb(var(--line) / 0.12), transparent);
   }
 }
 
@@ -85,8 +149,10 @@
   }
 }
 
-/* ---- Ambient cinematic backdrop (depth-0 / depth-1) ---- */
-.ambient {
+/* ---- Ambient backdrop — flat on light (Finexy), soft cinematic glow on dark ---- */
+.ambient { display: none; }
+.dark .ambient {
+  display: block;
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -111,13 +177,13 @@
 .ambient-blob.a {
   width: 46vw; height: 46vw;
   top: -14vw; left: -8vw;
-  background: radial-gradient(circle, rgba(59,130,246,0.30), transparent 70%);
+  background: radial-gradient(circle, rgba(241,89,43,0.22), transparent 70%);
   animation: drift-a 26s ease-in-out infinite;
 }
 .ambient-blob.b {
   width: 40vw; height: 40vw;
   bottom: -16vw; right: -10vw;
-  background: radial-gradient(circle, rgba(34,197,94,0.16), transparent 70%);
+  background: radial-gradient(circle, rgba(245,101,56,0.10), transparent 70%);
   animation: drift-b 32s ease-in-out infinite;
 }
 .ambient-grid {
@@ -142,20 +208,18 @@
 
 /* ── Live-trade highlight ──────────────────────────────────────────────────
    Cards for agents that currently hold an open position get a breathing,
-   P&L-tinted halo so the eye lands on them instantly. The first shadow layer
-   doubles as the 1px ring (these classes replace the tailwind ring on the
-   card, since both drive box-shadow). Honors prefers-reduced-motion above. */
+   P&L-tinted halo so the eye lands on them instantly. Honors reduced-motion. */
 @keyframes trade-breathe-profit {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(34,197,94,.40), 0 0 22px -6px rgba(34,197,94,.45); }
-  50%      { box-shadow: 0 0 0 1px rgba(34,197,94,.65), 0 0 44px -2px rgba(34,197,94,.85); }
+  0%, 100% { box-shadow: 0 0 0 1px rgb(var(--profit) / .40), 0 0 22px -6px rgb(var(--profit) / .45); }
+  50%      { box-shadow: 0 0 0 1px rgb(var(--profit) / .65), 0 0 44px -2px rgb(var(--profit) / .85); }
 }
 @keyframes trade-breathe-loss {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(244,63,94,.40), 0 0 22px -6px rgba(244,63,94,.45); }
-  50%      { box-shadow: 0 0 0 1px rgba(244,63,94,.65), 0 0 44px -2px rgba(244,63,94,.85); }
+  0%, 100% { box-shadow: 0 0 0 1px rgb(var(--loss) / .40), 0 0 22px -6px rgb(var(--loss) / .45); }
+  50%      { box-shadow: 0 0 0 1px rgb(var(--loss) / .65), 0 0 44px -2px rgb(var(--loss) / .85); }
 }
 @keyframes trade-breathe-accent {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(59,130,246,.40), 0 0 22px -6px rgba(59,130,246,.45); }
-  50%      { box-shadow: 0 0 0 1px rgba(59,130,246,.65), 0 0 44px -2px rgba(59,130,246,.85); }
+  0%, 100% { box-shadow: 0 0 0 1px rgb(var(--accent) / .40), 0 0 22px -6px rgb(var(--accent) / .45); }
+  50%      { box-shadow: 0 0 0 1px rgb(var(--accent) / .65), 0 0 44px -2px rgb(var(--accent) / .85); }
 }
 .trade-glow-profit { animation: trade-breathe-profit 2.6s ease-in-out infinite; }
 .trade-glow-loss   { animation: trade-breathe-loss   2.6s ease-in-out infinite; }

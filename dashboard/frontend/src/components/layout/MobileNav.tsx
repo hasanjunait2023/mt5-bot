@@ -31,7 +31,7 @@ export function MobileNav() {
                        rounded-t-2xl px-3 pt-3 pb-4 shadow-topbar"
             onClick={e => e.stopPropagation()}
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15" />
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-tint/15" />
             {NAV_GROUPS.map(group => (
               <div key={group.label} className="mb-3 last:mb-0">
                 <p className="px-1 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted/80">
@@ -120,7 +120,7 @@ function SheetTile({
             'flex flex-col items-center justify-center gap-1.5 h-20 rounded-xl text-[11px] text-center px-1 transition-colors',
             isActive
               ? 'text-accent bg-accent/[0.10] ring-1 ring-accent/25'
-              : 'text-text-secondary bg-white/[0.025] ring-1 ring-border hover:bg-white/[0.05]'
+              : 'text-text-secondary bg-tint/[0.025] ring-1 ring-border hover:bg-tint/[0.05]'
           )
         }
       >

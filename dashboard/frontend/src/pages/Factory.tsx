@@ -161,7 +161,7 @@ export function Factory() {
             <button
               key={j.job_id} onClick={() => setSelId(j.job_id)}
               className={`w-full text-left px-3 py-2 rounded-lg transition ring-1 ${
-                selId === j.job_id ? 'bg-white/[0.06] ring-border' : 'ring-transparent hover:bg-white/[0.03]'
+                selId === j.job_id ? 'bg-tint/[0.06] ring-border' : 'ring-transparent hover:bg-tint/[0.03]'
               }`}
             >
               <div className="flex items-center justify-between gap-2">
@@ -193,7 +193,7 @@ export function Factory() {
                     return (
                       <span key={s} className={`text-[10px] px-2 py-1 rounded font-mono ${
                         here ? 'bg-accent/20 text-accent ring-1 ring-accent/40'
-                        : done ? 'bg-profit/10 text-profit/80' : 'bg-white/[0.03] text-text-muted'
+                        : done ? 'bg-profit/10 text-profit/80' : 'bg-tint/[0.03] text-text-muted'
                       }`}>{s}</span>
                     )
                   })}
@@ -224,7 +224,7 @@ export function Factory() {
               )}
               {job.status === 'FAILED' && (
                 <button onClick={requeue}
-                  className="h-9 px-4 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-text-primary text-sm transition">
+                  className="h-9 px-4 rounded-lg bg-tint/[0.06] hover:bg-tint/[0.1] text-text-primary text-sm transition">
                   Requeue (retry)
                 </button>
               )}
@@ -250,7 +250,7 @@ export function Factory() {
                   {ARTIFACTS.map(a => (
                     <button key={a} onClick={() => setTab(a)}
                       className={`text-xs px-3 py-1.5 rounded-lg transition ${
-                        tab === a ? 'bg-accent/20 text-accent' : 'bg-white/[0.03] text-text-muted hover:text-text-secondary'
+                        tab === a ? 'bg-accent/20 text-accent' : 'bg-tint/[0.03] text-text-muted hover:text-text-secondary'
                       } ${!job._artifacts_present?.[a] ? 'opacity-40' : ''}`}>
                       {a}
                     </button>

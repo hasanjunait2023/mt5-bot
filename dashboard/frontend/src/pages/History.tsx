@@ -69,7 +69,7 @@ export function History() {
               'px-3 h-8 rounded-lg text-xs font-mono font-medium transition-all',
               symbol === s
                 ? 'bg-accent text-white shadow-glow-accent'
-                : 'bg-white/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary hover:bg-white/[0.07]',
+                : 'bg-tint/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary hover:bg-tint/[0.07]',
             )}
           >
             {s}
@@ -83,12 +83,12 @@ export function History() {
           {data.total > 50 && (
             <div className="flex justify-center items-center gap-2 mt-4">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="px-3 h-8 rounded-lg text-xs bg-white/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:hover:text-text-secondary transition-colors">
+                className="px-3 h-8 rounded-lg text-xs bg-tint/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:hover:text-text-secondary transition-colors">
                 ← Prev
               </button>
               <span className="text-text-muted text-xs font-mono px-2">Page {page}</span>
               <button onClick={() => setPage(p => p + 1)} disabled={data.trades.length < 50}
-                className="px-3 h-8 rounded-lg text-xs bg-white/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:hover:text-text-secondary transition-colors">
+                className="px-3 h-8 rounded-lg text-xs bg-tint/[0.04] ring-1 ring-border text-text-secondary hover:text-text-primary disabled:opacity-40 disabled:hover:text-text-secondary transition-colors">
                 Next →
               </button>
             </div>

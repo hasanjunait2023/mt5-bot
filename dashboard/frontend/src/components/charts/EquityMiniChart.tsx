@@ -9,7 +9,7 @@ interface Props {
 
 export function EquityMiniChart({ data, height = 48 }: Props) {
   if (data.length < 2)
-    return <div style={{ height }} className="bg-white/[0.04] rounded-md" />
+    return <div style={{ height }} className="bg-tint/[0.04] rounded-md" />
   const isUp = data[data.length - 1].equity >= data[0].equity
   const color = isUp ? CHART.profit : CHART.loss
 

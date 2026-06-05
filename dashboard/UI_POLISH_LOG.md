@@ -31,6 +31,13 @@ Scalp · VolumeProfile · Journal · TelegramHQ · Settings · Hub · Factory ·
 ## Run log (newest first)
 <!-- agent appends one block per run -->
 
+### 2026-06-05 05:54 UTC — PageHeader (shared) — SKIPPED (blocked)
+- Intended change: add a premium accent kicker bar (gradient `from-accent to-accent-dim`) anchoring the title in the shared `PageHeader`, propagating consistent header rhythm to all 26 routes (backlog #1). JSX/className-only, backward compatible.
+- Why skipped: could not obtain a verified passing build gate. (a) Local build impossible — `dashboard/frontend/node_modules` is not installed (only `@babel` present) and the npm registry is unreachable (`npm error ... read ECONNRESET`), so `npx vite build` / `npm i` both fail. (b) VPS build gate fails on a PRE-EXISTING, unrelated divergence, NOT this change: `Could not resolve "./pages/Strength" from "src/App.tsx"`. Local `App.tsx` has no such import and no `pages/Strength*` exists locally — the VPS frontend source tree is diverged/dirty and currently cannot rebuild.
+- Action taken: reverted local edit (`git checkout`) and restored the VPS `PageHeader.tsx` to origin/master. The failed VPS build did NOT emit a new `dist/`, so the live bundle was never replaced. Canary: live :8010 returns HTTP 200, still serving `index-B8_ePNGl.js` — no regression, no harm.
+- ⚠️ Human action needed: the VPS `dashboard/frontend/src/App.tsx` imports a non-existent `./pages/Strength`. The frontend cannot be rebuilt on the VPS until this is reconciled — this will block ALL future dashboard-designer deploys, not just this one.
+- Build: BLOCKED (local deps missing + registry ECONNRESET; VPS pre-existing `./pages/Strength` resolve error) · Visual: skipped · Deployed: none (reverted) · Commit: log-only
+
 ### 2026-06-04 13:20 UTC — Table (shared primitive)
 - Change: Replaced the bare muted "No data" text in the shared `Table` empty cell with a composed empty state — an outlined glyph badge (soft glass circle) above the message in clearer `text-secondary` hierarchy, with a gentle `reveal` fade. Propagates to every data table (Positions, History, EAs, BotsAgents, Journal, Reports, SystemAgents).
 - Why premium: Polished empty states are a signature of premium fintech UIs; a bare centered string reads as unfinished. Icon-in-circle + restrained copy is the established pattern (backlog item #1: empty-state polish). Uses only existing tokens (border, bg-white/[0.03], text-muted/secondary, reveal, font-sans) — no new deps.

@@ -16,6 +16,7 @@ router = APIRouter()
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 STATE_PATH = BASE_DIR / "logs" / "strength" / "_strength_state.json"
+SNAP_PATH = BASE_DIR / "logs" / "strength" / "_session_snapshots.json"
 AGENT_PATH = BASE_DIR / "logs" / "m3strength" / "_agent_state.json"
 PAPER_PATH = BASE_DIR / "logs" / "m3strength" / "_paper_trades.jsonl"
 
@@ -76,6 +77,13 @@ def get_strength_suggestions(session: str = "newyork"):
         "suggestions": sess.get("suggestions", []),
         "trade_of_the_day": state.get("trade_of_the_day"),
     }
+
+
+@router.get("/strength/snapshots")
+def get_strength_snapshots():
+    """Per-session strength captured at session time by the cron snapshot
+    (BD: Asian 07:00 / London 11:00 / NY 18:00)."""
+    return _read_json(SNAP_PATH, {"updated_at": None, "sessions": {}})
 
 
 @router.get("/strength/agent")

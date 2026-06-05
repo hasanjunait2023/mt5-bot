@@ -22,25 +22,51 @@ EMA_FAST = 9
 EMA_SLOW = 15
 RSI_BUY = (50.0, 70.0)    # momentum, not overbought
 RSI_SELL = (30.0, 50.0)
+# Validated config (2yr MT5 Strategy Tester, USDJPY/GBPUSD/EURJPY PF 1.34-1.47):
 SL_ATR = 1.5              # stop distance = SL_ATR * ATR(14)
-TP_RR = 1.5               # take profit = TP_RR * stop distance
-ATR_FAST_N = 20
-ATR_SLOW_N = 60
-ATR_EXPANSION = 1.10      # recent ATR must exceed baseline by this ratio
+TP_RR = 2.0               # take profit = TP_RR * stop distance
+ATR_BASELINE = 50         # SMA window for the ATR-expansion baseline
+ATR_EXPANSION = 1.20      # ATR(14) must exceed ATR_EXPANSION * SMA(ATR14, 50)
 ADR_USED_MAX = 0.70       # skip if today's range already covered > 70% of ADR
 
 
+def _atr_series(highs: list[float], lows: list[float], closes: list[float],
+                period: int = 14) -> list[float]:
+    """Rolling Wilder ATR(period) array (same recurrence as indicators.atr)."""
+    n = len(closes)
+    if n < period + 1:
+        return []
+    tr = [0.0] * n
+    for i in range(1, n):
+        tr[i] = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]),
+                    abs(lows[i] - closes[i - 1]))
+    out = [0.0] * n
+    a = sum(tr[1:period + 1]) / period
+    out[period] = a
+    for i in range(period + 1, n):
+        a = (a * (period - 1) + tr[i]) / period
+        out[i] = a
+    for i in range(period):
+        out[i] = out[period]
+    return out
+
+
 def atr_expansion_ok(highs: list[float], lows: list[float], closes: list[float],
-                     fast_n: int = ATR_FAST_N, slow_n: int = ATR_SLOW_N,
-                     ratio: float = ATR_EXPANSION) -> bool:
-    """True when recent ATR is expanding vs its longer baseline (momentum)."""
-    if len(closes) < slow_n:
+                     baseline: int = ATR_BASELINE, ratio: float = ATR_EXPANSION) -> bool:
+    """True when ATR(14) is expanding vs its 50-bar SMA (momentum present).
+
+    Matches the validated MQL5 EA: ATR14_now >= ratio * SMA(ATR14, baseline).
+    """
+    if len(closes) < 14 + baseline + 2:
         return False
-    atr_fast = atr(highs[-fast_n:], lows[-fast_n:], closes[-fast_n:], 14)
-    atr_slow = atr(highs[-slow_n:], lows[-slow_n:], closes[-slow_n:], 14)
-    if atr_slow <= 0:
+    s = _atr_series(highs, lows, closes, 14)
+    if not s:
         return False
-    return atr_fast >= ratio * atr_slow
+    atr_now = s[-1]
+    sma = sum(s[-baseline:]) / baseline
+    if sma <= 0:
+        return False
+    return atr_now >= ratio * sma
 
 
 def adr_from_m3(times: list, highs: list[float], lows: list[float],

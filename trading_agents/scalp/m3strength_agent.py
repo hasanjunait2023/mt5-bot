@@ -437,7 +437,7 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
             open_pos = _open_positions()
             if paper:
                 for sym in list(paper._pending.keys()):
-                    b = _fetch_bars(sym, TF_ENTRY, 3)
+                    b = _fetch_bars(sym, TF_ENTRY, 60)
                     if b:
                         paper.tick(sym, b["high"][-2], b["low"][-2])
 
@@ -462,7 +462,10 @@ def run(risk_pct: float, dd_limit: float, force_paper: bool) -> None:
                 if open_pos.get(symbol) or (paper and paper.has(symbol)):
                     continue
                 # New-bar gate per symbol (avoid re-eval same M3 bar).
-                m3t = _fetch_bars(symbol, TF_ENTRY, 3)
+                # NOTE: _fetch_bars returns None when fewer than 30 bars come
+                # back, so this MUST request >=30 (a count of 3 silently skipped
+                # every candidate → the agent never traded).
+                m3t = _fetch_bars(symbol, TF_ENTRY, 60)
                 if not m3t:
                     continue
                 bar_t = m3t["time"][-2]

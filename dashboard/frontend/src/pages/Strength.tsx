@@ -51,21 +51,38 @@ function fmtTime(ts: string | null): string {
   catch { return ts }
 }
 
+interface SessionSnap {
+  session: string
+  captured_bd: string
+  tiers: Record<string, string>
+  top: Suggestion | null
+}
+interface SnapsState { updated_at: string | null; sessions: Record<string, SessionSnap> }
+
+const SNAP_META: { key: string; label: string; time: string }[] = [
+  { key: 'asian', label: 'Asian', time: '07:00 BD' },
+  { key: 'london', label: 'London', time: '11:00 BD' },
+  { key: 'newyork', label: 'New York', time: '18:00 BD' },
+]
+
 export function Strength() {
   const [state, setState] = useState<StrengthState | null>(null)
   const [agent, setAgent] = useState<AgentState | null>(null)
+  const [snaps, setSnaps] = useState<SnapsState | null>(null)
   const [tab, setTab] = useState<string>('newyork')
 
   useEffect(() => {
     let cancelled = false
     const load = async () => {
       try {
-        const [rs, ra] = await Promise.all([
+        const [rs, ra, rn] = await Promise.all([
           apiFetch('/strength/state'),
           apiFetch('/strength/agent'),
+          apiFetch('/strength/snapshots'),
         ])
         if (rs.ok) { const d = await rs.json(); if (!cancelled) setState(d) }
         if (ra.ok) { const d = await ra.json(); if (!cancelled) setAgent(d) }
+        if (rn.ok) { const d = await rn.json(); if (!cancelled) setSnaps(d) }
       } catch { /* ignore */ }
     }
     load()
@@ -129,6 +146,46 @@ export function Strength() {
           </Panel>
         ))}
       </div>
+
+      {/* Session snapshots — captured at session time by the cron */}
+      <Panel title="Session Snapshots · captured at session time">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {SNAP_META.map(s => {
+            const snap = snaps?.sessions?.[s.key]
+            const tiers = snap?.tiers ?? {}
+            const strong = majors.filter(c => tiers[c] === 'STRONG')
+            const weak = majors.filter(c => tiers[c] === 'WEAK')
+            return (
+              <div key={s.key} className="rounded-xl ring-1 ring-border p-3 bg-tint/[0.02]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-text-primary">{s.label}</span>
+                  <span className="text-[11px] text-text-muted font-mono">{s.time}</span>
+                </div>
+                {snap ? (
+                  <div className="space-y-1.5 text-xs">
+                    <div className="text-[11px] text-text-muted">captured {snap.captured_bd}</div>
+                    <div className="flex flex-wrap gap-1">
+                      {strong.map(c => <Badge key={c} tone="green">{c}</Badge>)}
+                      {weak.map(c => <Badge key={c} tone="red">{c}</Badge>)}
+                      {strong.length === 0 && weak.length === 0 && <span className="text-text-muted">no extremes</span>}
+                    </div>
+                    {snap.top && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-text-muted">top</span>
+                        <span className="font-mono font-semibold">{snap.top.symbol}</span>
+                        <Badge variant={snap.top.side === 'BUY' ? 'buy' : 'sell'}>{snap.top.side}</Badge>
+                        <span className="font-mono text-text-secondary">diff {snap.top.diff > 0 ? '+' : ''}{snap.top.diff}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-text-muted py-3">awaiting first {s.label} snapshot</div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </Panel>
 
       {/* Heatmap + suggestions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

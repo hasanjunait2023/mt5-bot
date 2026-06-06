@@ -169,6 +169,9 @@ MTF_DEFAULT_PARAMS = {
     # ATR volatility filter
     "ATR_Period":       14,
     "ATR_Med_Window":   20,    # bars for rolling median comparison
+    # ADX chop filter (M15; disabled by default until backtest validates)
+    "ADX_Period":       14,
+    "ADX_Min":          20,    # M15 ADX must be >= this to allow entry
     # Candle quality — crossover candle body must be >= this ratio of range
     "MinBodyRatio":     0.35,
     # SL placement
@@ -319,6 +322,7 @@ MTF_DEFAULT_FILTERS = {
     "session":           True,   # London + NY sessions only
     "candle_quality":    True,   # crossover candle body >= MinBodyRatio
     "ema_separation":    True,   # EMA gap expanding on M3
+    "adx_chop":          False,  # M15 ADX>=ADX_Min; off until backtest validates
     "currency_strength": False,  # requires all 28 pairs pre-loaded
     "news":              False,  # requires internet (Forex Factory API)
     "spread":            True,   # spread below threshold

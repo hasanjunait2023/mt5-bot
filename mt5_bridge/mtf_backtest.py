@@ -18,7 +18,11 @@ import pandas as pd
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-import MetaTrader5 as mt5
+try:
+    import MetaTrader5 as mt5
+except ImportError:
+    class mt5:  # constants shim for Linux/bridge mode
+        TIMEFRAME_M1 = 1
 
 sys.path.insert(0, ".")
 from mt5_bridge import connect, disconnect, fetch_ohlcv, get_pip_size, check_symbol
@@ -364,6 +368,8 @@ def main():
                         help="Enable currency strength filter")
     parser.add_argument("--news",     action="store_true",
                         help="Enable news blackout filter (requires internet)")
+    parser.add_argument("--adx",      action="store_true",
+                        help="Enable M15 ADX chop filter (ADX_Min=20)")
     parser.add_argument("--no-rsi",   action="store_true",
                         help="Disable RSI filter")
     parser.add_argument("--no-atr",   action="store_true",
@@ -377,6 +383,7 @@ def main():
     p = MTF_DEFAULT_PARAMS.copy()
 
     enable = MTF_DEFAULT_FILTERS.copy()
+    if args.adx:        enable["adx_chop"] = True
     if args.no_rsi:    enable["rsi"]     = False
     if args.no_atr:    enable["atr_vol"] = False
     if args.strength:  enable["currency_strength"] = True

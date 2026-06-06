@@ -41,6 +41,18 @@ def _atr(df: pd.DataFrame, period: int) -> pd.Series:
     tr  = pd.concat([hl, hc, lc], axis=1).max(axis=1)
     return tr.rolling(period).mean()
 
+def _adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """Wilder-smoothed ADX. Returns ADX series (0-100; >20 = trending)."""
+    hi, lo, cl = df["High"], df["Low"], df["Close"].shift()
+    tr = pd.concat([(hi - lo).abs(), (hi - cl).abs(), (lo - cl).abs()], axis=1).max(axis=1)
+    pdm = (hi - hi.shift()).clip(lower=0).where((hi - hi.shift()) > (lo.shift() - lo), 0.0)
+    ndm = (lo.shift() - lo).clip(lower=0).where((lo.shift() - lo) > (hi - hi.shift()), 0.0)
+    atr_s = tr.ewm(alpha=1 / period, adjust=False).mean()
+    pdi = 100 * pdm.ewm(alpha=1 / period, adjust=False).mean() / atr_s.replace(0, np.nan)
+    ndi = 100 * ndm.ewm(alpha=1 / period, adjust=False).mean() / atr_s.replace(0, np.nan)
+    dx  = (100 * (pdi - ndi).abs() / (pdi + ndi).replace(0, np.nan)).fillna(0)
+    return dx.ewm(alpha=1 / period, adjust=False).mean()
+
 
 # ── Single-TF indicator builder ───────────────────────────────────────────────
 
@@ -55,6 +67,7 @@ def add_mtf_indicators(df: pd.DataFrame, p: dict) -> pd.DataFrame:
     df["ema15"]  = _ema(df["Close"], p["EMA_Slow"])
     df["rsi14"]  = _rsi(df["Close"], p["RSI_Period"])
     df["atr14"]  = _atr(df,          p["ATR_Period"])
+    df["adx14"]  = _adx(df,          p.get("ADX_Period", 14))
     return df
 
 
@@ -117,6 +130,7 @@ def align_mtf_to_m1(
         "ema9":   "ema9_m15",
         "ema15":  "ema15_m15",
         "Close":  "close_m15",
+        "adx14":  "adx14_m15",
     }
 
     df_out = df_m1.copy()
@@ -361,6 +375,11 @@ def compute_mtf_signals(
     if enable.get("ema_separation"):
         sep_ok = _ema_sep_expanding(df["ema9_m3"], df["ema15_m3"]).values
         mask  &= sep_ok
+
+    if enable.get("adx_chop") and "adx14_m15" in df.columns:
+        adx_min = p.get("ADX_Min", 20)
+        adx_ok  = df["adx14_m15"].fillna(0).values >= adx_min
+        mask   &= adx_ok
 
     if enable.get("currency_strength") and strength_ts and symbol and len(symbol) >= 6:
         base  = symbol[:3].upper()

@@ -20,6 +20,7 @@ Auth: optional X-API-Key header (set MT5_BRIDGE_SECRET in env)
 from __future__ import annotations
 
 import argparse
+import hmac as _hmac
 import logging
 import os
 import sys
@@ -139,7 +140,7 @@ def _ensure_mt5() -> bool:
 
 def _check_auth(x_api_key: Optional[str]) -> None:
     secret = os.getenv("MT5_BRIDGE_SECRET", "")
-    if secret and x_api_key != secret:
+    if secret and not _hmac.compare_digest((x_api_key or "").encode(), secret.encode()):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 
@@ -617,7 +618,7 @@ def trade_close_all(magic: Optional[int] = None, x_api_key: Optional[str] = Head
 def main() -> None:
     import uvicorn
     parser = argparse.ArgumentParser(description="MT5 FastAPI Bridge")
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8090)
     args = parser.parse_args()
     log.info("Starting MT5 bridge on http://%s:%d", args.host, args.port)

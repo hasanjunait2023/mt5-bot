@@ -58,6 +58,11 @@ def get_artifact(job_id: str, name: str):
     path = job.get("artifacts", {}).get(key)
     if not path or not Path(path).exists():
         raise HTTPException(404, f"artifact '{name}' not available")
+    # Guard against path traversal in stored artifact paths
+    try:
+        Path(path).resolve().relative_to(BASE_DIR.resolve())
+    except ValueError:
+        raise HTTPException(403, "artifact path outside project directory")
     text = Path(path).read_text(encoding="utf-8", errors="ignore")
     return {"name": name, "path": path, "content": text[:200_000]}
 

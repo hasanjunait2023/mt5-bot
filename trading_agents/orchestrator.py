@@ -224,6 +224,7 @@ class Service:
         self.restarts = 0
         self.status = "stopped"
         self._logf = None
+        self._restart_at: float = 0.0  # non-zero while waiting out a cooldown
 
     def start(self) -> None:
         # Clear any leaked/orphaned listener so a port-bound service can bind.
@@ -267,6 +268,14 @@ class Service:
 
     def check(self) -> None:
         """One health evaluation; restart if needed."""
+        # Non-blocking cooldown: wait until _restart_at before attempting restart.
+        if self._restart_at:
+            if time.time() < self._restart_at:
+                return  # still cooling down — don't block the loop
+            self._restart_at = 0.0
+            self.start()
+            self.restarts += 1
+            return
         if not self.alive():
             self.status = "dead"
             self._handle_unhealthy("process exited")
@@ -304,9 +313,7 @@ class Service:
         else:
             cooldown = self.backoff
         self.stop()
-        time.sleep(cooldown)
-        self.start()
-        self.restarts += 1
+        self._restart_at = time.time() + cooldown  # schedule restart without blocking
 
     def snapshot(self) -> dict:
         return {
@@ -354,8 +361,19 @@ def acquire_lock() -> bool:
                 return False
         except Exception:
             pass
-    LOCK_FILE.write_text(str(os.getpid()))
-    return True
+        # Stale lock from a dead process — remove before atomic create
+        try:
+            LOCK_FILE.unlink(missing_ok=True)
+        except Exception:
+            pass
+    # Atomic exclusive create: raises FileExistsError if another process beat us
+    try:
+        with open(LOCK_FILE, "x") as f:
+            f.write(str(os.getpid()))
+        return True
+    except FileExistsError:
+        _log("lock file appeared mid-race — another orchestrator started simultaneously")
+        return False
 
 
 # ── Main supervise loop ──────────────────────────────────────────────────────-

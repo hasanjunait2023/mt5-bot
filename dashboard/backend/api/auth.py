@@ -2,7 +2,7 @@
 
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from core.auth import auth_enabled, check_password, mint_token
@@ -27,20 +27,21 @@ def auth_status():
 
 
 @router.post("/auth/login")
-def login(req: LoginRequest):
+def login(req: LoginRequest, request: Request):
     if not auth_enabled():
         # nothing to log into — auth is disabled
         return {"auth_required": False, "token": None}
 
+    client_ip = (request.client.host if request.client else None) or "unknown"
     now = time.time()
-    fails = [t for t in _FAILS.get("global", []) if now - t < _WINDOW_S]
+    fails = [t for t in _FAILS.get(client_ip, []) if now - t < _WINDOW_S]
     if len(fails) >= _MAX_FAILS:
         raise HTTPException(status_code=429, detail="Too many attempts — wait a few minutes")
 
     if not check_password(req.password):
         fails.append(now)
-        _FAILS["global"] = fails
+        _FAILS[client_ip] = fails
         raise HTTPException(status_code=401, detail="Incorrect password")
 
-    _FAILS["global"] = []
+    _FAILS.pop(client_ip, None)
     return {"auth_required": True, **mint_token()}

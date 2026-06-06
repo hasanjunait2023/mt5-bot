@@ -112,16 +112,18 @@ def client_ip(scope_client_host: str | None, headers) -> str:
     if os.getenv("CONSOLE_TRUST_XFF") == "1":
         xff = headers.get("x-forwarded-for") if headers else None
         if xff:
-            return xff.split(",")[0].strip()
+            # Use the rightmost hop — that is the one the trusted proxy added.
+            # The leftmost hop is attacker-controlled and must not be trusted.
+            return xff.split(",")[-1].strip()
     return scope_client_host or ""
 
 
 def ip_allowed(ip: str) -> bool:
     nets = _allowed_nets()
     if not nets:
-        # No allowlist configured: token still required, but warn loudly.
-        log.warning("CONSOLE_ALLOWED_IPS empty — console reachable from ANY IP (token-only)")
-        return True
+        # No allowlist configured: fail-closed to protect the RCE endpoint.
+        log.error("CONSOLE_ALLOWED_IPS not set — console login blocked (set it to enable access)")
+        return False
     try:
         addr = ipaddress.ip_address(ip)
     except ValueError:

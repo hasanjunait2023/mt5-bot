@@ -8,6 +8,7 @@ dashboard's require_auth — see core/console_auth.py. Fail-closed: every route
 import asyncio
 import json
 import logging
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -17,6 +18,10 @@ from core import console_runner as runner
 
 router = APIRouter()
 log = logging.getLogger("console.api")
+
+_CONSOLE_FAILS: dict[str, list[float]] = {}
+_CONSOLE_WINDOW_S = 300
+_CONSOLE_MAX_FAILS = 5
 
 
 class LoginBody(BaseModel):
@@ -29,9 +34,17 @@ class RenameBody(BaseModel):
 
 @router.post("/console/login")
 def login(body: LoginBody, request: Request):
-    ca.guard_ip(request)                      # IP gate even on login
+    ca.guard_ip(request)  # IP gate even on login
+    client_ip = (request.client.host if request.client else None) or "unknown"
+    now = time.time()
+    fails = [t for t in _CONSOLE_FAILS.get(client_ip, []) if now - t < _CONSOLE_WINDOW_S]
+    if len(fails) >= _CONSOLE_MAX_FAILS:
+        raise HTTPException(status_code=429, detail="Too many attempts — wait a few minutes")
     if not ca.check_password(body.password):
+        fails.append(now)
+        _CONSOLE_FAILS[client_ip] = fails
         raise HTTPException(status_code=401, detail="Wrong password")
+    _CONSOLE_FAILS.pop(client_ip, None)
     return ca.mint_token()
 
 

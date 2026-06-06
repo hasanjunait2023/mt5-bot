@@ -236,6 +236,11 @@ class JTCC:
         from trading_agents.jtcc.monitoring.performance_tracker import log_signal, log_trade_open
 
         symbol = decision["symbol"]
+        # Kill-switch + daily DD + concurrent position cap must all pass
+        allowed, block_reason = self._can_trade(symbol)
+        if not allowed:
+            log.warning("Trade blocked by risk gate: %s", block_reason)
+            return
         action = decision["decision"]
         entry = decision.get("entry_price", 0)
         sl = decision.get("stop_loss", 0)
@@ -327,6 +332,12 @@ class JTCC:
                 partner_symbol = p["a"]
                 break
         if not partner_symbol:
+            return
+
+        # Risk gate applies to pair leg too (kill-switch / DD / position cap)
+        allowed, block_reason = self._can_trade(partner_symbol)
+        if not allowed:
+            log.warning("Pair leg blocked by risk gate: %s", block_reason)
             return
 
         # Fetch live tick for partner to compute entry/sl/tp

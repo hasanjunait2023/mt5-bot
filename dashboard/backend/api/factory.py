@@ -105,3 +105,32 @@ def requeue(job_id: str):
     if job is None:
         raise HTTPException(404, "job not found")
     return {"ok": True, "stage": job["stage"], "status": job["status"]}
+
+
+@router.get("/factory/hunter")
+def hunter_stats():
+    """Source Hunter pipeline stats + last scorecard for the leaderboard."""
+    state_file = BASE_DIR / "logs" / "factory" / "_hunter_state.json"
+    if not state_file.exists():
+        return {"runs": 0, "created_jobs": 0, "top": [], "last_scorecard": None}
+    try:
+        d = json.loads(state_file.read_text(encoding="utf-8"))
+    except Exception:
+        return {"runs": 0, "created_jobs": 0, "top": [], "last_scorecard": None}
+    sc = d.get("last_scorecard") or {}
+    jobs = fst.list_jobs()
+    by_status: dict = {}
+    for j in jobs:
+        by_status[j["status"]] = by_status.get(j["status"], 0) + 1
+    return {
+        "runs": d.get("runs", 0),
+        "created_jobs": len(d.get("created_jobs") or []),
+        "top": sc.get("top", []),
+        "last_run_at": sc.get("at"),
+        "last_scorecard": {
+            "collected": sc.get("collected", 0),
+            "fresh": sc.get("fresh", 0),
+            "opened": sc.get("opened", 0),
+        },
+        "by_status": by_status,
+    }

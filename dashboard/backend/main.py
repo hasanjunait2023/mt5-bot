@@ -43,6 +43,7 @@ from api import fleet as fleet_api
 from api import strength as strength_api
 from api import strategy_lab as strategy_lab_api
 from api import console as console_api
+from api import factory as factory_api
 
 logging.basicConfig(
     level=logging.INFO,
@@ -142,6 +143,7 @@ app.include_router(asia_api.router,       prefix="/api", dependencies=_protected
 app.include_router(fleet_api.router,      prefix="/api", dependencies=_protected)
 app.include_router(strength_api.router,   prefix="/api", dependencies=_protected)
 app.include_router(strategy_lab_api.router, prefix="/api", dependencies=_protected)
+app.include_router(factory_api.router,      prefix="/api", dependencies=_protected)
 
 # Claude Code Console — enforces its OWN auth (IP allowlist + dedicated token,
 # core/console_auth.py), NOT the dashboard token, since it grants code execution.

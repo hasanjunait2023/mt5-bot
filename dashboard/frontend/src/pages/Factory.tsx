@@ -2,6 +2,15 @@ import { useEffect, useState, useCallback } from 'react'
 import { apiFetch } from '../lib/api'
 import { MetricCard } from '../components/ui/MetricCard'
 
+interface HunterStats {
+  runs: number
+  created_jobs: number
+  top: string[]
+  last_run_at: string | null
+  last_scorecard: { collected: number; fresh: number; opened: number } | null
+  by_status: Record<string, number>
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface JobSummary {
   job_id: string
@@ -52,6 +61,14 @@ export function Factory() {
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState<ArtName>('plan')
   const [artifact, setArtifact] = useState<string>('')
+  const [hunter, setHunter] = useState<HunterStats | null>(null)
+
+  const loadHunter = useCallback(async () => {
+    try {
+      const r = await apiFetch('/api/factory/hunter')
+      if (r.ok) setHunter(await r.json())
+    } catch { /* ignore */ }
+  }, [])
 
   const loadJobs = useCallback(async () => {
     try {
@@ -69,6 +86,7 @@ export function Factory() {
     } catch { /* ignore */ }
   }, [])
 
+  useEffect(() => { loadHunter(); const t = setInterval(loadHunter, 30000); return () => clearInterval(t) }, [loadHunter])
   useEffect(() => { loadJobs(); const t = setInterval(loadJobs, 8000); return () => clearInterval(t) }, [loadJobs])
   useEffect(() => {
     if (!selId) return
@@ -126,6 +144,49 @@ export function Factory() {
           YouTube → research → code → backtest → demo soak → real-money gate
         </p>
       </div>
+
+      {/* Source Hunter Leaderboard */}
+      {hunter && (
+        <div className="glass p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Source Hunter Pipeline</p>
+            {hunter.last_run_at && (
+              <span className="text-[11px] text-text-muted">
+                last run {new Date(hunter.last_run_at).toLocaleString()}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <MetricCard label="Total Runs" value={hunter.runs} />
+            <MetricCard label="Jobs Created" value={hunter.created_jobs} />
+            <MetricCard label="Last Batch Found" value={hunter.last_scorecard?.collected ?? 0} sub="candidates" />
+            <MetricCard label="Last Batch Opened" value={hunter.last_scorecard?.opened ?? 0} sub="jobs" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(hunter.by_status).map(([st, n]) => (
+              <span key={st} className={`text-[11px] px-2.5 py-1 rounded-full font-mono ${
+                st === 'DONE' ? 'bg-profit/10 text-profit' :
+                st === 'WAITING_APPROVAL' ? 'bg-amber-400/10 text-amber-400' :
+                st === 'REJECTED' || st === 'FAILED' ? 'bg-loss/10 text-loss' :
+                'bg-tint/[0.05] text-text-muted'
+              }`}>{st} {n}</span>
+            ))}
+          </div>
+          {hunter.top.length > 0 && (
+            <div>
+              <p className="text-[11px] text-text-muted mb-1.5">Top candidates from last run</p>
+              <div className="space-y-1">
+                {hunter.top.map((t, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono text-accent/60 w-4 shrink-0">#{i + 1}</span>
+                    <span className="text-xs text-text-secondary truncate">{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Ingest */}
       <div className="glass p-4 flex flex-col gap-3">

@@ -36,6 +36,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Analytics',
     items: [
+      { to: '/factory',  label: 'Strategy Factory', icon: 'strategy' },
       { to: '/lab',      label: 'Strategy Lab',    icon: 'strategy' },
       { to: '/strategy', label: 'Strategy Perf',   icon: 'strategy' },
       { to: '/reports',  label: 'Reports',         icon: 'reports' },

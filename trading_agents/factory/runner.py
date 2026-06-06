@@ -76,16 +76,20 @@ def _h_classify(job: dict) -> None:
         st.advance(job, st.RESEARCH_NB, f"strategy ({res['confidence']:.0%}): {res['reason'][:80]}")
         _notify("ceo", f"🏭 Factory {job['job_id']}: strategy detected — researching.\n{job['source'].get('title','')}")
     else:
-        # Stash the suggested plan and pause for approval.
-        art = st.artifact_dir(job["job_id"])
-        plan = res.get("plan") or "Not a tradeable strategy. No build plan."
-        (art / "build_plan.md").write_text(
-            f"# Non-strategy video\n\n{res['reason']}\n\n## Suggested plan\n\n{plan}\n",
-            encoding="utf-8")
-        job["artifacts"]["build_plan"] = str(art / "build_plan.md")
-        st.advance(job, st.GATE_PLAN, "non-strategy — plan ready")
-        _notify("ceo", f"🏭 Factory {job['job_id']}: NOT a strategy — {res['reason']}. "
-                       f"Review plan & approve/reject in dashboard /factory.", level="WARNING")
+        if AUTONOMOUS:
+            # Autonomous mode: non-strategy videos have no build value — reject silently.
+            st.set_status(job, st.REJECTED, f"non-strategy (autonomous reject): {res['reason'][:100]}")
+        else:
+            # Manual mode: park at GATE_PLAN so a human can review and approve/reject.
+            art = st.artifact_dir(job["job_id"])
+            plan = res.get("plan") or "Not a tradeable strategy. No build plan."
+            (art / "build_plan.md").write_text(
+                f"# Non-strategy video\n\n{res['reason']}\n\n## Suggested plan\n\n{plan}\n",
+                encoding="utf-8")
+            job["artifacts"]["build_plan"] = str(art / "build_plan.md")
+            st.advance(job, st.GATE_PLAN, "non-strategy — plan ready")
+            _notify("ceo", f"🏭 Factory {job['job_id']}: NOT a strategy — {res['reason']}. "
+                           f"Review plan & approve/reject in dashboard /factory.", level="WARNING")
 
 
 def _h_research_nb(job: dict) -> None:

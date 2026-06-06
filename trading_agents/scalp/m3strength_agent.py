@@ -48,19 +48,20 @@ DAILY_PATH = LOG_DIR / "_agent_daily.json"
 PAPER_PATH = LOG_DIR / "_paper_trades.jsonl"
 
 MAGIC = 20260900
-# Validated subset only (2yr MT5 Strategy Tester, strict config): USDJPY PF 1.44,
-# GBPUSD 1.47, EURJPY 1.34. The 28-pair scan at MinDiff=3 FAILED the gate (all
-# PF<1.3, over-trading); MinDiff=5 + RR 2.0 on these three cleared it. The full
-# 28-pair strength still drives the dashboard; the agent trades only the winners.
+# Full 28-pair scan: trades any pair where |strength_diff| >= BIAS_MIN_DIFF=5 AND
+# the momentum gate fires (EMA9/15 cross + RSI band + ATR expansion). The strict
+# MinDiff=5 filter is the edge — it prevents the over-trading that killed MinDiff=3.
+# Override via M3STR_SYMBOLS env to restrict to specific pairs.
+_DEFAULT_SYMBOLS = ",".join(PAIRS28)
 SYMBOLS = [s.strip() for s in os.getenv(
-    "M3STR_SYMBOLS", "USDJPY,GBPUSD,EURJPY").split(",") if s.strip()]
+    "M3STR_SYMBOLS", _DEFAULT_SYMBOLS).split(",") if s.strip()]
 TF_ENTRY = "M3"
 TF_ADR = "D1"
 BARS_M3 = 300
 BARS_D1 = 30
 POLL_INTERVAL_S = 30
 BIAS_MIN_DIFF = 5          # validated: only strong currency divergence
-MAX_OPEN = int(os.getenv("M3STR_MAX_OPEN", "3"))   # global concurrency cap
+MAX_OPEN = int(os.getenv("M3STR_MAX_OPEN", "5"))   # global concurrency cap
 _INVALID_FILL = 10030
 
 logging.basicConfig(
@@ -341,7 +342,7 @@ def _write_state(mode: str, daily: DailyState, equity: float, sess_name: str,
         STATE_PATH.write_text(json.dumps({
             "mode": mode,
             "magic": MAGIC,
-            "symbols": len(SYMBOLS),
+            "symbols": SYMBOLS,
             "active_session": sess_name,
             "score": score,
             "open_positions": open_pos,

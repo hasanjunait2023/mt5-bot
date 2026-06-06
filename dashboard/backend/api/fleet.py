@@ -67,6 +67,8 @@ AGENTS = [
      "magic": 20260800, "orch_id": "asia_fade",  "state": BASE_DIR / "logs/asia_desk/_state.json",        "pairs": []},
     {"id": "confluence", "name": "Sundar Pichai",  "avatar": "sundar-pichai",   "strategy": "Multi-Strategy Desk · S13 + S19",
      "magic": 20261300, "orch_id": "confluence", "state": BASE_DIR / "logs/confluence/_agent_state.json", "pairs": ["XAUUSD", "GBPUSD", "USDJPY"]},
+    {"id": "m3strength", "name": "Mayank Raj",   "avatar": "mayank-raj",      "strategy": "Strength-Scalp · 28-pair Currency Bias M3",
+     "magic": 20260900, "orch_id": "m3strength", "state": BASE_DIR / "logs/m3strength/_agent_state.json", "pairs": []},
 ]
 
 _CACHE_TTL_S = 2.0

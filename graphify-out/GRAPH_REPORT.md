@@ -1,16 +1,16 @@
-# Graph Report - mt5 bot  (2026-06-03)
+# Graph Report - mt5 bot  (2026-06-06)
 
 ## Corpus Check
-- 710 files · ~2,419,465 words
+- 795 files · ~2,485,134 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5920 nodes · 10420 edges · 490 communities (414 shown, 76 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 432 edges (avg confidence: 0.74)
+- 6892 nodes · 11771 edges · 570 communities (481 shown, 89 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 475 edges (avg confidence: 0.75)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3bef3a43`
+- Built from commit: `02dcdd09`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -435,19 +435,81 @@
 - [[_COMMUNITY_Community 486|Community 486]]
 - [[_COMMUNITY_Community 487|Community 487]]
 - [[_COMMUNITY_Community 488|Community 488]]
+- [[_COMMUNITY_Community 489|Community 489]]
 - [[_COMMUNITY_Community 490|Community 490]]
+- [[_COMMUNITY_Community 491|Community 491]]
+- [[_COMMUNITY_Community 492|Community 492]]
+- [[_COMMUNITY_Community 493|Community 493]]
+- [[_COMMUNITY_Community 494|Community 494]]
+- [[_COMMUNITY_Community 495|Community 495]]
+- [[_COMMUNITY_Community 496|Community 496]]
+- [[_COMMUNITY_Community 497|Community 497]]
+- [[_COMMUNITY_Community 498|Community 498]]
+- [[_COMMUNITY_Community 499|Community 499]]
+- [[_COMMUNITY_Community 500|Community 500]]
+- [[_COMMUNITY_Community 501|Community 501]]
+- [[_COMMUNITY_Community 502|Community 502]]
+- [[_COMMUNITY_Community 503|Community 503]]
+- [[_COMMUNITY_Community 504|Community 504]]
+- [[_COMMUNITY_Community 505|Community 505]]
+- [[_COMMUNITY_Community 506|Community 506]]
+- [[_COMMUNITY_Community 507|Community 507]]
+- [[_COMMUNITY_Community 508|Community 508]]
+- [[_COMMUNITY_Community 509|Community 509]]
+- [[_COMMUNITY_Community 510|Community 510]]
+- [[_COMMUNITY_Community 511|Community 511]]
+- [[_COMMUNITY_Community 512|Community 512]]
+- [[_COMMUNITY_Community 513|Community 513]]
+- [[_COMMUNITY_Community 514|Community 514]]
+- [[_COMMUNITY_Community 515|Community 515]]
+- [[_COMMUNITY_Community 516|Community 516]]
+- [[_COMMUNITY_Community 517|Community 517]]
+- [[_COMMUNITY_Community 518|Community 518]]
+- [[_COMMUNITY_Community 519|Community 519]]
+- [[_COMMUNITY_Community 520|Community 520]]
+- [[_COMMUNITY_Community 521|Community 521]]
+- [[_COMMUNITY_Community 522|Community 522]]
+- [[_COMMUNITY_Community 523|Community 523]]
+- [[_COMMUNITY_Community 524|Community 524]]
+- [[_COMMUNITY_Community 525|Community 525]]
+- [[_COMMUNITY_Community 526|Community 526]]
+- [[_COMMUNITY_Community 527|Community 527]]
+- [[_COMMUNITY_Community 528|Community 528]]
+- [[_COMMUNITY_Community 529|Community 529]]
+- [[_COMMUNITY_Community 530|Community 530]]
+- [[_COMMUNITY_Community 531|Community 531]]
+- [[_COMMUNITY_Community 532|Community 532]]
+- [[_COMMUNITY_Community 533|Community 533]]
+- [[_COMMUNITY_Community 534|Community 534]]
+- [[_COMMUNITY_Community 535|Community 535]]
+- [[_COMMUNITY_Community 536|Community 536]]
+- [[_COMMUNITY_Community 537|Community 537]]
+- [[_COMMUNITY_Community 538|Community 538]]
+- [[_COMMUNITY_Community 539|Community 539]]
+- [[_COMMUNITY_Community 540|Community 540]]
+- [[_COMMUNITY_Community 541|Community 541]]
+- [[_COMMUNITY_Community 542|Community 542]]
+- [[_COMMUNITY_Community 543|Community 543]]
+- [[_COMMUNITY_Community 544|Community 544]]
+- [[_COMMUNITY_Community 545|Community 545]]
+- [[_COMMUNITY_Community 546|Community 546]]
+- [[_COMMUNITY_Community 547|Community 547]]
+- [[_COMMUNITY_Community 550|Community 550]]
+- [[_COMMUNITY_Community 552|Community 552]]
+- [[_COMMUNITY_Community 556|Community 556]]
+- [[_COMMUNITY_Community 558|Community 558]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `apiFetch()` - 52 edges
-2. `Panel()` - 41 edges
-3. `SystemAgents()` - 34 edges
-4. `Badge()` - 33 edges
-5. `useWebSocket()` - 31 edges
-6. `VideoAnalysisAgent` - 30 edges
-7. `MetricCard()` - 27 edges
-8. `MainTradingSystem` - 27 edges
-9. `PageHeader()` - 26 edges
-10. `StatusDot()` - 26 edges
+1. `apiFetch()` - 56 edges
+2. `Panel()` - 44 edges
+3. `Badge()` - 37 edges
+4. `SystemAgents()` - 34 edges
+5. `useWebSocket()` - 32 edges
+6. `MetricCard()` - 30 edges
+7. `PageHeader()` - 30 edges
+8. `VideoAnalysisAgent` - 30 edges
+9. `StatusDot()` - 29 edges
+10. `MainTradingSystem` - 27 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `reset()` --calls--> `clear_history()`  [INFERRED]
@@ -461,7 +523,7 @@
 - `run()` --calls--> `TradeConfirmationAgent`  [INFERRED]
   mt5_bridge/cpp_live_trader.py → trading_agents/trade_confirmation_agent.py
 
-## Communities (490 total, 76 thin omitted)
+## Communities (570 total, 89 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.19
@@ -469,31 +531,31 @@ Nodes (21): _analyze_account(), _analyze_ea_positions(), _escalate_to_dev(), _ge
 
 ### Community 1 - "Community 1"
 Cohesion: 0.09
-Nodes (24): main(), ml_enhanced_compute_signals(), MLCSignalFilter, print_ml_enhanced_results(), ML-enhanced signal generation system that improves the existing scalping strateg, Create labels for ML training based on future trade outcomes., Create labels for ML training based on future trade outcomes., Prepare features and labels for ML training. (+16 more)
+Nodes (27): Run enhanced backtest with optional walk-forward analysis and ML enhancement., Run enhanced backtest with optional walk-forward analysis and ML enhancement., run_enhanced_backtest(), main(), ml_enhanced_compute_signals(), MLCSignalFilter, print_ml_enhanced_results(), ML-enhanced signal generation system that improves the existing scalping strateg (+19 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.26
-Nodes (8): Delivery gate wrapper — fail-open if the delivery module is unavailable., Emit an ImprovedSignal to its dedicated topic + WS channel + tracker., Emit an ImprovedSignal to its dedicated topic + WS channel + tracker., Emit an ImprovedSignal to its dedicated topic + WS channel + tracker., _should_deliver(), SignalEvent, _utcnow_iso(), _verdict()
+Cohesion: 0.23
+Nodes (10): Render the last `bars` candles with EMA 9/15/200 on a white background.      df, render_signal_chart(), Delivery gate wrapper — fail-open if the delivery module is unavailable., Emit an ImprovedSignal to its dedicated topic + WS channel + tracker., Emit an ImprovedSignal to its dedicated topic + WS channel + tracker., Emit an ImprovedSignal to its dedicated topic + WS channel + tracker., _should_deliver(), SignalEvent (+2 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.07
 Nodes (44): _extract_price(), _extract_risk_state(), _fetch_bars(), _fetch_bars_mt5(), _fmp_symbol(), MarketFeed, Layer 0: Market feed — FMP REST API for OHLCV bars, _live_state.json polling for, Extract bid/ask. Prefers MT5 bridge live tick; falls back to _live_state.json. (+36 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.07
-Nodes (37): calc_lot_size(), cancel_order(), check_no_trade_day(), close_all(), close_partial(), get_asian_range(), get_open_position(), get_pending_orders() (+29 more)
+Cohesion: 0.14
+Nodes (23): calc_lot_size(), cancel_order(), check_no_trade_day(), close_all(), close_partial(), get_asian_range(), get_open_position(), get_pending_orders() (+15 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.27
-Nodes (11): fmtPrice(), fmtTime(), Iconic(), IconicAgentState, IconicScore, IconicSignal, IconicState, KLASS_BADGE (+3 more)
+Cohesion: 0.15
+Nodes (16): BoardGroup, BoardGroupMember, BoardOpen, BoardState, BoardStrength, fmtPrice(), fmtTime(), Iconic() (+8 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.09
-Nodes (43): get_dev_agent_status(), list_reviews(), Dev Agents status and trigger endpoints for the MT5 dashboard., Return latest MonitorAgent health state., List recent code review reports., Spawn DevLead with a task description. Returns the output.      Disabled unless, trigger_dev_agent(), TriggerRequest (+35 more)
+Cohesion: 0.06
+Nodes (51): LoginBody, Claude Code Console API — browser-driven Claude Code on the live VPS.  Auth is, RenameBody, get_dev_agent_status(), list_reviews(), Dev Agents status and trigger endpoints for the MT5 dashboard., Return latest MonitorAgent health state., List recent code review reports. (+43 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.10
-Nodes (47): attempt_lookback_h, _doc, enabled, full_auto, fxvault_magics, halt_dd_pct, history_cap, max_fix_attempts (+39 more)
+Cohesion: 0.09
+Nodes (51): attempt_lookback_h, _doc, enabled, full_auto, fxvault_magics, halt_dd_pct, history_cap, max_fix_attempts (+43 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.12
@@ -504,8 +566,8 @@ Cohesion: 0.10
 Nodes (19): main(), MainTradingSystem, Main Trading System - Orchestrates the self-improving trading team. Brings toget, Handle shutdown signals gracefully., Start the main trading system., Stop the main trading system., Schedule regular system tasks., Main system loop that runs scheduled tasks. (+11 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.17
-Nodes (18): ConfluenceScorer, Per-tick scorer + signal emitter. Holds a small per-symbol memory     so we can, adx(), atr(), _confluence_score(), detect(), ema(), _in_session() (+10 more)
+Cohesion: 0.24
+Nodes (15): adx(), atr(), _confluence_score(), detect(), ema(), _in_session(), prepare(), Confluence Pullback Portfolio (CPP) — multi-symbol intraday strategy =========== (+7 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.15
@@ -517,27 +579,27 @@ Nodes (24): calc_macd(), calc_rsi(), close_full(), close_partial(), ema(), in_se
 
 ### Community 13 - "Community 13"
 Cohesion: 0.07
-Nodes (8): LogTailer, _now_iso(), Push live-trading transitions to the Telegram HQ once per edge., Push live-trading transitions to the Telegram HQ once per edge., StatePoller, _now_iso(), Thread-safe broadcast from non-async threads (StatePoller, LogTailer)., WebSocketManager
+Nodes (9): LogTailer, Page Telegram on real, persistent errors — not self-healing blips., _now_iso(), Push live-trading transitions to the Telegram HQ once per edge., Push live-trading transitions to the Telegram HQ once per edge., StatePoller, _now_iso(), Thread-safe broadcast from non-async threads (StatePoller, LogTailer). (+1 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.20
-Nodes (16): _build_prompt(), _call_nvidia(), chat(), clear_history(), _get_nvidia_key(), _load_history(), Maic — CEO Agent of the Fx Vault MT5 Bot System.  Central orchestrator: receives, Call NVIDIA NIM with full conversation history. Returns response text. (+8 more)
+Cohesion: 0.24
+Nodes (12): reset(), _build_prompt(), _call_nvidia(), clear_history(), _get_nvidia_key(), _load_history(), Maic — CEO Agent of the Fx Vault MT5 Bot System.  Central orchestrator: receives, Call NVIDIA NIM with full conversation history. Returns response text. (+4 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.23
-Nodes (8): _asia_session_purpose(), NewsProvider, PurposeGate, PurposeResult, Purpose gate — Urban Forex "you need a reason" rule.  Per Navin (Urban Forex, Ic, Loads orange/red G7 events from a JSON calendar.      Schema: [{"time_utc": "2, Loads orange/red G7 events from a JSON calendar.      Schema: [{"time_utc": "202, _session_purpose()
+Cohesion: 0.15
+Nodes (15): IconicConfluenceScorer, IconicScore, Iconic A/B/C confluence scorer (Phase 1).  Combines the three measurable filters, Build a synthetic OHLC+tick_volume df. vol_profile sets the LAST bars'     volu, Build a synthetic OHLC+tick_volume df. vol_profile sets the LAST bars'     volum, _run_selftest(), _synth_df(), _asia_session_purpose() (+7 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.14
-Nodes (25): get_positions(), add_indicators(), _atr(), calc_lot(), close_partial(), close_position(), _ema(), fetch() (+17 more)
+Cohesion: 0.15
+Nodes (24): get_positions(), add_indicators(), _atr(), calc_lot(), close_partial(), close_position(), _ema(), fetch() (+16 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.07
-Nodes (43): _allowed_ids(), handle_message(), _maic_chat(), _maic_clear(), main(), Maic Telegram Bot — inbound listener using python-telegram-bot.  Routes messages, Send text, splitting into chunks if over Telegram's 4096-char limit., _running_procs() (+35 more)
+Cohesion: 0.05
+Nodes (50): RuntimeError, _allowed_ids(), handle_message(), _maic_chat(), _maic_clear(), main(), Maic Telegram Bot — inbound listener using python-telegram-bot.  Routes messages, Send text, splitting into chunks if over Telegram's 4096-char limit. (+42 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.11
-Nodes (38): TradingContext, TradingProvider(), useTrading(), clsx, useLogs(), INITIAL, useTraderState(), connect() (+30 more)
+Nodes (37): EmptyChart(), EquityCurveChart(), Props, EquityMiniChart(), Props, TradingContext, TradingProvider(), useTrading() (+29 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.12
@@ -557,11 +619,11 @@ Nodes (26): coach_cycle_hours, graduation_criteria, max_daily_dd_pct, min_days_o
 
 ### Community 23 - "Community 23"
 Cohesion: 0.10
-Nodes (22): enhanced_compute_signals(), main(), MLSignalEnhancer, print_enhanced_results(), Enhanced backtest engine with walk-forward analysis and ML-enhanced signal filte, Machine learning component to enhance signal quality and reduce false positives., Extract features for ML model., Machine learning component to enhance signal quality and reduce false positives. (+14 more)
+Nodes (19): enhanced_compute_signals(), main(), MLSignalEnhancer, print_enhanced_results(), Enhanced backtest engine with walk-forward analysis and ML-enhanced signal filte, Machine learning component to enhance signal quality and reduce false positives., Extract features for ML model., Machine learning component to enhance signal quality and reduce false positives. (+11 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.05
-Nodes (86): asof_pos(), atr_series(), backtest_cpp(), backtest_ict(), backtest_s1(), backtest_s1_v2(), backtest_s2(), backtest_s2_v2() (+78 more)
+Cohesion: 0.09
+Nodes (60): asof_pos(), atr_series(), backtest_cpp(), backtest_ict(), backtest_s1(), backtest_s1_v2(), backtest_s2(), backtest_s2_v2() (+52 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.40
@@ -572,24 +634,24 @@ Cohesion: 0.10
 Nodes (23): dependencies, date-fns, react, react-dom, react-router-dom, recharts, devDependencies, autoprefixer (+15 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.11
-Nodes (35): analyse_ea(), _build_performance_snapshot(), _check_pending_question_timeout(), _get_backtest_summary(), _load_coach_state(), _load_config(), _notify(), EACoach — Performance analyst, improvement suggester, and demo-to-live progressi (+27 more)
+Cohesion: 0.20
+Nodes (22): analyse_ea(), _build_performance_snapshot(), _check_pending_question_timeout(), _get_backtest_summary(), _load_coach_state(), _load_config(), _notify(), EACoach — Performance analyst, improvement suggester, and demo-to-live progressi (+14 more)
 
 ### Community 28 - "Community 28"
-Cohesion: 0.21
-Nodes (22): _age_minutes(), _collect_snapshot(), _escalate_to_dev(), _jtcc_snapshot(), _load_history(), _maic_health(), _notify(), SupervisorAgent — Workspace-wide heartbeat and system integrity guardian.  Runs (+14 more)
+Cohesion: 0.10
+Nodes (38): _load(), main(), GS-VP diagnostic — per-playbook + per-symbol breakdown.  Replicates backtest_one, Prefer the local cache (offline, bridge-independent); fall back to fetch., _report(), _run(), _stats(), _age_minutes() (+30 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.24
 Nodes (5): AbsorptionEvent, _atr(), OrderBlock, OrderFlowDetector, Order-flow signals: absorption + order blocks.  ABSORPTION:   Heavy tick-volume
 
 ### Community 30 - "Community 30"
-Cohesion: 0.07
-Nodes (24): App(), BotsAgents, CppPortfolio, Desk, EAs, Factory, History, Hub (+16 more)
+Cohesion: 0.05
+Nodes (45): CoachState, ConfluenceBar(), ConfluenceData, EMPTY_STATE, EquityPoint, EquitySparkline(), GuardianState, HeatmapState (+37 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.07
-Nodes (40): prefersReduced(), useCountUp(), useValueFlash(), Approval, ARTIFACTS, ArtName, Job, JobSummary (+32 more)
+Cohesion: 0.06
+Nodes (34): prefersReduced(), useCountUp(), useValueFlash(), Approval, ARTIFACTS, ArtName, Job, JobSummary (+26 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.07
@@ -612,7 +674,7 @@ Cohesion: 0.18
 Nodes (9): _fetch_atr(), PaperTrade, PaperTradeTracker, _pip_mult(), Paper Trade Tracker — opens a simulated 1% risk + 1:2 RR scalping trade for ever, One global tracker. Inject into both engines so each emitted signal     opens a, Open a paper trade. `signal` is the SignalEvent dict from emit()., Per-system × per-type rollup of WIN/LOSS/TIMEOUT + win rate + pips. (+1 more)
 
 ### Community 37 - "Community 37"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (12): _backtest_gate(), _load_file(), _quarantine_file(), Strategy loader — auto-discovers and hot-reloads YAML strategy files from strate, Scan directory for .yaml files (excluding STRATEGY_TEMPLATE). Returns new count., Start background thread that polls for new/changed YAML files., Returns error string if invalid, None if valid., Move broken YAML to _quarantine/ folder and notify Telegram. (+4 more)
 
 ### Community 38 - "Community 38"
@@ -628,8 +690,8 @@ Cohesion: 0.10
 Nodes (18): main(), PerformanceOptimizer, Performance Optimization Agent - Analyzes results, improves strategies, and mana, Create an empty performance log structure., Save knowledge base to file., Save performance log to file., Analyze recent trading performance to identify improvement areas., Optimize system parameters based on performance analysis. (+10 more)
 
 ### Community 41 - "Community 41"
-Cohesion: 0.19
-Nodes (18): check_signal(), DailyState, fetch_bars(), get_open_positions(), has_open_position(), _journal_open(), load(), log_status() (+10 more)
+Cohesion: 0.23
+Nodes (15): check_signal(), DailyState, fetch_bars(), get_open_positions(), has_open_position(), _journal_open(), load(), log_status() (+7 more)
 
 ### Community 42 - "Community 42"
 Cohesion: 0.14
@@ -644,8 +706,8 @@ Cohesion: 0.12
 Nodes (15): _build_prompt(), daily_calls(), MasterAgent, _parse_response(), Layer 3: Master Decision Agent — the ONLY component that calls Claude API. Calle, Returns rejection reason string if blocked, None if clear to proceed., Returns rejection reason string if blocked, None if clear to proceed., Gate-check then call Claude API. Returns decision dict. (+7 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.20
-Nodes (18): CHART, tooltipProps, DDPoint, DrawdownChart(), Props, EmptyChart(), EquityCurveChart(), Props (+10 more)
+Cohesion: 0.08
+Nodes (26): CHART, tooltipProps, DDPoint, DrawdownChart(), Props, PnLBarChart, PnLItem, Props (+18 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.06
@@ -660,8 +722,8 @@ Cohesion: 0.37
 Nodes (11): _adx(), _atr(), _ema(), _heikin_ashi(), _macd(), MomentumAgent, Layer 1: Momentum indicators — ATR, RSI, EMA, HA, ADX, Stoch, MACD. Pure Python,, Simplified ADX calculation. (+3 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.29
-Nodes (8): AlphaSignal, _atr_value(), _flow_pts(), _nearby_pool_pts(), Confluence scorer + real-time alpha-signal emitter.  Inputs per symbol:   - snap, How many distinct factor types fired same-side in window., _tier(), _zone_freshness_pts()
+Cohesion: 0.21
+Nodes (11): AlphaSignal, _atr_value(), ConfluenceScorer, _flow_pts(), _nearby_pool_pts(), Confluence scorer + real-time alpha-signal emitter.  Inputs per symbol:   - snap, Per-tick scorer + signal emitter. Holds a small per-symbol memory     so we can, How many distinct factor types fired same-side in window. (+3 more)
 
 ### Community 50 - "Community 50"
 Cohesion: 0.22
@@ -672,24 +734,24 @@ Cohesion: 0.17
 Nodes (6): _atr(), Supply & Demand zone detection + lifecycle tracker.  Detection rule (simple but, Zones within `atr_units` ATR of current price., Per-symbol zone store. Update with .ingest(symbol, tf, df) each tick., Zone, ZoneTracker
 
 ### Community 52 - "Community 52"
-Cohesion: 0.18
-Nodes (19): _ea_backtests(), get_reports(), _parse_backtest(), color(), MonthlyHeatmap(), MONTHS, Props, BacktestMetrics (+11 more)
+Cohesion: 0.16
+Nodes (22): _ea_backtests(), get_reports(), _parse_backtest(), color(), MonthlyHeatmap(), MONTHS, Props, clsx (+14 more)
 
 ### Community 53 - "Community 53"
 Cohesion: 0.20
 Nodes (13): analyze_report(), _find_new_reports(), _load_history(), _parse_report(), BacktestAnalyst — Automatically analyzes backtest HTML reports using Claude.  Wa, Watch backtest_reports/ for new HTML files and analyze them automatically., Extracts text content from backtest HTML reports., Analyze a single backtest HTML report. Returns the analysis markdown. (+5 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.32
-Nodes (10): DevLeadAgent — Orchestrates the full development engineering team.  Receives a t, _route_task(), _run_backtest(), _run_code_review(), _run_debug(), _run_doc_keeper(), _run_ea_sync(), _run_monitor() (+2 more)
+Cohesion: 0.25
+Nodes (12): DevLeadAgent — Orchestrates the full development engineering team.  Receives a, Restart a dead/stuck managed service via the orchestrator. The dev team's     o, _route_task(), _run_backtest(), _run_code_review(), _run_debug(), _run_doc_keeper(), _run_ea_sync() (+4 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.11
 Nodes (17): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleResolution, noEmit (+9 more)
 
 ### Community 56 - "Community 56"
-Cohesion: 0.20
-Nodes (14): _detect_equal_levels(), _detect_fvg(), _detect_order_blocks(), _detect_sweep(), _ote_zone(), _pd_zone(), Layer 1: SMC/ICT detector — OB, FVG, liquidity sweeps, OTE zone. Pure Python., Order Block: last opposite candle before BOS. Simplified: last bearish before bu (+6 more)
+Cohesion: 0.14
+Nodes (21): ABC, analyze(), BaseAgent, Abstract base class for all JTCC Layer 1 analysis agents., Run fn safely, return default on any exception., All L1 agents inherit this. Must return dict in under 50ms. No Claude API calls., _detect_equal_levels(), _detect_fvg() (+13 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.15
@@ -702,10 +764,6 @@ Nodes (17): main(), Session analyzer for dynamic session optimization based on v
 ### Community 59 - "Community 59"
 Cohesion: 0.32
 Nodes (16): activate(), alloc_remote(), double_click_screen(), find_mt5(), find_treeview(), free_remote(), get_item_rect_screen(), get_item_text() (+8 more)
-
-### Community 60 - "Community 60"
-Cohesion: 0.32
-Nodes (4): Chart renderer for signal feeds — white background, 9/15/200 EMAs overlaid on ca, Render the last `bars` candles with EMA 9/15/200 on a white background.      df, render_signal_chart(), Signal Engine — multi-TF EMA-200 alignment scanner with chart-attached Telegram
 
 ### Community 61 - "Community 61"
 Cohesion: 0.22
@@ -724,8 +782,8 @@ Cohesion: 0.29
 Nodes (7): build_context(), MarketContext, mock(), Builds shared MarketContext JSON — the standardized input to all Layer 2 strateg, Holds one complete market snapshot for a single symbol., Serialized context for strategy rule engine and Master Agent prompt., Run all L1 agents in parallel and assemble the full MarketContext.
 
 ### Community 65 - "Community 65"
-Cohesion: 0.21
-Nodes (7): loop(), main(), Session Scalper — 3×/day TradingView scalp plan, ~30 min before each open.  Fire, run_once(), TVClient — drive the tradingview-mcp stdio server from Python.  The TradingView, Best-effort cross-process lock via an exclusive lock file., TVLock
+Cohesion: 0.23
+Nodes (7): tv_desk configuration — symbols, timeframes, RR targets, paths, schedule.  Every, tv_desk — TradingView-driven analysis agents.  Two scheduled agents that read Tr, loop(), main(), Session Scalper — 3×/day TradingView scalp plan, ~30 min before each open.  Fire, run_once(), TVClient — drive the tradingview-mcp stdio server from Python.  The TradingView
 
 ### Community 66 - "Community 66"
 Cohesion: 0.29
@@ -740,8 +798,8 @@ Cohesion: 0.25
 Nodes (14): _calc_sl_tp(), _coerce(), _eval_rule(), _eval_rules_list(), YAML rule engine — evaluates strategy rules against MarketContext. No Claude API, All rules must pass (AND logic)., Calculate SL and TP from exit rules and market context., Evaluates a strategy YAML definition against a MarketContext dict. (+6 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.15
-Nodes (20): _no_kill_switch(), Money-path tests for JTCC risk_manager.  These guard the rules that protect real, Point KILL_SWITCH at a non-existent file so can_trade() isn't blocked     by a s, _state(), test_can_trade_blocked_at_max_per_symbol(), test_can_trade_blocked_at_max_total(), test_can_trade_blocked_by_dd(), test_can_trade_fails_safe_on_corrupt_kill_switch() (+12 more)
+Cohesion: 0.14
+Nodes (22): _no_kill_switch(), Money-path tests for JTCC risk_manager.  These guard the rules that protect re, Point KILL_SWITCH at a non-existent file so can_trade() isn't blocked     by a, _state(), test_can_trade_blocked_at_max_per_symbol(), test_can_trade_blocked_at_max_total(), test_can_trade_blocked_by_dd(), test_can_trade_fails_safe_on_corrupt_kill_switch() (+14 more)
 
 ### Community 70 - "Community 70"
 Cohesion: 0.27
@@ -756,16 +814,16 @@ Cohesion: 0.17
 Nodes (6): ICTSpecialist, ICT 2022 Specialist — LLM-powered ICT setup analyzer.  Unlike rule-based YAML st, Cheap pre-check before spending tokens. Returns (call_llm, reason)., Build compact ICT-focused prompt (strip irrelevant data)., Returns a vote dict in the same format as rule_engine.evaluate().          Outpu, LLM-powered ICT 2022 analyst. Votes alongside YAML rule strategies.
 
 ### Community 73 - "Community 73"
-Cohesion: 0.19
-Nodes (16): calculate_lot(), can_trade(), check_daily_dd(), check_spread(), emergency_close_all(), get_account(), Hard risk rules enforcement — 1% equity per trade, 6% daily DD shutdown., Returns (ok, reason). Spread > 20% of SL distance = skip. (+8 more)
+Cohesion: 0.14
+Nodes (20): calculate_lot(), can_trade(), check_daily_dd(), check_spread(), emergency_close_all(), get_account(), Hard risk rules enforcement — 1% equity per trade, 6% daily DD shutdown., Returns (ok, reason). Spread > 20% of SL distance = skip. (+12 more)
 
 ### Community 74 - "Community 74"
 Cohesion: 0.16
 Nodes (3): Call an MCP tool, return the parsed tool payload (dict/list)., TVClient, TVError
 
 ### Community 75 - "Community 75"
-Cohesion: 0.11
-Nodes (32): get_hq(), put_hq(), Telegram HQ dashboard API — view routing, toggle topics, send test pings., Update only safe prefs. Never touches thread_id / group_chat_id     (those are o, test_send(), AgentCard(), AgentsData, BotsAgents() (+24 more)
+Cohesion: 0.07
+Nodes (47): get_hq(), put_hq(), Telegram HQ dashboard API — view routing, toggle topics, send test pings., Update only safe prefs. Never touches thread_id / group_chat_id     (those are o, test_send(), AgentCard(), AgentsData, BotsAgents() (+39 more)
 
 ### Community 76 - "Community 76"
 Cohesion: 0.17
@@ -804,8 +862,8 @@ Cohesion: 0.22
 Nodes (11): discrepancies, ea_source, generated_at, python_source, recommended_params, PART_LV[0], PART_LV[1], PART_LV[2] (+3 more)
 
 ### Community 85 - "Community 85"
-Cohesion: 0.41
-Nodes (10): _heal(), _in_active_window(), load_config(), _parse_hhmm(), Signal delivery control — time windows + per-channel on/off.  A single JSON conf, Master decision: deliver a signal of `category` (Telegram + WS) now?, Snapshot for the API: config + whether each channel would deliver now., save_config() (+2 more)
+Cohesion: 0.32
+Nodes (12): _heal(), _in_active_window(), load_config(), _parse_hhmm(), Signal delivery control — time windows + per-channel on/off.  A single JSON conf, Master decision: deliver a signal of `category` (Telegram + WS) now?, Master decision: deliver a signal of `category` (Telegram + WS) now?, Snapshot for the API: config + whether each channel would deliver now. (+4 more)
 
 ### Community 86 - "Community 86"
 Cohesion: 0.38
@@ -820,12 +878,12 @@ Cohesion: 0.40
 Nodes (9): _check_once(), MonitorAgent — Continuous watchdog for the live MT5 trading system.  Polls _live, Continuous polling loop. Blocks forever., Run a single check. Returns the monitor result dict., _read_live_state(), run_loop(), run_once(), _save_monitor_state() (+1 more)
 
 ### Community 89 - "Community 89"
-Cohesion: 0.20
-Nodes (10): EASyncAgent — Detects parameter drift between Python strategies and MQL5 EAs.  C, _read_safe(), sync_strategy(), notify(), Shared Telegram notifier for all agents.  Thin backward-compatible shim over the, _extract_symbols(), TestWriterAgent — Generates pytest test suites for any Python module.  Usage:, Extract function and class names via AST. (+2 more)
+Cohesion: 0.21
+Nodes (12): _filter_diff(), _get_commit_sha(), _get_diff(), CodeReviewerAgent — Claude-powered code review on git diffs.  Usage:   python -m, Keep only .py and .mq5 file sections, cap at 8000 chars., review(), _write_report(), EASyncAgent — Detects parameter drift between Python strategies and MQL5 EAs.  C (+4 more)
 
 ### Community 90 - "Community 90"
-Cohesion: 0.09
-Nodes (60): asof_pos(), atr_series(), backtest_cpp(), backtest_ict(), backtest_s1(), backtest_s1_v2(), backtest_s2(), backtest_s2_v2() (+52 more)
+Cohesion: 0.05
+Nodes (86): asof_pos(), atr_series(), backtest_cpp(), backtest_ict(), backtest_s1(), backtest_s1_v2(), backtest_s2(), backtest_s2_v2() (+78 more)
 
 ### Community 91 - "Community 91"
 Cohesion: 0.33
@@ -836,7 +894,7 @@ Cohesion: 0.36
 Nodes (9): activate(), find_mt5(), key_combo(), main(), press(), run_setup_script.py Runs Setup_MTF_Charts script inside the live MT5 terminal us, Press a combo of VK codes simultaneously, then release., Type ASCII text using VK codes. (+1 more)
 
 ### Community 93 - "Community 93"
-Cohesion: 0.31
+Cohesion: 0.36
 Nodes (6): _check_news(), _fetch_calendar(), _get_calendar(), NewsGuardAgent, Layer 1: News guard — blocks trading around high-impact economic events. Uses FM, Fetch FMP economic calendar for the next 24 hours.
 
 ### Community 94 - "Community 94"
@@ -864,24 +922,24 @@ Cohesion: 0.53
 Nodes (8): build_digest(), _next_digest_time(), _pending_approvals(), Telegram HQ — daily digest + approval reminders.  Posts a once-a-day rollup (P&L, _read(), run_loop(), run_reminders(), send_digest()
 
 ### Community 100 - "Community 100"
-Cohesion: 0.11
-Nodes (18): _calc_lots(), DailyState, _eval_signal(), _fetch_bars(), _has_open_position(), _journal_open(), load(), _load_gs12_config() (+10 more)
+Cohesion: 0.10
+Nodes (19): _calc_lots(), DailyState, _eval_signal(), _fetch_bars(), _has_open_position(), _journal_open(), load(), _load_gs12_config() (+11 more)
 
 ### Community 101 - "Community 101"
 Cohesion: 0.36
 Nodes (7): compute(), compute_crypto(), _ewma_vol(), Time Series Momentum (TSMOM) — Moskowitz, Ooi, Pedersen 2012.  Sign of past N-pe, EWMA volatility (annualized). Paper eq.1: σ²_t = 261 * Σ (1-δ)δ^i (r - r̄)², Compute TSMOM signal + sizing for a single instrument.      Returns:         {, Crypto-tuned TSMOM (Liu & Tsyvinski 2021): 1-4 week lookback. Default 28 bars.
 
 ### Community 102 - "Community 102"
-Cohesion: 0.47
-Nodes (7): _filter_diff(), _get_commit_sha(), _get_diff(), CodeReviewerAgent — Claude-powered code review on git diffs.  Usage:   python -m, Keep only .py and .mq5 file sections, cap at 8000 chars., review(), _write_report()
+Cohesion: 0.10
+Nodes (28): _bars_since(), BoardTrader, _build_snapshots(), _calc_lots(), _close_position(), _connect(), DailyState, _dominant() (+20 more)
 
 ### Community 103 - "Community 103"
-Cohesion: 0.15
-Nodes (9): RuntimeError, _claude_cli_call(), Call `claude -p` subprocess using the existing Claude Code subscription     (OAu, main(), Video Analysis Agent — extracts trading strategies from instructional video file, Full pipeline: video → strategy dict. Returns the strategy dict., Interactive REPL to discuss the extracted strategy with the user., Extracts trading strategies from instructional video files. (+1 more)
+Cohesion: 0.09
+Nodes (37): atr(), daily_macd_hist(), _day_range(), fetch(), line(), main(), Asian-Session multi-strategy backtest — real-cost screen.  Implements the 5 stra, Fake-breakout / stop-hunt reversal (S6). Sweep a Donchian(20) extreme then     c (+29 more)
 
 ### Community 104 - "Community 104"
-Cohesion: 0.10
-Nodes (26): backtest_one(), _fetch_bars(), _gs01_gold_ema_rsi_stoch(), _gs05_ema_crossover(), _gs06_rsi_bb_stoch_reversal(), _gs09_rsi_bb_ema200_reversal(), _gs10_ema_triple_trend(), _gs11_opening_range_scalper() (+18 more)
+Cohesion: 0.07
+Nodes (35): backtest_one(), _build_strength_history(), days_covered(), _fetch_bars(), _gs01_gold_ema_rsi_stoch(), _gs06_rsi_bb_stoch_reversal(), _gs09_rsi_bb_ema200_reversal(), _gs10_ema_triple_trend() (+27 more)
 
 ### Community 105 - "Community 105"
 Cohesion: 0.53
@@ -921,7 +979,7 @@ Nodes (5): _agent_stats(), cpp_daily(), CPP — unified Confluence Pullback Port
 
 ### Community 115 - "Community 115"
 Cohesion: 0.12
-Nodes (20): fmt(), Intraday(), Perf, StateResp, fmt(), Perf, SESSION_LABEL, SessionScalp() (+12 more)
+Nodes (19): fmt(), Intraday(), Perf, StateResp, fmt(), Perf, SESSION_LABEL, SessionScalp() (+11 more)
 
 ### Community 116 - "Community 116"
 Cohesion: 0.31
@@ -968,8 +1026,8 @@ Cohesion: 0.83
 Nodes (3): Invoke-WatchdogCheck(), Test-ProcessAlive(), Write-Log()
 
 ### Community 127 - "Community 127"
-Cohesion: 0.09
-Nodes (32): acquire_lock(), _alert(), cmd_status(), cmd_stop(), free_port(), grace_for(), load_config(), _log() (+24 more)
+Cohesion: 0.07
+Nodes (38): acquire_lock(), _alert(), cmd_status(), cmd_stop(), free_port(), grace_for(), load_config(), _log() (+30 more)
 
 ### Community 128 - "Community 128"
 Cohesion: 0.06
@@ -977,7 +1035,7 @@ Nodes (33): 0a. Security headers, 0b. Password-length startup gate, 0c. Fail-clo
 
 ### Community 129 - "Community 129"
 Cohesion: 0.06
-Nodes (33): _calc_lots(), _currency_strength(), DailyState, _fetch_bars_mt5(), _has_open_position(), _journal_open(), load(), main() (+25 more)
+Nodes (37): _calc_lots(), _currency_strength(), DailyState, _fetch_bars_mt5(), _has_open_position(), _journal_open(), load(), main() (+29 more)
 
 ### Community 130 - "Community 130"
 Cohesion: 0.06
@@ -1000,8 +1058,8 @@ Cohesion: 0.09
 Nodes (27): Access control and keys, Apply hosted migrations, CI / Deployment, code:bash (npm install -g supabase), code:powershell (npm run migrate:hosted:ps1), code:bash (npx supabase db push), code:bash (pip install supabase), code:python (from supabase import create_client) (+19 more)
 
 ### Community 195 - "Community 195"
-Cohesion: 0.06
-Nodes (49): enabled, icon_color, label, thread_id, enabled, icon_color, label, thread_id (+41 more)
+Cohesion: 0.05
+Nodes (57): enabled, icon_color, label, thread_id, alpha_confluence, ceo, critical, dev_team (+49 more)
 
 ### Community 196 - "Community 196"
 Cohesion: 0.08
@@ -1020,8 +1078,8 @@ Cohesion: 0.09
 Nodes (22): A10. Early-exit conditions (any one), A1. Timeframe framework — "Two-Timeframe Rule", A2. The setup — Set 1 / Set 2 (downtrend example), A3. Test 1 / Test 2 (the trigger inside the money spot), A4. Volume rules (quantified — directly codeable), A5. Correlation / currency strength, A6. A / B / C classification (the filter), A7. Sessions & news (+14 more)
 
 ### Community 200 - "Community 200"
-Cohesion: 0.18
-Nodes (14): _dead_at(), _h1_with_pattern(), IconicEngine, IconicTradeSignal, now_iso(), IconicEngine — combines the confluence layer (Phase 1) and the pattern layer (Ph, Pattern self-test scenario + tick_volume (pop on impulse, dead on Test 2)     +, Pattern self-test scenario + tick_volume (pop on impulse, dead on Test 2)     + (+6 more)
+Cohesion: 0.15
+Nodes (16): _dead_at(), _h1_with_pattern(), IconicEngine, IconicTradeSignal, now_iso(), IconicEngine — combines the confluence layer (Phase 1) and the pattern layer (P, Pattern self-test scenario + tick_volume (pop on impulse, dead on Test 2)     +, Pattern self-test scenario + tick_volume (pop on impulse, dead on Test 2)     + (+8 more)
 
 ### Community 201 - "Community 201"
 Cohesion: 0.17
@@ -1032,8 +1090,8 @@ Cohesion: 0.48
 Nodes (6): main(), optimize_tf(), GS12 aggressive optimizer with in-sample / out-of-sample validation.  Grid-searc, run_combo(), slice_bars(), _write_report()
 
 ### Community 203 - "Community 203"
-Cohesion: 0.38
-Nodes (12): AgentStatus, ago(), HeadStatus(), INC_TONE, IncidentRow, IncidentsData, LLMStat, Overview (+4 more)
+Cohesion: 0.16
+Nodes (21): AsiaPosition, AsiaRange, AsiaState, Backtest, BtPair, AgentStatus, ago(), HeadStatus() (+13 more)
 
 ### Community 204 - "Community 204"
 Cohesion: 0.10
@@ -1052,7 +1110,7 @@ Cohesion: 0.11
 Nodes (17): 🔧 Available MT5 Telegram Commands, code:bash (# Start the Free Claude Code server (includes Telegram bot)), code:bash (# Start just the proxy server), code:block3 (You: /mt5_account), 💡 Example Usage Flow, 🚀 How to Start the System, 🆘 Need Help?, 🔮 Next Steps / Enhancements (+9 more)
 
 ### Community 208 - "Community 208"
-Cohesion: 0.24
+Cohesion: 0.23
 Nodes (16): _add_emas(), _adx(), _align(), _cross_event(), _currency_strength(), _ema(), _fmt_symbol(), _fmt_ts_bd() (+8 more)
 
 ### Community 209 - "Community 209"
@@ -1080,28 +1138,28 @@ Cohesion: 0.12
 Nodes (16): 10. Adding a New Strategy — Checklist, 1. Manifest Required, 2. State Schema — Heartbeat Required, 3. Paper-Trade Gate — No Exceptions, 4. Global Risk Rules — Cannot Be Overridden, 5. Per-Strategy Rules — Allowed Overrides, 6. Trade Journal — Mandatory, 7. Logs Isolation (+8 more)
 
 ### Community 215 - "Community 215"
-Cohesion: 0.19
-Nodes (17): get_iconic_agent(), get_iconic_scalp_agent(), get_iconic_scalp_trades(), get_iconic_signals(), get_iconic_state(), get_iconic_symbol(), Iconic Trader API — A/B/C scoreboard + live trade signals., Iconic Scalp agent state: NZDUSD M15, paper/live mode, PF, partial exits. (+9 more)
+Cohesion: 0.12
+Nodes (25): get_iconic_agent(), get_iconic_board(), get_iconic_scalp_agent(), get_iconic_scalp_trades(), get_iconic_signals(), get_iconic_state(), get_iconic_symbol(), Iconic Trader API — A/B/C scoreboard + live trade signals. (+17 more)
 
 ### Community 216 - "Community 216"
-Cohesion: 0.14
-Nodes (10): fmt(), fmtPct(), Journal(), LossAnalysis, MISTAKE_COLOR, MISTAKE_LABEL, MistakeAgg, Stats (+2 more)
+Cohesion: 0.10
+Nodes (22): adr(), adr_used_frac(), Average Daily Range = mean of the last `period` COMPLETED daily H-L.      Pass, Fraction of ADR already covered by today's range (1.0 = exhausted)., active_session_score(), _calc_lots(), DailyState, eval_pair() (+14 more)
 
 ### Community 217 - "Community 217"
-Cohesion: 0.12
-Nodes (20): _gs12_ict_simple(), GS12: "Stupid-Simple" ICT triad — Liquidity Sweep -> Inverse FVG -> Trendline Br, GS12: "Stupid-Simple" ICT triad — Liquidity Sweep -> Inverse FVG -> Trendline Br, detect_trendline_break(), find_fvg_zones(), find_inverse_fvg(), Fractal swing highs/lows as (index, price) lists, oldest→newest.      A bar i is, Fractal swing highs/lows as (index, price) lists, oldest→newest.      A bar i is (+12 more)
+Cohesion: 0.10
+Nodes (24): _gs12_ict_simple(), GS12: "Stupid-Simple" ICT triad — Liquidity Sweep -> Inverse FVG -> Trendline Br, GS12: "Stupid-Simple" ICT triad — Liquidity Sweep -> Inverse FVG -> Trendline Br, GS12: "Stupid-Simple" ICT triad — Liquidity Sweep -> Inverse FVG -> Trendline Br, detect_trendline_break(), find_fvg_zones(), find_inverse_fvg(), Fractal swing highs/lows as (index, price) lists, oldest→newest.      A bar i is (+16 more)
 
 ### Community 218 - "Community 218"
-Cohesion: 0.25
-Nodes (14): correlation_tier(), pair_strength(), PairStrength, pick_leader(), Currency-strength correlation — Urban Forex ±7 model.  Course rule: read the *pr, ('EUR','USD') from 'EURUSD'; handles XAUUSD etc. None if not splittable., Map SignalEngine 0..10 (5=neutral) onto course ±7 scale., Return ('strong'|'neutral'|'contradicts', directional_value).      directional = (+6 more)
+Cohesion: 0.29
+Nodes (13): correlation_tier(), pair_strength(), PairStrength, pick_leader(), Currency-strength correlation — Urban Forex ±7 model.  Course rule: read the *pr, ('EUR','USD') from 'EURUSD'; handles XAUUSD etc. None if not splittable., Map SignalEngine 0..10 (5=neutral) onto course ±7 scale., Return ('strong'|'neutral'|'contradicts', directional_value).      directional = (+5 more)
 
 ### Community 219 - "Community 219"
-Cohesion: 0.25
-Nodes (13): atr(), _build_sell_scenario(), _detect_money_spot(), detect_setup(), find_pivots(), Pattern layer (Phase 2) — Set 1 / Set 2 / money spot / Test 1 / Test 2.  This is, Most recent congestion: extend a window back from the last closed bar     while, Detect a Set 1/Set 2 money-spot setup on the setup-TF dataframe. (+5 more)
+Cohesion: 0.18
+Nodes (18): atr(), _build_sell_scenario(), _detect_money_spot(), detect_setup(), find_pivots(), Pattern layer (Phase 2) — Set 1 / Set 2 / money spot / Test 1 / Test 2.  This, Most recent congestion: extend a window back from the last closed bar     while, Detect a Set 1/Set 2 money-spot setup on the setup-TF dataframe. (+10 more)
 
 ### Community 220 - "Community 220"
-Cohesion: 0.19
-Nodes (8): _default_broadcaster(), main(), Single-thread MT5 scanner. Call .run() to block, or .start() in a daemon., Single-thread MT5 scanner. Call .run() to block, or .start() in a daemon., Try to wire to the dashboard ws_manager if it's importable., Try to wire to the dashboard ws_manager if it's importable., Try to wire to the dashboard ws_manager if it's importable., SignalEngine
+Cohesion: 0.29
+Nodes (4): main(), Single-thread MT5 scanner. Call .run() to block, or .start() in a daemon., Single-thread MT5 scanner. Call .run() to block, or .start() in a daemon., SignalEngine
 
 ### Community 221 - "Community 221"
 Cohesion: 0.20
@@ -1124,20 +1182,20 @@ Cohesion: 0.33
 Nodes (11): _load_config(), _notify(), EAValidator — Tests an EA across multiple pairs, sessions, and market conditions, Return (verdict, metrics) for a single backtest result., Test EA across all configured pairs × sessions. Returns full compatibility matri, Quick single-pair validation., Run a backtest for a specific EA/symbol/session combination., _run_backtest_for_pair() (+3 more)
 
 ### Community 226 - "Community 226"
-Cohesion: 0.15
-Nodes (25): advance(), alloc_strategy_id(), append_history(), _atomic_write(), fail(), job_path(), list_jobs(), load_job() (+17 more)
+Cohesion: 0.11
+Nodes (34): advance(), alloc_strategy_id(), append_history(), artifact_dir(), _atomic_write(), fail(), job_path(), list_jobs() (+26 more)
 
 ### Community 227 - "Community 227"
 Cohesion: 0.10
 Nodes (19): discrepancies, ea_source, generated_at, python_source, recommended_params, BE_Offset_Pips, H1BiasRefresh, macd_bear_condition (+11 more)
 
 ### Community 228 - "Community 228"
-Cohesion: 0.35
-Nodes (7): ABC, analyze(), BaseAgent, Abstract base class for all JTCC Layer 1 analysis agents., Run fn safely, return default on any exception., All L1 agents inherit this. Must return dict in under 50ms. No Claude API calls., BaseAgent
+Cohesion: 0.09
+Nodes (28): Session/kill-zone flags for a unix timestamp (Asia/Dhaka hours).      Mirrors, session_info(), build_state(), fetch_pair_bars(), main(), Strength producer — fetches 28-pair H1 bars and writes the session state JSON., {symbol: {time,high,low,close}} for all 28 pairs via the MT5 bridge., Compute the full 3-session strength payload from live bars. (+20 more)
 
 ### Community 229 - "Community 229"
-Cohesion: 0.08
-Nodes (29): _gs03_vwap_macd(), _gs04_keltner_rsi_breakout(), GS03: VWAP + MACD scalp.     Entry: Price bounces off VWAP, MACD histogram posit, GS03: VWAP + MACD scalp.     Entry: Price bounces off VWAP, MACD histogram posit, GS04: Keltner Channels + RSI Volatility Scalper — BREAKOUT (NotebookLM verified), GS04: Keltner Channels + RSI Volatility Scalper — BREAKOUT (NotebookLM verified), atr(), _day_start_unix() (+21 more)
+Cohesion: 0.09
+Nodes (25): _gs03_vwap_macd(), GS03: VWAP + MACD scalp.     Entry: Price bounces off VWAP, MACD histogram posit, GS03: VWAP + MACD scalp.     Entry: Price bounces off VWAP, MACD histogram posit, GS03: VWAP + MACD scalp.     Entry: Price bounces off VWAP, MACD histogram posi, atr(), _day_start_unix(), ema(), ema_above() (+17 more)
 
 ### Community 230 - "Community 230"
 Cohesion: 0.18
@@ -1164,8 +1222,8 @@ Cohesion: 0.20
 Nodes (9): discrepancies, ea_source, generated_at, python_source, recommended_params, EntryMin, Max_Spread, RiskPct (+1 more)
 
 ### Community 236 - "Community 236"
-Cohesion: 0.28
-Nodes (7): IconicConfluenceScorer, IconicScore, Iconic A/B/C confluence scorer (Phase 1).  Combines the three measurable filters, Build a synthetic OHLC+tick_volume df. vol_profile sets the LAST bars'     volu, Build a synthetic OHLC+tick_volume df. vol_profile sets the LAST bars'     volum, _run_selftest(), _synth_df()
+Cohesion: 0.09
+Nodes (23): Agent, AgentCard, AgentCardBase(), ago(), Fleet(), FleetData, HEALTH_DOT, modeTone() (+15 more)
 
 ### Community 237 - "Community 237"
 Cohesion: 0.33
@@ -1196,7 +1254,7 @@ Cohesion: 0.38
 Nodes (3): IconicRunner, IconicRunner — in-process wrapper for SignalEngine Pass 6.  Called by SignalEngi, _utcnow()
 
 ### Community 244 - "Community 244"
-Cohesion: 0.15
+Cohesion: 0.16
 Nodes (16): _h_backtest(), _h_build_plan(), _h_classify(), _h_codegen(), _h_demo_deploy(), _h_gate_backtest(), _h_gate_live(), _h_gate_plan() (+8 more)
 
 ### Community 245 - "Community 245"
@@ -1220,20 +1278,20 @@ Cohesion: 0.25
 Nodes (4): child, line, parsed, pending
 
 ### Community 250 - "Community 250"
-Cohesion: 0.43
-Nodes (5): chat_resilient(), _emit(), Resilient LLM call — Claude with automatic NVIDIA NIM fallback + telemetry.  Eve, Try Claude SDK → claude CLI subprocess → NVIDIA NIM.      thinking=True  → Opus/, Try Claude (`model`). On any failure fall back to the NVIDIA NIM tier.      th
+Cohesion: 0.29
+Nodes (8): chat_resilient(), _claude_cli_call(), _emit(), Resilient LLM call — Claude with automatic NVIDIA NIM fallback + telemetry.  Eve, Try Claude SDK → claude CLI subprocess → NVIDIA NIM.      thinking=True  → Opus/, Try Claude SDK → claude CLI subprocess → NVIDIA NIM.      thinking=True  → Opus/, Call `claude -p` subprocess using the existing Claude Code subscription     (OAu, Try Claude (`model`). On any failure fall back to the NVIDIA NIM tier.      th
 
 ### Community 251 - "Community 251"
-Cohesion: 0.15
-Nodes (23): CppPortfolio(), Daily, PerSym, Resp, EA, EACard(), EAData, EAPerf (+15 more)
+Cohesion: 0.23
+Nodes (14): EA, EAData, EAPerf, EAPerfRow, EAPosition, EAs(), ICTPeriod, ICTResults (+6 more)
 
 ### Community 252 - "Community 252"
 Cohesion: 0.25
 Nodes (6): After validating — keep records synced, Common Tester settings (all 4), PASS / FAIL bar (graduate only if ALL met), Per-EA config, S14 special — ATR filter calibration (extra pass, after baseline), Strategy Tester Validation Plan — inspection_ea → ready_ea
 
 ### Community 253 - "Community 253"
-Cohesion: 0.20
-Nodes (9): lifespan(), _maybe_start_signal_engine(), Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOA, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD (+1 more)
+Cohesion: 0.18
+Nodes (10): lifespan(), _maybe_start_signal_engine(), Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOA, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD, Spin up the signal engine in-process so WS push is zero-IPC.      Env: DASHBOARD (+2 more)
 
 ### Community 254 - "Community 254"
 Cohesion: 0.33
@@ -1244,8 +1302,8 @@ Cohesion: 0.53
 Nodes (4): Checklist, Migrations, Security / Secrets, Summary
 
 ### Community 256 - "Community 256"
-Cohesion: 0.29
-Nodes (7): _gs02_ict_silver_bullet(), GS02: ICT Silver Bullet — session-timed FVG entry.     Session: London SB 14:00-, GS02: ICT Silver Bullet — session-timed FVG entry.     Session: London SB 14:00-, has_bearish_fvg(), has_bullish_fvg(), True if there's an unfilled bullish FVG in the last N bars., True if there's an unfilled bullish FVG in the last N bars.
+Cohesion: 0.22
+Nodes (9): _gs02_ict_silver_bullet(), GS02: ICT Silver Bullet — session-timed FVG entry.     Session: London SB 14:00-, GS02: ICT Silver Bullet — session-timed FVG entry.     Session: London SB 14:00-, GS02: ICT Silver Bullet — session-timed FVG entry.     Session: London SB 14:00, has_bearish_fvg(), has_bullish_fvg(), True if there's an unfilled bullish FVG in the last N bars., True if there's an unfilled bullish FVG in the last N bars. (+1 more)
 
 ### Community 257 - "Community 257"
 Cohesion: 0.80
@@ -1260,24 +1318,24 @@ Cohesion: 0.10
 Nodes (20): author, description, devDependencies, supabase, directories, doc, keywords, license (+12 more)
 
 ### Community 260 - "Community 260"
-Cohesion: 0.14
-Nodes (20): account_info(), _base(), copy_rates_from_pos(), _get(), _headers(), history_deals_get(), initialize(), order_send() (+12 more)
+Cohesion: 0.11
+Nodes (25): account_info(), _base(), copy_rates_from_pos(), _get(), _headers(), history_deals_get(), initialize(), order_send() (+17 more)
 
 ### Community 261 - "Community 261"
 Cohesion: 0.16
 Nodes (10): _extract(), load_module(), Safe loader + AST allow-list for factory-generated strategies.  Generated strate, Static allow-list check. Returns (ok, errors)., Validate then import a generated module from file. Raises on validation     fail, Load every generated module and register it into the given dicts.      Never ove, register_into(), validate_file() (+2 more)
 
 ### Community 262 - "Community 262"
-Cohesion: 0.21
-Nodes (12): categories, digest, digest, enabled, hour_utc, icon_color, label, reminder_hours (+4 more)
+Cohesion: 0.09
+Nodes (24): enabled, icon_color, label, thread_id, categories, alpha_signal, ea_guardian, ea_validator (+16 more)
 
 ### Community 263 - "Community 263"
 Cohesion: 0.16
 Nodes (13): ensure_connected(), _eval(), prep_symbol(), tv_layout — connection readiness + dedicated-layout helpers.  Keeps the user's w, Best-effort switch to the dedicated automation layout., Point the chart at a symbol+timeframe and clear prior agent drawings., True if TradingView is reachable over CDP. Attempts a launch once., Best-effort switch to the dedicated automation layout. (+5 more)
 
 ### Community 264 - "Community 264"
-Cohesion: 0.13
-Nodes (14): _authorized(), _group_chat_id(), _handle_approval(), handle_message(), _handle_youtube(), _parse_answer(), _pending_eas(), Telegram bot — gateway to Maic (CEO Agent) and command center for the Telegram H (+6 more)
+Cohesion: 0.14
+Nodes (13): _authorized(), _group_chat_id(), _handle_approval(), handle_message(), _handle_youtube(), _parse_answer(), _pending_eas(), Telegram bot — gateway to Maic (CEO Agent) and command center for the Telegram H (+5 more)
 
 ### Community 265 - "Community 265"
 Cohesion: 0.25
@@ -1287,9 +1345,13 @@ Nodes (14): _chart(), intraday_chart(), intraday_events(), intraday_perf(), intr
 Cohesion: 0.12
 Nodes (16): 4 EAs Available for Backtesting, code:block1 (C:\Users\Junait\AppData\Roaming\MetaQuotes\Terminal\D0E8209F), Inputs Tab, Key Metrics to Look For, MT5 Strategy Tester — Complete Backtesting Guide, Recommended Parameters to Optimize per EA, Settings Tab, Step 0: Download Maximum History (Do This First — ONE TIME ONLY) (+8 more)
 
-### Community 270 - "Community 270"
+### Community 269 - "Community 269"
 Cohesion: 0.40
-Nodes (5): nvidia_heartbeat(), Ping NVIDIA NIM API. Returns True/False/None (if not configured)., Ping NVIDIA NIM API. Returns True/False/None (if not configured)., Ping NVIDIA NIM API. Returns True/False/None (if not configured)., Ping NVIDIA NIM API. Returns True/False/None (if not configured).
+Nodes (4): graphify, Operations, Skill routing, VPS is the target (definition of done)
+
+### Community 270 - "Community 270"
+Cohesion: 0.33
+Nodes (6): nvidia_heartbeat(), Ping NVIDIA NIM API. Returns True/False/None (if not configured)., Ping NVIDIA NIM API. Returns True/False/None (if not configured)., Ping NVIDIA NIM API. Returns True/False/None (if not configured)., Ping NVIDIA NIM API. Returns True/False/None (if not configured)., Ping NVIDIA NIM API. Returns True/False/None (if not configured).
 
 ### Community 294 - "Community 294"
 Cohesion: 0.12
@@ -1328,12 +1390,12 @@ Cohesion: 0.14
 Nodes (13): XAUUSD, best_day, days, final, mdd, net, pf, profile (+5 more)
 
 ### Community 303 - "Community 303"
-Cohesion: 0.14
+Cohesion: 0.15
 Nodes (13): EURGBP, best_day, days, final, mdd, net, pf, profile (+5 more)
 
 ### Community 304 - "Community 304"
-Cohesion: 0.22
-Nodes (12): download_video(), extract_url(), fetch_metadata(), fetch_transcript(), YouTube ingestion helpers for the Strategy Factory.  Wraps yt-dlp for metadata,, Download a capped-resolution mp4 for Whisper+Vision. Returns the path or     Non, Return the first YouTube URL in a text blob, or None., Title/channel/description/duration via `yt-dlp --dump-json`. Returns a     dict (+4 more)
+Cohesion: 0.15
+Nodes (17): download_video(), extract_url(), fetch_metadata(), fetch_transcript(), list_channel_videos(), YouTube ingestion helpers for the Strategy Factory.  Wraps yt-dlp for metadata, Download a capped-resolution mp4 for Whisper+Vision. Returns the path or     Non, Auto-subtitle transcript via yt-dlp (no Whisper needed). Returns plain     text (+9 more)
 
 ### Community 305 - "Community 305"
 Cohesion: 0.15
@@ -1372,7 +1434,7 @@ Cohesion: 0.15
 Nodes (13): EURCAD, best_day, days, final, mdd, net, pf, profile (+5 more)
 
 ### Community 314 - "Community 314"
-Cohesion: 0.15
+Cohesion: 0.14
 Nodes (13): EURNZD, best_day, days, final, mdd, net, pf, profile (+5 more)
 
 ### Community 315 - "Community 315"
@@ -1417,15 +1479,15 @@ Nodes (10): daily_trades, AUDCHF, NZDJPY, USDCAD, mt5_connected, nvidia_api_aliv
 
 ### Community 325 - "Community 325"
 Cohesion: 0.27
-Nodes (10): _build_grid(), optimize_generic(), _params_dict(), Generic walk-forward optimizer for factory strategies.  Generalizes scalp/optimi, The mutable *_PARAMS dict in the strategy's module namespace, or None., Grid = spec.tunable_params restricted to keys that exist in the strategy's     p, Run the walk-forward optimization. Returns a result dict with full-sample     me, _save_config() (+2 more)
+Nodes (10): _build_grid(), optimize_generic(), _params_dict(), Generic walk-forward optimizer for factory strategies.  Generalizes scalp/opti, The mutable *_PARAMS dict in the strategy's module namespace, or None., Grid = spec.tunable_params restricted to keys that exist in the strategy's, Run the walk-forward optimization. Returns a result dict with full-sample     m, _save_config() (+2 more)
 
 ### Community 326 - "Community 326"
 Cohesion: 0.18
 Nodes (11): account, balance, daily_dd_pct, daily_pnl, equity, free_margin, login, margin (+3 more)
 
 ### Community 327 - "Community 327"
-Cohesion: 0.13
-Nodes (17): _call_claude(), _call_claude_followup(), _call_claude_sdk(), _find_claude(), Try Claude CLI. Returns response text or None on any failure., Locate the claude CLI executable — handles missing PATH in hidden processes., Try Claude CLI. Returns response text or None on any failure., Locate the claude CLI executable — handles missing PATH in hidden processes. (+9 more)
+Cohesion: 0.25
+Nodes (8): _call_claude(), _call_claude_sdk(), Try Claude CLI. Returns response text or None on any failure., Try Claude CLI. Returns response text or None on any failure., Try Claude CLI. Returns response text or None on any failure., Try the Anthropic SDK (needs ANTHROPIC_API_KEY). Fast path — preferred on     th, Try the Anthropic SDK (needs ANTHROPIC_API_KEY). Fast path — preferred on     th, Claude via SDK (API key) → CLI → None (caller then uses NVIDIA).
 
 ### Community 328 - "Community 328"
 Cohesion: 0.20
@@ -1437,7 +1499,7 @@ Nodes (24): discrepancies, ea_source, generated_at, python_source, recommended_p
 
 ### Community 330 - "Community 330"
 Cohesion: 0.20
-Nodes (10): bar_time, direction, bar_time, direction, last_signals, AUDCHF, GBPAUD, NZDJPY (+2 more)
+Nodes (10): bar_time, direction, bar_time, direction, last_signals, AUDCAD, GBPAUD, NZDJPY (+2 more)
 
 ### Community 331 - "Community 331"
 Cohesion: 0.33
@@ -1460,8 +1522,8 @@ Cohesion: 0.10
 Nodes (20): discrepancies, ea_source, generated_at, python_source, recommended_params, BE_Lock_Pips, BE_Pips, daily_dd_halt (+12 more)
 
 ### Community 336 - "Community 336"
-Cohesion: 0.32
-Nodes (7): build_plan(), _fallback_spec(), merge_spec(), Merge research artifacts into one canonical strategy spec + a human plan.  The s, BUILD_PLAN: render a concise markdown plan for the user to approve., MERGE_SPEC: combine artifacts into a canonical spec dict, save it, return it., _read()
+Cohesion: 0.28
+Nodes (8): build_plan(), _fallback_spec(), merge_spec(), Merge research artifacts into one canonical strategy spec + a human plan.  The, BUILD_PLAN: render a concise markdown plan for the user to approve., BUILD_PLAN: render a concise markdown plan for the user to approve., MERGE_SPEC: combine artifacts into a canonical spec dict, save it, return it., _read()
 
 ### Community 337 - "Community 337"
 Cohesion: 0.29
@@ -1496,20 +1558,20 @@ Cohesion: 0.26
 Nodes (16): _backtest(), _cfg(), _idea_id(), _load_state(), _notify(), _observe_downstream(), _pitch_to_ceo(), GrowthPipeline — the autonomous strategy-growth loop.  Each cycle: Scout collect (+8 more)
 
 ### Community 345 - "Community 345"
-Cohesion: 0.11
-Nodes (35): AuthGate(), Phase, useSettings(), HQCategory, HQOutboxEntry, HQState, useTelegramHQ(), api() (+27 more)
+Cohesion: 0.16
+Nodes (22): AuthGate(), Phase, useSettings(), HQCategory, HQOutboxEntry, HQState, useTelegramHQ(), api() (+14 more)
 
 ### Community 346 - "Community 346"
-Cohesion: 0.20
-Nodes (19): _append(), close_trade(), _flush(), _folded(), get_all(), get_open_tickets(), _load(), open_trade() (+11 more)
+Cohesion: 0.15
+Nodes (26): _agg(), _append(), close_trade(), _flush(), _folded(), get_all(), get_open_tickets(), get_stats() (+18 more)
 
 ### Community 347 - "Community 347"
-Cohesion: 0.12
-Nodes (18): backtest_ngs_pyramid(), main(), NGS_Pyramid multi-symbol test (Phase 3B).  XAUUSD M5 failed the gate (0/81 confi, main(), NextGenSync_Pyramid real-cost backtest gate (Phase 2).  Mirrors NextGenSync_Pyra, adx_series(), backtest_ngs_pyramid_v2(), main() (+10 more)
+Cohesion: 0.15
+Nodes (15): backtest_ngs_pyramid(), main(), NGS_Pyramid multi-symbol test (Phase 3B).  XAUUSD M5 failed the gate (0/81 confi, main(), NextGenSync_Pyramid real-cost backtest gate (Phase 2).  Mirrors NextGenSync_Pyra, adx_series(), backtest_ngs_pyramid_v2(), main() (+7 more)
 
 ### Community 348 - "Community 348"
-Cohesion: 0.31
-Nodes (9): Layout(), MobileNav(), NAV, NAV, Sidebar(), Icon(), IconName, PATHS (+1 more)
+Cohesion: 0.35
+Nodes (8): useFavorites(), MobileNav(), NAV, Sidebar(), Icon(), IconName, PATHS, Props
 
 ### Community 349 - "Community 349"
 Cohesion: 0.83
@@ -1548,8 +1610,8 @@ Cohesion: 0.12
 Nodes (16): discrepancies, ea_source, generated_at, python_source, recommended_params, MagicNumber, news_filter, note_on_ob_fvg (+8 more)
 
 ### Community 363 - "Community 363"
-Cohesion: 0.20
-Nodes (7): EMPTY, fmtTime(), PerSym, SYM_NOTE, VolumeProfile(), VpState, VpTrade
+Cohesion: 0.10
+Nodes (12): API_BASE, clearConsoleToken(), consoleFetch(), consoleWsUrl(), getConsoleToken(), setConsoleToken(), Console(), Ev (+4 more)
 
 ### Community 364 - "Community 364"
 Cohesion: 0.67
@@ -1628,16 +1690,16 @@ Cohesion: 0.24
 Nodes (13): _client(), _fallback_entries(), _fallback_narrative(), _parse_json(), synthesize — turn structural facts into concrete entries.  The deterministic det, 0-100 confluence score + tier + factor list., All real price levels the agent detected, as (price, label)., _score() (+5 more)
 
 ### Community 427 - "Community 427"
-Cohesion: 0.19
-Nodes (10): draw_plan(), _hline(), annotate — mark trades on TradingView with the native Long/Short Position tool., Draw one Long/Short Position tool per entry, screenshot, return PNG bytes., Render facts+plan on the chart and return screenshot PNG bytes., _rect(), _text(), _ticks() (+2 more)
+Cohesion: 0.33
+Nodes (8): draw_plan(), _hline(), annotate — mark trades on TradingView with the native Long/Short Position tool., Draw one Long/Short Position tool per entry, screenshot, return PNG bytes., Render facts+plan on the chart and return screenshot PNG bytes., _rect(), _text(), _ticks()
 
 ### Community 428 - "Community 428"
 Cohesion: 0.52
 Nodes (6): append_event(), ensure(), _now(), store — per-agent persistence (state + events + chart PNGs).  Mirrors the dashbo, save_chart(), write_state()
 
 ### Community 429 - "Community 429"
-Cohesion: 0.39
-Nodes (7): _load(), main(), GS-VP diagnostic — per-playbook + per-symbol breakdown.  Replicates backtest_one, Prefer the local cache (offline, bridge-independent); fall back to fetch., _report(), _run(), _stats()
+Cohesion: 0.11
+Nodes (14): ExecutionManager, main(), Execution & Risk Agent - Manages live trading, risk controls, and position sizin, Assess risk of a potential trade., Execute a trade with risk management., Manages live trade execution, risk controls, and position sizing., Update performance metrics based on trade history., Emergency stop - close all positions and disable trading. (+6 more)
 
 ### Community 430 - "Community 430"
 Cohesion: 0.60
@@ -1656,8 +1718,8 @@ Cohesion: 0.19
 Nodes (20): backtest_strategy(), _build_ctx_at(), _build_mtf_context_at_t(), _compute_orb_at(), _compute_session_range_at(), _compute_vwap_at(), _fetch_bars(), _intraday_at() (+12 more)
 
 ### Community 434 - "Community 434"
-Cohesion: 0.40
-Nodes (5): calc_lots(), Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot, Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot, Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot, Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot
+Cohesion: 0.33
+Nodes (6): calc_lots(), Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot, Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot, Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot, Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot, Position sizing: risk_pct% of current EQUITY (compounds automatically).     Lot
 
 ### Community 435 - "Community 435"
 Cohesion: 0.20
@@ -1668,12 +1730,12 @@ Cohesion: 0.33
 Nodes (8): build_report(), main(), _max_drawdown(), EA Performance Report — realized per-EA stats from live MT5 history.  Pulls clos, Max peak-to-trough drawdown of the realized equity curve ($)., positions: list of dicts {pnl, close_time} for one EA., _stats(), write_and_print()
 
 ### Community 437 - "Community 437"
-Cohesion: 0.42
-Nodes (8): _enable_autotrading(), _find_mt5_window(), main(), _notify(), AutoTrading Guard — keep MT5 "Algo Trading" enabled on the headless VPS.  MT5's, run_once(), _trade_allowed(), _xenv()
+Cohesion: 0.28
+Nodes (12): _enable_autotrading(), _find_mt5_window(), _health(), main(), _notify(), AutoTrading Guard — keep MT5 "Algo Trading" enabled on the headless VPS.  MT5's, Full bridge /health dict, or None if the bridge itself is unreachable     (that, Kill a hung wine MT5 terminal and relaunch it. The bridge's _ensure_mt5     re-i (+4 more)
 
 ### Community 438 - "Community 438"
-Cohesion: 0.29
-Nodes (7): _detect_and_journal_closes(), _get_tracked_positions(), _journal_close(), Return {ticket: {symbol, sl, tp}} for all bot-magic positions., Return {ticket: {symbol, sl, tp}} for all bot-magic positions., Compare prev positions vs current. Journal any that closed. Return current., Compare prev positions vs current. Journal any that closed. Return current.
+Cohesion: 0.22
+Nodes (9): _detect_and_journal_closes(), _get_tracked_positions(), _journal_close(), Return {ticket: {symbol, sl, tp}} for all bot-magic positions., Return {ticket: {symbol, sl, tp}} for all bot-magic positions., Compare prev positions vs current. Journal any that closed. Return current., Compare prev positions vs current. Journal any that closed. Return current., Return {ticket: {symbol, sl, tp}} for all bot-magic positions. (+1 more)
 
 ### Community 439 - "Community 439"
 Cohesion: 0.47
@@ -1736,8 +1798,8 @@ Cohesion: 0.41
 Nodes (6): Setup, AgentVerdict, Trade Confirmation & Regime Agent — the AI half of the hybrid CPP system. ======, Decide on one candidate setup. `context` (live only) may carry         {news_hig, _selftest(), TradeConfirmationAgent
 
 ### Community 461 - "Community 461"
-Cohesion: 0.29
-Nodes (11): _history(), _journal_iteration(), _load_scorecard(), _notify(), _propose(), improvement_loop.py — Phase 5 north star: improve losing strategies until profit, One bounded, backtestable change. Reinforces what wins, fixes what fails., Best-effort research note for this strategy's failure mode. (+3 more)
+Cohesion: 0.26
+Nodes (12): _history(), _journal_iteration(), _load_scorecard(), _notify(), _propose(), improvement_loop.py — Phase 5 north star: improve losing strategies until profit, One bounded, backtestable change. Reinforces what wins, fixes what fails., One bounded, backtestable change. Reinforces what wins, fixes what fails. (+4 more)
 
 ### Community 462 - "Community 462"
 Cohesion: 0.24
@@ -1760,16 +1822,16 @@ Cohesion: 0.36
 Nodes (10): backtest_pairs(), backtest_tsmom(), _fetch_d1(), main(), Backtest the academic JTCC strategies on Junait's actual broker (Exness) data., Walk-forward pairs backtest with dollar-neutral legs., Walk-forward TSMOM backtest. Each bar: enter long if past_N return > 0,     shor, _summarize() (+2 more)
 
 ### Community 467 - "Community 467"
-Cohesion: 0.40
-Nodes (5): strategy_scout, enabled, icon_color, label, thread_id
+Cohesion: 0.14
+Nodes (24): _adx_di(), _calc_lots(), _ema_series(), _fetch_bars(), _has_open(), _in_session(), _is_demo(), _journal_open() (+16 more)
 
 ### Community 469 - "Community 469"
 Cohesion: 0.43
 Nodes (6): _agg(), analyze(), _classify(), _fetch_m5(), loss_analyzer.py — Post-loss analysis engine.  For every SL_HIT trade in the jou, Full loss analysis, cached for _CACHE_TTL seconds.
 
 ### Community 470 - "Community 470"
-Cohesion: 0.29
-Nodes (7): _agg(), get_stats(), _in_window(), _max_drawdown(), Returns aggregated stats: total, by_source, by_strategy, by_symbol., Isolated drawdown = worst peak-to-trough on THIS bucket's ordered closed-pnl, Aggregated per-agent / per-strategy / per-symbol stats from CLOSED trades.
+Cohesion: 0.08
+Nodes (24): Forex Gold Scalping & Trend Reversal — Deep Research Dump, Q10. What are the EXACT risk management rules taught across all strategies? Cover: (1) risk per trade as % of account, (2) position sizing formula, (3) maximum daily loss/drawdown limit, (4) maximum trades per day, (5) partial profit taking rules, (6) when to move stop to break-even, (7) trailing stop rules, (8) when to exit early. Give numbers, not general concepts., Q10. What are the EXACT risk management rules taught across all strategies? Cover: (1) risk per trade as % of account, (2) position sizing formula, (3) maximum daily loss/drawdown limit, (4) maximum trades per day, (5) partial profit taking rules, (6) when to move stop to break-even, (7) trailing stop rules, (8) when to exit early. Give numbers, not general concepts., Q11. Which currency pairs and instruments perform BEST with each strategy? When is the best time of day (GMT) to trade each strategy? Are there specific pairs to avoid? What is the minimum recommended account size and typical broker spread tolerance for each strategy?, Q11. Which currency pairs and instruments perform BEST with each strategy? When is the best time of day (UTC/GMT) to trade each strategy? Are there specific pairs to avoid? What is the minimum recommended account size and typical broker spread tolerance for each strategy? Which strategies work best during specific sessions?, Q12. What backtesting results, win rates, profit factors, or historical performance data is mentioned in the notebook for any of these strategies? Give specific numbers: win rate %, average R, profit factor, max drawdown, number of trades tested. Also, what do the ICT Silver Bullet strategy sources say about expected win rate and performance on M1/M3 specifically?, Q12. What backtesting results, win rates, profit factors, or historical performance data is mentioned in the notebook for any of these strategies? Give specific numbers: win rate %, average R, profit factor, max drawdown, number of trades tested. If no backtest data exists, what do the sources say about expected performance?, Q1. List ALL the sources, videos, PDFs, and documents uploaded to this notebook. Give the name/title of each source and a one-sentence description of what it covers. This helps me understand what strategies are available. (+16 more)
 
 ### Community 471 - "Community 471"
 Cohesion: 0.33
@@ -1780,20 +1842,20 @@ Cohesion: 0.47
 Nodes (5): _agg(), analyze(), _classify(), win_analyzer.py — Post-WIN analysis engine (mirror of loss_analyzer.py).  The im, Full win analysis, cached for _CACHE_TTL seconds.
 
 ### Community 473 - "Community 473"
-Cohesion: 0.22
-Nodes (11): _gs07_liquidity_sweep(), _gs08_m1_sniper_bos(), GS07: Liquidity sweep entry.     M15 bias → wait for swing high/low sweep on LTF, GS07: Liquidity sweep entry.     M15 bias → wait for swing high/low sweep on LTF, GS08: 3-step sniper — 15m fake-out, MSS/BOS on M1.     Simplified: detects EMA d, GS08: 3-step sniper — 15m fake-out, MSS/BOS on M1.     Simplified: detects EMA d, detect_liquidity_sweep(), Stop-hunt sweep at/near the current bar.      BULL sweep: one of the last `recen (+3 more)
+Cohesion: 0.16
+Nodes (14): _gs07_liquidity_sweep(), _gs08_m1_sniper_bos(), GS07: Liquidity sweep entry.     M15 bias → wait for swing high/low sweep on LTF, GS07: Liquidity sweep entry.     M15 bias → wait for swing high/low sweep on LTF, GS07: Liquidity sweep entry.     M15 bias → wait for swing high/low sweep on LT, GS08: 3-step sniper — 15m fake-out, MSS/BOS on M1.     Simplified: detects EMA d, GS08: 3-step sniper — 15m fake-out, MSS/BOS on M1.     Simplified: detects EMA d, GS08: 3-step sniper — 15m fake-out, MSS/BOS on M1.     Simplified: detects EMA (+6 more)
 
 ### Community 474 - "Community 474"
-Cohesion: 0.40
-Nodes (3): agent_for_magic(), magic_registry.py — Canonical MT5 magic-number → agent map. Single source of tru, Agent/EA name for a magic, or None if it's not one of ours (manual trade, other
+Cohesion: 0.33
+Nodes (4): agent_for_magic(), magic_registry.py — Canonical MT5 magic-number → agent map. Single source of tru, Agent/EA name for a magic, or None if it's not one of ours (manual trade, other, Agent/EA name for a magic, or None if it's not one of ours (manual trade, other
 
 ### Community 475 - "Community 475"
-Cohesion: 0.40
-Nodes (5): enabled, icon_color, label, thread_id, alpha_signal
+Cohesion: 0.17
+Nodes (22): _allowed_nets(), _b64d(), _b64e(), _bearer(), check_password(), client_ip(), console_enabled(), guard_ip() (+14 more)
 
 ### Community 476 - "Community 476"
-Cohesion: 0.40
-Nodes (5): ea_guardian, enabled, icon_color, label, thread_id
+Cohesion: 0.17
+Nodes (22): _cfg(), _collect_llm(), _collect_papers(), _collect_web(), _collect_youtube(), _curate(), _hash(), _is_dup_title() (+14 more)
 
 ### Community 477 - "Community 477"
 Cohesion: 0.67
@@ -1812,56 +1874,252 @@ Cohesion: 0.33
 Nodes (6): ALPHA DESK — institutional confluence signal system.  Stacks 6 analysis layers o, generate_session_brief(), Pre-session brief generator.  Builds a markdown/text report from the current alp, `snapshots` = SignalEngine per-tick snapshot map, `pending_setups`     is a pre-, _strength_bot(), _strength_top()
 
 ### Community 482 - "Community 482"
-Cohesion: 0.40
-Nodes (5): ea_validator, enabled, icon_color, label, thread_id
+Cohesion: 0.11
+Nodes (15): Props, SESSION_COLS, StrengthHeatmap(), StrengthMeter(), StrengthRow, AgentState, fmtTime(), SessionData (+7 more)
 
 ### Community 483 - "Community 483"
 Cohesion: 0.40
 Nodes (5): Parse and execute a [DELEGATE: ...] block., Parse and execute a [DELEGATE: ...] block., Parse and execute a [DELEGATE: ...] block., Parse and execute a [DELEGATE: ...] block., _run_delegation()
 
 ### Community 484 - "Community 484"
-Cohesion: 0.40
-Nodes (5): live_trading, enabled, icon_color, label, thread_id
+Cohesion: 0.10
+Nodes (19): arxiv_max, arxiv_query, curation_min_score, interval_hours, llm_ideas_per_run, max_jobs_per_run, max_text_jobs_per_run, max_youtube_jobs_per_run (+11 more)
 
 ### Community 485 - "Community 485"
 Cohesion: 0.40
 Nodes (5): signal_alignment, enabled, icon_color, label, thread_id
 
 ### Community 486 - "Community 486"
-Cohesion: 0.67
-Nodes (3): bar_time, direction, AUDCAD
+Cohesion: 0.18
+Nodes (17): atr(), calc_lots(), flatten(), get_m15(), has_open(), _journal_close(), _journal_open(), main() (+9 more)
 
 ### Community 487 - "Community 487"
 Cohesion: 0.67
 Nodes (3): USDJPY, bar_time, direction
 
 ### Community 488 - "Community 488"
-Cohesion: 0.40
-Nodes (5): critical, enabled, icon_color, label, thread_id
+Cohesion: 0.15
+Nodes (11): _authorized(), _group_chat_id(), _handle_approval(), handle_message(), _handle_youtube(), _parse_answer(), _pending_eas(), Telegram bot — gateway to Maic (CEO Agent) and command center for the Telegram H (+3 more)
+
+### Community 489 - "Community 489"
+Cohesion: 0.17
+Nodes (16): get_active_trades(), get_client(), get_risk_config(), push_account_snapshot(), push_log(), push_signal(), push_trade(), query_trades() (+8 more)
 
 ### Community 490 - "Community 490"
 Cohesion: 0.50
 Nodes (3): Pending Board, Pending tasks (manual), Stalled agents (auto — do not edit)
 
+### Community 491 - "Community 491"
+Cohesion: 0.21
+Nodes (14): _age_sec(), _blotter(), _bridge_get(), _build(), fleet_overview(), _midnight_utc(), _mode(), _pairs() (+6 more)
+
+### Community 492 - "Community 492"
+Cohesion: 0.17
+Nodes (9): Ctx, Theme, ThemeCtx, ThemeProvider(), useTheme(), Layout(), Pill(), TopBar() (+1 more)
+
+### Community 493 - "Community 493"
+Cohesion: 0.20
+Nodes (14): _audit(), _block_events(), delete(), list_console_sessions(), _options(), Claude Code Console runner — drives the Claude Agent SDK headlessly inside the, Run one console turn. Streams events via `send`. `holder['client']` is set so, Replay a session's transcript as wire events for the UI. (+6 more)
+
+### Community 494 - "Community 494"
+Cohesion: 0.23
+Nodes (15): _build_roster(), _calc_lots(), _connect(), _live_metrics(), loop_once(), main(), _notify(), _now() (+7 more)
+
+### Community 495 - "Community 495"
+Cohesion: 0.13
+Nodes (14): Asian-Session Strategy Specs, Best Asian-session pairs (source consensus), BTC (BTC/USD), Claimed win-rates (UNVALIDATED — backtest decides), Deep-research additions (2026-06-04, batch 2 — BTC/gold/pairs/high-WR tactics), Gold (XAUUSD) — best hours + bias, Risk params (institutional guide), S1 — Asian Range Fade (mean-reversion) (+6 more)
+
+### Community 496 - "Community 496"
+Cohesion: 0.13
+Nodes (14): 0. Orient, 1. Pick ONE target, 2. Research premium reference (bounded), 3. Implement, 4. Build-gate, 5. Visual verify (before/after) — BEST-EFFORT, TIME-BOXED, 6. Deploy to the live VPS (:8010), 7. Post-deploy canary (+6 more)
+
+### Community 497 - "Community 497"
+Cohesion: 0.13
+Nodes (14): adx_min, adx_trend, _comment, exit_mode, max_hold_bars, max_trades_day, min_body_frac, pullback_atr (+6 more)
+
+### Community 498 - "Community 498"
+Cohesion: 0.25
+Nodes (14): build_report(), _control_plane(), _llm_activity(), main(), _parse_ts(), Daily agent activity report — a short Telegram brief, once a day at 22:00 Dhaka,, UTC instant of 00:00 today in Dhaka time., Return (worked_today, silent_today). worked_today[agent] = {calls, errors,     b (+6 more)
+
+### Community 499 - "Community 499"
+Cohesion: 0.14
+Nodes (13): discrepancies, ea_source, generated_at, python_source, recommended_params, BE_Buffer_Pips, MACD_BearCondition, MACD_BullCondition (+5 more)
+
+### Community 500 - "Community 500"
+Cohesion: 0.14
+Nodes (13): Account (current), code:bash (ssh mt5vps                         # see SSH config alias be), code:block2 (Host mt5vps), Common procedures (on the VPS), Dashboard, Deploy, Gotcha — wine bridge file ownership (reconciler silently dead), OPS RUNBOOK — single source of operational truth (+5 more)
+
+### Community 501 - "Community 501"
+Cohesion: 0.14
+Nodes (13): Architecture decisions (locked by review), Current capability (verified 2026-06-03) — ~40% there, Decision audit trail (autoplan auto-decisions), Owner decisions (gate), Phase 1 — Data foundation  *(KEYSTONE — every downstream number depends on it)*, Phase 2 — Scorecard + scheduled diagnosis, Phase 3 — CEO + report, Phase 4 — Dashboard  *(mandatory per project rule)* (+5 more)
+
+### Community 502 - "Community 502"
+Cohesion: 0.19
+Nodes (13): _gs13_m3_strength_scalp(), M3 EMA200/9-15 + RSI scalp, biased by -7..+7 currency strength.      Bias from, adr_from_m3(), atr_expansion_ok(), _atr_series(), _crossed(), m3_signal(), M3 EMA 200/9/15 + RSI entry logic + momentum filters (pure, shared).  Lives in (+5 more)
+
+### Community 503 - "Community 503"
+Cohesion: 0.24
+Nodes (12): _default_state(), get_strength_agent(), get_strength_snapshots(), get_strength_state(), get_strength_suggestions(), Currency Strength API — 3-session -7..+7 strength, suggestions, agent status., Full 3-session strength payload (score + tiers + suggestions per session)., Ranked BUY/SELL pair suggestions for one session (default New York). (+4 more)
+
+### Community 504 - "Community 504"
+Cohesion: 0.24
+Nodes (7): MOBILE_PRIMARY, NAV, NAV_GROUPS, navByPath(), NavGroup, NavItem, NAV
+
+### Community 505 - "Community 505"
+Cohesion: 0.17
+Nodes (11): discrepancies, ea_source, generated_at, python_source, recommended_params, MagicNumber, note_news, note_partials (+3 more)
+
+### Community 506 - "Community 506"
+Cohesion: 0.24
+Nodes (11): _write_state(), agent_daily_loss_usd(), agent_dd_breached(), daily_dd_usd_limit(), dd_usd_breached(), _magic_set(), Uniform per-agent daily drawdown limit, in account-currency dollars.  Demo tes, Current per-agent daily DD limit in dollars (env-overridable). (+3 more)
+
+### Community 507 - "Community 507"
+Cohesion: 0.18
+Nodes (10): discrepancies, ea_source, generated_at, python_source, recommended_params, Retrace50_Pips, Retrace70_Pips, SessionEnd (+2 more)
+
+### Community 508 - "Community 508"
+Cohesion: 0.18
+Nodes (10): 2026-06-04 13:20 UTC — Table (shared primitive), 2026-06-05 05:54 UTC — PageHeader (shared) — SKIPPED (blocked), 2026-06-05 — PageHeader (shared), Backlog (highest-value first — agent may add/reorder), Dashboard UI Polish — backlog & run log, Design system (do not drift from these), Pages (rotation pool — 26), Per-page polish state (+2 more)
+
+### Community 509 - "Community 509"
+Cohesion: 0.25
+Nodes (10): fetch_ff_events(), main(), _parse_ff_time(), News-calendar sync — fills the gap that left Iconic A-class dead.  PurposeGate (, FF 'date' like '2026-06-04T12:30:00-04:00' -> UTC-aware datetime., Raw Forex Factory weekly events (list of dicts), or [] on failure., Transform FF events into the NewsProvider schema (G7, high/medium only)., Fetch + write the iconic news calendar. Returns event count written.      On fet (+2 more)
+
+### Community 510 - "Community 510"
+Cohesion: 0.27
+Nodes (10): Asof lookup: latest computed strength with H1-close time <= t (step-hold)., _strength_at(), _adr_used_causal(), _atr_arr(), backtest_pair(), main(), Fast vectorized backtest for GS13 (M3 Strength-Scalp), real-cost.  The generic, used[i] = today's range up to bar i / ADR(last `period` completed days). (+2 more)
+
+### Community 511 - "Community 511"
+Cohesion: 0.42
+Nodes (7): capitalize(), fmtCountdown(), NextBrief, pad(), SESSION_STYLES, SessionClock(), TimePayload
+
+### Community 512 - "Community 512"
+Cohesion: 0.49
+Nodes (8): EA Lifecycle Manager — Orchestrator for the EA Guardian/Coach/Validator team.  W, _route(), _run_answer(), _run_coach(), _run_guardian(), run_task(), _run_validator(), _run_weekly_report()
+
+### Community 513 - "Community 513"
+Cohesion: 0.20
+Nodes (9): discrepancies, ea_source, generated_at, python_source, recommended_params, EntryMin, MagicNumber, RiskPct (+1 more)
+
+### Community 514 - "Community 514"
+Cohesion: 0.20
+Nodes (9): 2-YEAR MT5 STRATEGY TESTER — no-data EAs (2026-06-04), Headline counts, Honest caveats, Strategy Report — Full Inventory + Backtest Results — 2026-06-04, TABLE 1 — LIVE NOW (18 strategies, 6 agents), TABLE 2 — JTCC QUARANTINED (15, NOT live — failed/unvalidated), TABLE 3 — Gold Scalp library, NOT live (8 — backtest-only), TABLE 4 — MQL5 Expert Advisors (21, NOT live in the python stack) (+1 more)
+
+### Community 515 - "Community 515"
+Cohesion: 0.29
+Nodes (9): compute_strength(), _pair_directional(), Board layer — the whole-board view Navin's Iconic method runs on.  The single-pa, Signed, ATR-normalised distance of close from EMA200 on the setup TF.      +1 →, Board-wide currency strength {ccy: 0..10} (5 = neutral).      `snapshots` maps s, Sorted strongest→weakest, for the dashboard board view., _run_selftest(), strength_table() (+1 more)
+
+### Community 516 - "Community 516"
+Cohesion: 0.33
+Nodes (9): atr(), fetch(), indicators(), main(), Asian-Session Mean-Reversion (ASMR) — first-pass edge screen.  Hypothesis: AUDJP, Walk bars; one position at a time. Returns list of net-PnL (price units).      m, rsi(), simulate() (+1 more)
+
+### Community 517 - "Community 517"
+Cohesion: 0.22
+Nodes (8): discrepancies, ea_source, generated_at, python_source, recommended_params, MagicNumber, RiskPct, strategy
+
+### Community 518 - "Community 518"
+Cohesion: 0.22
+Nodes (8): Architecture — `iconic/board_trader.py` (new orchestrator), code:block1 (┌──────────── BOARD LOOP (H1 bar close; manage every M3) ───), Iconic Board Trader — Whole-Board Autonomous System (Build Plan), Migration, Phases (each independently verifiable), Risk / safety, The gap (what we build), What already exists (the brain — keep, don't rebuild)
+
+### Community 519 - "Community 519"
+Cohesion: 0.32
+Nodes (7): AgentAvatar(), hash(), initials(), PALETTE, Tone, TONE_GLOW, TONE_RING
+
+### Community 520 - "Community 520"
+Cohesion: 0.36
+Nodes (7): _fetch(), _load_board(), main(), Board-level walk-forward backtest — validates the WHOLE-BOARD selection.  Unlike, Walk bars [lo,hi); book leaders, exit on SL/tp_final. Returns stats., Returns (h1_data, m15_data). m15_data empty unless with_m15., _simulate()
+
+### Community 521 - "Community 521"
+Cohesion: 0.25
+Nodes (8): _gs05_ema_crossover(), GS05: EMA9/21 crossover trend-follow.     Entry: EMA9 crosses EMA21, confirmed b, GS05: EMA9/21 crossover trend-follow.     Entry: EMA9 crosses EMA21, confirmed b, GS05: EMA9/21 crossover trend-follow.     Entry: EMA9 crosses EMA21, confirmed, ema_cross(), Returns +1 (bullish cross this bar), -1 (bearish cross), 0 (no cross)., Returns +1 (bullish cross this bar), -1 (bearish cross), 0 (no cross)., Returns +1 (bullish cross this bar), -1 (bearish cross), 0 (no cross).
+
+### Community 522 - "Community 522"
+Cohesion: 0.29
+Nodes (8): _call_claude_followup(), _find_claude(), Locate the claude CLI executable — handles missing PATH in hidden processes., Locate the claude CLI executable — handles missing PATH in hidden processes., Claude CLI call for delegation followup. Returns text or None., Locate the claude CLI executable — handles missing PATH in hidden processes., Claude (SDK → CLI) call for delegation followup. Returns text or None., Claude (SDK → CLI) call for delegation followup. Returns text or None.
+
+### Community 523 - "Community 523"
+Cohesion: 0.33
+Nodes (6): get_asia_backtest(), get_asia_state(), Asia Desk API — Asian Range Fade (S1) live state + validated backtest summary., Live Asia Desk agent state: open positions, today's ranges, daily trades., Validated backtest summary backing the deployment decision., _read_json()
+
+### Community 524 - "Community 524"
+Cohesion: 0.43
+Nodes (5): _extract_symbols(), TestWriterAgent — Generates pytest test suites for any Python module.  Usage:, Extract function and class names via AST., Generate tests for target file and write to tests/ directory., write_tests()
+
+### Community 525 - "Community 525"
+Cohesion: 0.57
+Nodes (5): can_go_live(), _criteria(), Non-bypassable demo→LIVE promotion gate.  This is the single source of truth for, Return (allowed, reasons). `allowed` is True only if EVERY evidence     check pa, _read()
+
+### Community 527 - "Community 527"
+Cohesion: 0.53
+Nodes (5): _build(), leaderboard(), _num(), Strategy Lab API — the champion/challenger leaderboard for the /lab page.  `GE, _read_json()
+
+### Community 528 - "Community 528"
+Cohesion: 0.33
+Nodes (6): Write structured JSON snapshot for the dashboard (atomic, non-blocking)., Write structured JSON snapshot for the dashboard (atomic, non-blocking)., Write structured JSON snapshot for the dashboard (atomic, non-blocking)., Write structured JSON snapshot for the dashboard (atomic, non-blocking)., Write structured JSON snapshot for the dashboard (atomic, non-blocking)., write_live_state()
+
+### Community 529 - "Community 529"
+Cohesion: 0.33
+Nodes (6): chat(), Main entry point. Pass a message from any interface and get Maic's response., Claude CLI call for delegation followup. Returns text or None., Main entry point. Pass a message from any interface and get Maic's response., Main entry point. Pass a message from any interface and get Maic's response., Main entry point. Pass a message from any interface and get Maic's response.
+
+### Community 531 - "Community 531"
+Cohesion: 0.40
+Nodes (5): enabled, icon_color, label, thread_id, alpha_brief
+
+### Community 532 - "Community 532"
+Cohesion: 0.40
+Nodes (5): digest, enabled, icon_color, label, thread_id
+
+### Community 533 - "Community 533"
+Cohesion: 0.50
+Nodes (3): Hard safety rules — NEVER violate, Notes, Steps each run
+
+### Community 534 - "Community 534"
+Cohesion: 0.50
+Nodes (3): copy, SHELL_URLS, url
+
+### Community 535 - "Community 535"
+Cohesion: 0.67
+Nodes (3): backtest_ngs_single(), main(), NGS_Single (Phase 6) — single-position trend follow (no pyramid layers).  Phase
+
+### Community 536 - "Community 536"
+Cohesion: 0.83
+Nodes (3): Invoke-WatchdogCheck(), Test-ProcessAlive(), Write-Log()
+
+### Community 537 - "Community 537"
+Cohesion: 0.50
+Nodes (4): _gs04_keltner_rsi_breakout(), GS04: Keltner Channels + RSI Volatility Scalper — BREAKOUT (NotebookLM verified), GS04: Keltner Channels + RSI Volatility Scalper — BREAKOUT (NotebookLM verified), GS04: Keltner Channels + RSI Volatility Scalper — BREAKOUT (NotebookLM verified)
+
+### Community 538 - "Community 538"
+Cohesion: 0.50
+Nodes (3): DISPLAY, WINEDEBUG, WINEPREFIX
+
+### Community 539 - "Community 539"
+Cohesion: 0.50
+Nodes (4): _default_broadcaster(), Try to wire to the dashboard ws_manager if it's importable., Try to wire to the dashboard ws_manager if it's importable., Try to wire to the dashboard ws_manager if it's importable.
+
+### Community 541 - "Community 541"
+Cohesion: 0.67
+Nodes (3): bar_time, direction, AUDCHF
+
 ## Knowledge Gaps
-- **1275 isolated node(s):** `command`, `args`, `NOTEBOOKLM_PROFILE`, `command`, `args` (+1270 more)
+- **1520 isolated node(s):** `command`, `args`, `NOTEBOOKLM_PROFILE`, `command`, `args` (+1515 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **76 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **89 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `chat_resilient()` connect `Community 250` to `Community 225`, `Community 102`, `Community 103`, `Community 460`, `Community 111`, `Community 464`, `Community 53`, `Community 54`, `Community 213`, `Community 88`, `Community 89`, `Community 27`, `Community 28`, `Community 223`?**
-  _High betweenness centrality (0.073) - this node is a cross-community bridge._
-- **Why does `main()` connect `Community 223` to `Community 24`, `Community 75`, `Community 454`?**
-  _High betweenness centrality (0.043) - this node is a cross-community bridge._
+- **Why does `chat_resilient()` connect `Community 250` to `Community 512`, `Community 225`, `Community 460`, `Community 524`, `Community 111`, `Community 464`, `Community 17`, `Community 53`, `Community 54`, `Community 213`, `Community 88`, `Community 89`, `Community 27`, `Community 28`, `Community 223`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Why does `main()` connect `Community 223` to `Community 90`, `Community 75`, `Community 454`?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
 - **Why does `Row()` connect `Community 75` to `Community 223`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+  _High betweenness centrality (0.036) - this node is a cross-community bridge._
 - **What connects `command`, `args`, `NOTEBOOKLM_PROFILE` to the rest of the system?**
-  _2268 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _2737 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.09274193548387097 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0907563025210084 - nodes in this community are weakly interconnected._
 - **Should `Community 3` be split into smaller, more focused modules?**
   _Cohesion score 0.0710085933966531 - nodes in this community are weakly interconnected._
 - **Should `Community 4` be split into smaller, more focused modules?**
-  _Cohesion score 0.06605222734254992 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.13513513513513514 - nodes in this community are weakly interconnected._

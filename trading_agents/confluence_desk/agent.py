@@ -206,6 +206,8 @@ def _calc_lots(symbol: str, entry: float, stop: float, risk_pct: float) -> float
     acc, sym = mt5.account_info(), mt5.symbol_info(symbol)
     if acc is None or sym is None:
         return 0.0
+    if acc.equity <= 0:
+        return 0.0
     sl_dist = abs(entry - stop)
     if sl_dist < sym.point or sym.trade_tick_size <= 0:
         return 0.0

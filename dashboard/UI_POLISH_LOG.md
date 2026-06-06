@@ -19,6 +19,7 @@ Scalp · VolumeProfile · Journal · TelegramHQ · Settings · Hub · Factory ·
 <!-- agent maintains: page → last-polished date + one-line of what was done -->
 | Page | Last polished | Notes |
 |------|---------------|-------|
+| _shared: PageLoader (App)_ | 2026-06-06 | Premium shimmer skeleton (header rail + metric grid + panel) replacing bare "Loading…" — shown on every lazy route transition |
 | _shared: PageHeader_ | 2026-06-05 | Gradient accent kicker bar anchoring the title — consistent header rhythm across all routes |
 | _shared: Table_ | 2026-06-04 | Premium empty-state (glyph badge + composed message) — lifts every data table |
 
@@ -31,6 +32,11 @@ Scalp · VolumeProfile · Journal · TelegramHQ · Settings · Hub · Factory ·
 
 ## Run log (newest first)
 <!-- agent appends one block per run -->
+
+### 2026-06-06 — PageLoader (shared, App.tsx)
+- Change: Replaced the route-level Suspense fallback's bare `Loading…` text (a single pulsing string) with a premium skeleton scaffold that mirrors the common page shape — a kicker rail + title/subtitle header block, a 4-up metric-card grid (using the real `.glass` card surface + padding), and a primary panel with row placeholders. Each placeholder is a soft `bg-tint/30` block with a horizontal `animate-shimmer` sheen sweep; the whole thing fades in via `.reveal`. Shows on EVERY lazy route transition (all 26 routes).
+- Why premium: Structural skeletons that match the destination layout are the signature loading pattern of premium fintech/SaaS dashboards — they communicate "content arriving" and preserve spatial stability, vs a centered spinner/string that reads as unfinished and shifts layout on load. Realizes backlog #3 (loading skeletons over bare spinners). Single-file, zero new deps — reuses existing `shimmer` keyframe, `.glass`/`.reveal` utilities, and `tint`/`sheen` tokens.
+- Build: pass (local `npx vite build` 9.65s + VPS `npx vite build` 16.38s) · Visual: skipped (time-boxed; additive className-only skeleton, very low risk + prior Windows browser-daemon instability — relied on build-gate + live bundle/HTTP canary) · Deployed: :8010 (live serves new bundle `index-CrH-AkQv.js`, HTTP 200) · Commit: a090f39
 
 ### 2026-06-05 — PageHeader (shared)
 - Change: Added a slim (3px) vertical gradient accent kicker bar (`from-accent to-accent-dim`, rounded, faint accent glow) to the left of the title block in the shared `PageHeader`. Self-stretches to the title+subtitle height. Propagates a consistent premium header anchor to every route that uses `PageHeader` (12+ pages).

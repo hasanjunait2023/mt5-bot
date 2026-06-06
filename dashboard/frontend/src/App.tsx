@@ -31,8 +31,50 @@ const Pending      = lazy(() => import('./pages/Pending').then(m => ({ default: 
 const Console      = lazy(() => import('./pages/Console').then(m => ({ default: m.Console })))
 const Factory      = lazy(() => import('./pages/Factory').then(m => ({ default: m.Factory })))
 
+// Premium skeleton scaffold shown during lazy-route loads — mirrors the common
+// page shape (header + metric grid + panel) with a soft shimmer sweep so the
+// transition reads as "content arriving", not a bare spinner.
+function Skel({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={
+        'rounded-lg bg-tint/30 bg-[linear-gradient(90deg,transparent,rgb(var(--sheen)/0.10),transparent)] ' +
+        'bg-[length:200%_100%] animate-shimmer ' + className
+      }
+    />
+  )
+}
+
 function PageLoader() {
-  return <div className="min-h-[60vh] grid place-items-center text-text-muted text-sm animate-pulse">Loading…</div>
+  return (
+    <div className="reveal space-y-6">
+      {/* header: kicker rail + title + subtitle */}
+      <div className="flex items-stretch gap-3">
+        <Skel className="w-[3px] rounded-full" />
+        <div className="flex flex-col gap-2 py-0.5">
+          <Skel className="h-6 w-52" />
+          <Skel className="h-3.5 w-72" />
+        </div>
+      </div>
+      {/* metric card grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="glass p-3.5 md:p-5 flex flex-col gap-3">
+            <Skel className="h-3 w-20" />
+            <Skel className="h-7 w-28" />
+            <Skel className="h-3 w-16" />
+          </div>
+        ))}
+      </div>
+      {/* primary panel */}
+      <div className="glass p-5 space-y-3">
+        <Skel className="h-4 w-40" />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skel key={i} className="h-4 w-full" />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function App() {

@@ -27,6 +27,11 @@ from typing import Optional
 
 import pandas as pd
 
+try:
+    import fcntl  # linux-only; single-instance lock
+except ImportError:  # pragma: no cover (non-linux dev box)
+    fcntl = None
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
@@ -39,6 +44,25 @@ LOG_PATH     = LOG_DIR / "_agent_log.txt"
 STATE_PATH   = LOG_DIR / "_agent_state.json"
 DAILY_PATH   = LOG_DIR / "_agent_daily.json"
 PAPER_PATH   = LOG_DIR / "_paper_trades.jsonl"
+LOCK_PATH    = LOG_DIR / "_agent.lock"
+_lock_fh = None
+
+
+def acquire_singleton() -> bool:
+    """Hold a process-lifetime flock so only ONE iconic instance (board or legacy)
+    ever runs on magic 20260700. The orchestrator double-started this agent once
+    (external restart racing a pending cooldown restart) → an orphaned 2nd board
+    process; this lock makes any 2nd instance self-exit. No-op where fcntl absent."""
+    global _lock_fh
+    if fcntl is None:
+        return True
+    try:
+        _lock_fh = open(LOCK_PATH, "w")
+        fcntl.flock(_lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _lock_fh.write(str(os.getpid())); _lock_fh.flush()
+        return True
+    except Exception:
+        return False
 
 MAGIC           = 20260700          # Iconic Trader magic number
 BARS_H1         = 500               # warmup + lookback
@@ -627,6 +651,10 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
+
+    if not acquire_singleton():
+        log.error("Another iconic instance holds %s — exiting to avoid double-trade.", LOCK_PATH)
+        sys.exit(0)
 
     # Cutover hook: when ICONIC_BOARD is set (.env), this service runs the
     # whole-board system instead of the single-pair USDCAD agent. Read .env

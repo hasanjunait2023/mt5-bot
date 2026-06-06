@@ -64,6 +64,10 @@ def _h_ingest(job: dict) -> None:
     meta = yt.fetch_metadata(job["source"]["youtube_url"])
     job["source"].update({k: meta.get(k, job["source"].get(k))
                           for k in ("video_id", "title", "channel", "description", "duration_s")})
+    if not job["source"].get("title"):
+        # yt-dlp failed (429/bot-block) — leave at INGEST, runner retries next cycle.
+        log.warning("[%s] ingest failed — no title from yt-dlp, will retry", job.get("job_id"))
+        return
     st.advance(job, st.CLASSIFY, f"ingested: {job['source'].get('title','')[:60]}")
 
 
@@ -122,8 +126,11 @@ def _h_gate_plan(job: dict) -> None:
         st.advance(job, st.CODEGEN, "plan approved")
     elif ap["state"] == "rejected":
         st.set_status(job, st.REJECTED, "plan rejected")
-    elif AUTONOMOUS and job.get("is_strategy") is not False:
-        # Auto-approve plan for real strategies; non-strategies still park for review.
+    elif AUTONOMOUS and job.get("is_strategy") is False:
+        # Non-strategy reached GATE_PLAN (classified by old code) — auto-reject.
+        st.set_status(job, st.REJECTED, "non-strategy (autonomous gate reject)")
+    elif AUTONOMOUS:
+        # Auto-approve plan for real strategies.
         ap["state"] = "approved"
         ap["by"] = "autonomous"
         ap["at"] = st._now()

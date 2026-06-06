@@ -267,17 +267,62 @@ def _collect_llm(cfg: dict) -> list[dict]:
 
 # ── source: YouTube channels ──────────────────────────────────────────────────
 
-def _collect_youtube(cfg: dict, state: dict) -> list[dict]:
+import re as _re
+
+# Word-boundary matched (short tokens that appear as substrings in unrelated words).
+_STRATEGY_TITLE_WORDS = {"ict", "smc", "fvg", "bos", "ea"}
+# Substring matched (safe multi-word phrases unlikely to appear in noise).
+_STRATEGY_TITLE_KW = {
+    "strategy", "setup", "backtest", "backtesting", "system", "indicator",
+    "scalp", "swing", "breakout", "reversal", "orderblock", "order block",
+    "liquidity", "fibonacci", "fair value", "choch", "how to trade", "confluence",
+    "algo trading", "automated trading", "pine script", "quant", "mechanical",
+    "high probability", "risk reward", "smart money", "institutional",
+    "supply demand", "supply and demand", "market structure", "price action",
+    "trade setup", "trading system", "live trade", "profit factor",
+    "expert advisor", "mql5", "ninjatrader", "python trading",
+    "forex strategy", "gold strategy", "xauusd", "eurusd strategy",
+}
+_REJECT_TITLE_KW = {
+    "day in the life", "my journey", "motivat", "mindset", "mental", "goals 20",
+    "i became", "week in review", "market news", "economic calendar", "this week in",
+    "forex news", "q&a", "interview", "vlog", "reaction", "story time",
+    "portfolio update", "results video", "income report", "how i made",
+    "for beginners", "beginner", "beginner's", "prediction market", "nfl",
+    "sports betting", "crypto news", "nba", "it was too slow",
+}
+
+
+def _is_strategy_title(title: str) -> bool:
+    t = title.lower()
+    if any(kw in t for kw in _REJECT_TITLE_KW):
+        return False
+    if any(kw in t for kw in _STRATEGY_TITLE_KW):
+        return True
+    return any(_re.search(r"\b" + kw + r"\b", t) for kw in _STRATEGY_TITLE_WORDS)
+
+
+def _collect_youtube(cfg: dict, state: dict) -> tuple[list[dict], list[str]]:
+    """Returns (strategy_candidates, title_filtered_video_ids).
+    Caller persists title_filtered_video_ids into seen_videos so they are
+    never re-checked in future runs."""
     seen = set(state.get("seen_videos", []))
     out: list[dict] = []
+    title_filtered_ids: list[str] = []
     for ch in cfg.get("youtube_channels", []):
         for v in yt.list_channel_videos(ch, cfg.get("videos_per_channel", 4)):
             if v["video_id"] in seen:
                 continue
+            if not _is_strategy_title(v["title"]):
+                title_filtered_ids.append(v["video_id"])
+                log.debug("title-filter skip: %s", v["title"])
+                continue
             out.append({"kind": "youtube", "title": v["title"][:120],
                         "text": v["title"], "ref": v["url"],
                         "video_id": v["video_id"]})
-    return out
+    if title_filtered_ids:
+        log.info("title-filter skipped %d non-strategy YouTube video(s)", len(title_filtered_ids))
+    return out, title_filtered_ids
 
 
 # ── curation ──────────────────────────────────────────────────────────────────
@@ -349,8 +394,10 @@ def run_once() -> dict:
     seen_videos = set(state.get("seen_videos", []))
 
     candidates: list[dict] = []
+    title_filtered_ids: list[str] = []
     if srcs.get("youtube"):
-        candidates += _collect_youtube(cfg, state)
+        yt_cands, title_filtered_ids = _collect_youtube(cfg, state)
+        candidates += yt_cands
     if srcs.get("web"):
         candidates += _collect_web(cfg)
     if srcs.get("llm"):
@@ -427,6 +474,8 @@ def run_once() -> dict:
     # big-trader strategy) therefore drains a few videos per run over many runs instead
     # of being burned in one pass; the Factory CLASSIFY stage rejects non-strategies.
 
+    # Persist title-filtered video IDs so they are never re-checked in future runs.
+    seen_videos.update(title_filtered_ids)
     state["seen_videos"] = list(seen_videos)[-3000:]
     state["seen_hashes"] = list(seen_hashes)[-4000:]
     state["created_jobs"] = (state.get("created_jobs", []) + created)[-500:]

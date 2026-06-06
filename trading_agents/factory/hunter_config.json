@@ -3,30 +3,32 @@
   "sources": {
     "youtube": true,
     "web": true,
-    "llm": true,
-    "papers": true
+    "llm": false,
+    "papers": false
   },
   "youtube_channels": [
+    "https://www.youtube.com/@parttimelarry",
+    "https://www.youtube.com/@quantifiedstrategies",
+    "https://www.youtube.com/@QuantProgram",
+    "https://www.youtube.com/@StrategyQuant",
+    "https://www.youtube.com/@SMBCapital",
     "https://www.youtube.com/@chart-fanatics",
     "https://www.youtube.com/@InnerCircleTrader",
-    "https://www.youtube.com/@TheTradingChannel",
     "https://www.youtube.com/@PhotonTrading",
-    "https://www.youtube.com/@SMBCapital",
-    "https://www.youtube.com/@parttimelarry"
+    "https://www.youtube.com/@TheTradingChannel"
   ],
-  "videos_per_channel": 8,
+  "videos_per_channel": 20,
   "web_feeds": [
-    "https://www.babypips.com/feed.rss",
-    "https://www.forexlive.com/feed/news"
+    "https://breakingdownfinance.com/feed/"
   ],
   "web_urls": [],
-  "arxiv_query": "cat:q-fin.TR OR cat:q-fin.PM OR cat:q-fin.ST",
-  "arxiv_max": 8,
-  "llm_ideas_per_run": 3,
-  "target_symbols": ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"],
+  "arxiv_query": "",
+  "arxiv_max": 0,
+  "llm_ideas_per_run": 0,
+  "target_symbols": ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDJPY"],
   "curation_min_score": 65,
   "youtube_min_score": 40,
-  "max_youtube_jobs_per_run": 4,
+  "max_youtube_jobs_per_run": 5,
   "max_text_jobs_per_run": 3,
-  "max_jobs_per_run": 7
+  "max_jobs_per_run": 6
 }

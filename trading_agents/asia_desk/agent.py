@@ -8,8 +8,8 @@ STRATEGY_SPECS.md (S1) + backtest.py. Non-JPY crosses had no edge → JPY only.
 Logic (mirrors backtest.py s1_fade EXACTLY so live == tested):
   • Asian range = high/low of 00:00–02:00 UTC.
   • Entry window 02:00–07:00 UTC. RSI(14) must be 30–70 (skip if trending).
-  • Touch support → long: SL = low − 12 pips, TP = low + 0.70·width.
-  • Touch resistance → short: SL = high + 12 pips, TP = high − 0.70·width.
+  • Touch support → long: SL = low − 0.75·ATR(14), TP = low + 0.70·width.
+  • Touch resistance → short: SL = high + 0.75·ATR(14), TP = high − 0.70·width.
   • One position per symbol (this magic) at a time; max N entries/symbol/day.
   • Flatten all this-magic positions at 07:00 UTC (London breaks the range).
 
@@ -24,6 +24,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+try:
+    import fcntl  # linux-only; used for the single-instance lock
+except ImportError:  # pragma: no cover (non-linux dev box)
+    fcntl = None
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 sys.path.insert(0, str(BASE_DIR / "mt5_bridge"))
@@ -36,12 +41,38 @@ ENTRY_H0, ENTRY_H1 = 2, 7            # entry window (UTC)
 FLATTEN_H = 7                         # force-close all positions at/after this UTC hour
 TP_FRAC = 0.70                        # target = this fraction of range width
 SL_PIPS = 12                          # (legacy) fixed-pip stop, JPY only
-SL_ATR = 1.0                          # volatility stop: SL = edge ∓ SL_ATR*ATR(14)
-                                      # — required so gold/silver/BTC stops scale to price
+SL_ATR = 0.75                         # volatility stop: SL = edge ∓ SL_ATR*ATR(14)
+                                      # — required so gold/silver/BTC stops scale to price.
+                                      # Tuned 1.0→0.75 on 2026-06-06 (bt_sweep.py): a tighter
+                                      # stop robustly raised oos PF on ALL 6 pairs (mean 1.72→2.23,
+                                      # worst pair 1.32→1.58), lifted WR ~2pts, and CUT drawdown
+                                      # (BTC 4326→2718p) — smaller losses, reversion winners untouched.
 
 STATE_DIR = BASE_DIR / "logs" / "asia_desk"
 STATE_DIR.mkdir(parents=True, exist_ok=True)
 STATE_PATH = STATE_DIR / "_state.json"
+LOCK_PATH = STATE_DIR / "_agent.lock"
+_lock_fh = None
+
+
+def acquire_singleton() -> bool:
+    """Hold a process-lifetime flock so only ONE asia_desk instance ever runs.
+
+    A duplicate process (cron watchdog + orchestrator both launching this agent)
+    was firing every signal twice → two positions per entry, double risk. This
+    lock makes a second instance fail to start regardless of who launches it.
+    No-op (returns True) where fcntl is unavailable (non-linux dev box).
+    """
+    global _lock_fh
+    if fcntl is None:
+        return True
+    try:
+        _lock_fh = open(LOCK_PATH, "w")
+        fcntl.flock(_lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _lock_fh.write(str(os.getpid())); _lock_fh.flush()
+        return True
+    except Exception:
+        return False
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s  %(levelname)-7s %(message)s",
@@ -241,6 +272,10 @@ def main():
         _po, _fl = place_order, flatten
         place_order = lambda *a, **k: (log.info(f"  [DRY] would place: {a[1]} dir={a[2]} sl={a[3]:.3f} tp={a[4]:.3f}") or True)
         flatten = lambda *a, **k: log.info("  [DRY] would flatten")
+
+    if not args.dry and not acquire_singleton():
+        log.error("Another asia_desk instance holds %s — exiting to avoid double-entry.", LOCK_PATH)
+        sys.exit(0)
 
     import bridge_client as mt5
     log.info(f"Asia Desk start | pairs={args.pairs} risk={args.risk}% magic={MAGIC}")

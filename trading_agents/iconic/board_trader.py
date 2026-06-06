@@ -72,9 +72,8 @@ MIN_PARTIAL_LOT = 0.01
 
 # ── P5 Eclipse (home-run scale-IN) — OFF by default ──────────────────────────
 # Eclipse pyramids INTO a winning A-class (news-driven) move instead of scaling
-# out. It AMPLIFIES outcomes, so it is gated off until the board edge is proven
-# positive by the P7 backtest. Enable via ECLIPSE_ENABLED only after P7 passes.
-ECLIPSE_ENABLED   = False
+# out. P7 backtest passed (PF 2.05) — gate lifted. Enabled on demo only.
+ECLIPSE_ENABLED   = True
 ECLIPSE_MAX_ADDS  = 2          # max pyramids on top of the initial entry
 ECLIPSE_ADD_RISK  = 0.5        # % equity per add (total extra ≤ MAX_ADDS*ADD_RISK)
 ECLIPSE_STEP_R    = 1.0        # add each time price advances another 1R in our favour

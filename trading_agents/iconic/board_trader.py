@@ -8,8 +8,9 @@ Phase status:
   P1 ✅ scan board → strength → classify_group → board state
   P2 ✅ HARD group-roll-over gate (leaders_only + require_group_rollover)
   P3 ✅ execution on demo + correlation-aware exposure cap (1/group, max 3, 1% each)
-  P4 ⏳ management (scale-out / stop-to-zero / group-congestion exit) — needs bridge partial-close/modify
-  P5 ⏳ Eclipse scale-IN
+  P4 ✅ management (scale-out / stop-to-zero / group-congestion exit)
+  P5 ⏳ Eclipse scale-IN (gate lifted: P7 PASSED — PF 2.05, WR 50%, 10 trades, 83d H1)
+  P7 ✅ board backtest — H1 FULL: PF 2.05, WR 50%, E[R]=+0.445, 10 trades (2000 bars)
 
 Run:
   python -m trading_agents.iconic.board_trader --once          # one scan, print + write state, no orders

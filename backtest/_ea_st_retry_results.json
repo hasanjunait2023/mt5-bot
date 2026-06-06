@@ -1,0 +1,92 @@
+[
+  {
+    "net": "0",
+    "pf": "0.00",
+    "trades": "0",
+    "dd": "0 (0%)",
+    "bars": "0",
+    "name": "S15_StochADX_Gold",
+    "sym": "XAUUSD",
+    "tf": "M15",
+    "model": 4,
+    "from": "2025.06.04"
+  },
+  {
+    "net": "0",
+    "pf": "0.00",
+    "trades": "0",
+    "dd": "0 (0%)",
+    "bars": "0",
+    "name": "S18_HeikinAshi_TrendRider",
+    "sym": "XAUUSD",
+    "tf": "H1",
+    "model": 4,
+    "from": "2024.06.04"
+  },
+  {
+    "net": "0",
+    "pf": "0.00",
+    "trades": "0",
+    "dd": "0 (0%)",
+    "bars": "0",
+    "name": "BTCUSD_ScalpMaster_M1",
+    "sym": "BTCUSD",
+    "tf": "M1",
+    "model": 4,
+    "from": "2025.06.04"
+  },
+  {
+    "net": "0",
+    "pf": "0.00",
+    "trades": "0",
+    "dd": "0 (0%)",
+    "bars": "0",
+    "name": "ScalpMaster_HFT",
+    "sym": "XAUUSD",
+    "tf": "M1",
+    "model": 4,
+    "from": "2025.06.04"
+  },
+  {
+    "net": "0",
+    "pf": "0.00",
+    "trades": "0",
+    "dd": "0 (0%)",
+    "bars": "0",
+    "name": "ScalpMaster_HFT_Aggressive",
+    "sym": "BTCUSD",
+    "tf": "M1",
+    "model": 4,
+    "from": "2025.06.04"
+  },
+  {
+    "net": "0",
+    "pf": "0.00",
+    "trades": "0",
+    "dd": "0 (0%)",
+    "bars": "0",
+    "name": "XAUUSD_ScalpMaster_Gold_M1",
+    "sym": "XAUUSD",
+    "tf": "M1",
+    "model": 4,
+    "from": "2025.06.04"
+  },
+  {
+    "name": "NextGenSync_Grid",
+    "sym": "XAUUSD",
+    "tf": "M5",
+    "status": "TIMEOUT/NO REPORT"
+  },
+  {
+    "net": "0.00",
+    "pf": "0.00",
+    "trades": "0",
+    "dd": "0.00 (0.00%)",
+    "bars": "744613",
+    "name": "MTF_EMA_Scalper_M1",
+    "sym": "EURUSD",
+    "tf": "M1",
+    "model": 1,
+    "from": "2024.06.04"
+  }
+]

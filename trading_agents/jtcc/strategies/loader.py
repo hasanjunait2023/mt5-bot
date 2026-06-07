@@ -141,12 +141,8 @@ class StrategyLoader:
         return loaded
 
     def _notify_new(self, name: str) -> None:
-        try:
-            from trading_agents.telegram_hq import send as tg_send
-            tg_send("live_trading", f"New JTCC strategy loaded: {name}", level="INFO",
-                    title="Strategy Loaded")
-        except Exception:
-            pass
+        # Telegram "Strategy Loaded" notification disabled by request — log only.
+        log.info("New JTCC strategy loaded: %s (Telegram notify off)", name)
 
     def start_watcher(self, interval_s: float = 5.0) -> threading.Thread:
         """Start background thread that polls for new/changed YAML files."""

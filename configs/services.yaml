@@ -52,6 +52,16 @@ services:
     critical: true
     depends_on: [mt5_terminal]
 
+  - id: bridge_local
+    name: MT5 Bridge (local Windows — direct MetaTrader5)
+    group: mt5
+    # Windows local PC: MetaTrader5 PyPI package is native — no wine needed.
+    # Runs the same api_server module directly on port 8090.
+    profiles: [local]
+    cmd: [python, -m, mt5_bridge.api_server, --port, "8090"]
+    health: {type: http, url: "http://localhost:8090/health", timeout: 15, grace: 30}
+    critical: true
+
   - id: dashboard
     name: Dashboard backend (hub/signals/alpha)
     group: core

@@ -1,3 +1,4 @@
 # Dev/CI-only tooling (not installed on the live VPS).
 pytest>=8.0
 ruff>=0.6
+pyyaml>=6.0           # needed by scripts/pending_tracker.py (imported by tests)

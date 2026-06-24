@@ -16,6 +16,7 @@ _MAX_RETRIES = 2            # fewer retries — fail fast to unblock queue
 _RETRY_DELAY = 1.0
 
 # Circuit breaker state
+_breaker_lock = __import__("threading").Lock()
 _breaker_state = {"failures": 0, "open_until": 0.0}
 _BREAKER_THRESHOLD = 3      # open faster — 3 failures is enough signal
 _BREAKER_COOLDOWN = 30      # shorter cooldown — retry sooner
@@ -23,18 +24,20 @@ _BREAKER_COOLDOWN = 30      # shorter cooldown — retry sooner
 
 def _breaker_check() -> bool:
     """Returns True if circuit is open (block requests)."""
-    return time.time() < _breaker_state["open_until"]
+    with _breaker_lock:
+        return time.time() < _breaker_state["open_until"]
 
 
 def _breaker_record(success: bool) -> None:
-    if success:
-        _breaker_state["failures"] = 0
-    else:
-        _breaker_state["failures"] += 1
-        if _breaker_state["failures"] >= _BREAKER_THRESHOLD:
-            _breaker_state["open_until"] = time.time() + _BREAKER_COOLDOWN
-            log.error("MT5 bridge circuit breaker OPEN for %ds after %d failures",
-                      _BREAKER_COOLDOWN, _breaker_state["failures"])
+    with _breaker_lock:
+        if success:
+            _breaker_state["failures"] = 0
+        else:
+            _breaker_state["failures"] += 1
+            if _breaker_state["failures"] >= _BREAKER_THRESHOLD:
+                _breaker_state["open_until"] = time.time() + _BREAKER_COOLDOWN
+                log.error("MT5 bridge circuit breaker OPEN for %ds after %d failures",
+                          _BREAKER_COOLDOWN, _breaker_state["failures"])
 
 
 def _get_bridge_url() -> str:

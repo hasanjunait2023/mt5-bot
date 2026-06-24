@@ -104,7 +104,8 @@ def _load_dedupe_persist() -> None:
     try:
         if _DEDUPE_PERSIST_PATH.exists():
             _dedupe_persist = json.loads(_DEDUPE_PERSIST_PATH.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        log.debug("dedupe persist load failed: %s", e)
         _dedupe_persist = {}
 
 def _save_dedupe_persist(key: str, ts: float) -> None:
@@ -114,8 +115,8 @@ def _save_dedupe_persist(key: str, ts: float) -> None:
         pruned = {k: v for k, v in _dedupe_persist.items() if v > cutoff}
         _DEDUPE_PERSIST_PATH.parent.mkdir(parents=True, exist_ok=True)
         _DEDUPE_PERSIST_PATH.write_text(json.dumps(pruned), encoding="utf-8")
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("dedupe persist save failed: %s", e)
 
 _load_dedupe_persist()
 
@@ -144,7 +145,8 @@ def load_config() -> dict:
         return cfg
     try:
         cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        log.debug("config load failed: %s", e)
         cfg = _default_config()
     # Heal missing keys / newly added categories without losing the thread map.
     base = _default_config()

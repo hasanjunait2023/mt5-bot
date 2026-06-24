@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 from fastapi import APIRouter, Body
 from fastapi.responses import FileResponse
+
+from core.file_utils import safe_read_json, safe_read_jsonl
 
 router = APIRouter()
 
@@ -19,37 +20,13 @@ PERF_PATH   = BASE_DIR / "logs" / "signals" / "_paper_perf.json"
 TRADES_PATH = BASE_DIR / "logs" / "signals" / "_paper_trades.jsonl"
 
 
-def _read_json(path: Path, default):
-    try:
-        if path.exists():
-            return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        pass
-    return default
-
-
 def _read_events(limit: int = 50) -> list[dict]:
-    if not EVENTS_PATH.exists():
-        return []
-    try:
-        lines = EVENTS_PATH.read_text(encoding="utf-8").splitlines()
-    except Exception:
-        return []
-    out: list[dict] = []
-    for ln in lines[-limit:]:
-        ln = ln.strip()
-        if not ln:
-            continue
-        try:
-            out.append(json.loads(ln))
-        except Exception:
-            continue
-    return list(reversed(out))
+    return list(reversed(safe_read_jsonl(str(EVENTS_PATH), limit)))
 
 
 @router.get("/signals")
 def get_signals():
-    state = _read_json(STATE_PATH, {
+    state = safe_read_json(STATE_PATH, {
         "running": False, "symbols": [], "tick_sec": None,
         "updated_at": None,
     })
@@ -90,27 +67,14 @@ def get_performance():
     Returns the rollup that PaperTradeTracker writes every tick, plus the
     full list of closed trades for the dashboard table.
     """
-    perf = _read_json(PERF_PATH, {
+    perf = safe_read_json(PERF_PATH, {
         "generated_at": None,
         "open_trades": [],
         "by_system": {"classic": {}, "improved": {}},
         "total_closed": 0,
     })
     # tail the closed-trades log for the comparison table
-    closed: list[dict] = []
-    if TRADES_PATH.exists():
-        try:
-            lines = TRADES_PATH.read_text(encoding="utf-8").splitlines()
-            for ln in lines[-200:]:
-                ln = ln.strip()
-                if not ln:
-                    continue
-                try:
-                    closed.append(json.loads(ln))
-                except Exception:
-                    continue
-        except Exception:
-            pass
+    closed = safe_read_jsonl(str(TRADES_PATH), 200)
     closed.reverse()
     perf["closed_trades"] = closed
     return perf
@@ -147,13 +111,7 @@ def set_delivery(config: dict = Body(...)):
 @router.get("/signals/compare")
 def get_compare():
     """Side-by-side comparison: latest 50 events split by system."""
-    events: list[dict] = []
-    if EVENTS_PATH.exists():
-        for ln in EVENTS_PATH.read_text(encoding="utf-8").splitlines()[-500:]:
-            ln = ln.strip()
-            if not ln: continue
-            try: events.append(json.loads(ln))
-            except Exception: continue
+    events = safe_read_jsonl(str(EVENTS_PATH), 500)
     classic  = [e for e in events if e.get("system", "classic") == "classic"][-50:]
     improved = [e for e in events if e.get("system") == "improved"][-50:]
     return {

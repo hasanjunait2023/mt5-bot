@@ -7,10 +7,11 @@ state/paper files. Mirrors api/iconic.py.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from fastapi import APIRouter
+
+from core.file_utils import safe_read_json, safe_read_jsonl
 
 router = APIRouter()
 
@@ -19,34 +20,6 @@ STATE_PATH = BASE_DIR / "logs" / "strength" / "_strength_state.json"
 SNAP_PATH = BASE_DIR / "logs" / "strength" / "_session_snapshots.json"
 AGENT_PATH = BASE_DIR / "logs" / "m3strength" / "_agent_state.json"
 PAPER_PATH = BASE_DIR / "logs" / "m3strength" / "_paper_trades.jsonl"
-
-
-def _read_json(p: Path, default):
-    try:
-        if p.exists():
-            return json.loads(p.read_text(encoding="utf-8"))
-    except Exception:
-        pass
-    return default
-
-
-def _read_jsonl(p: Path, limit: int = 200) -> list[dict]:
-    if not p.exists():
-        return []
-    try:
-        lines = p.read_text(encoding="utf-8").splitlines()
-    except Exception:
-        return []
-    out: list[dict] = []
-    for ln in lines[-limit:]:
-        ln = ln.strip()
-        if not ln:
-            continue
-        try:
-            out.append(json.loads(ln))
-        except Exception:
-            continue
-    return out
 
 
 def _default_state():
@@ -63,13 +36,13 @@ def _default_state():
 @router.get("/strength/state")
 def get_strength_state():
     """Full 3-session strength payload (score + tiers + suggestions per session)."""
-    return _read_json(STATE_PATH, _default_state())
+    return safe_read_json(STATE_PATH, _default_state())
 
 
 @router.get("/strength/suggestions")
 def get_strength_suggestions(session: str = "newyork"):
     """Ranked BUY/SELL pair suggestions for one session (default New York)."""
-    state = _read_json(STATE_PATH, _default_state())
+    state = safe_read_json(STATE_PATH, _default_state())
     sess = (state.get("sessions") or {}).get(session) or {}
     return {
         "session": session,
@@ -83,17 +56,17 @@ def get_strength_suggestions(session: str = "newyork"):
 def get_strength_snapshots():
     """Per-session strength captured at session time by the cron snapshot
     (BD: Asian 07:00 / London 11:00 / NY 18:00)."""
-    return _read_json(SNAP_PATH, {"updated_at": None, "sessions": {}})
+    return safe_read_json(SNAP_PATH, {"updated_at": None, "sessions": {}})
 
 
 @router.get("/strength/agent")
 def get_strength_agent():
     """M3 Strength-Scalp agent status + paper performance."""
-    agent = _read_json(AGENT_PATH, {
+    agent = safe_read_json(AGENT_PATH, {
         "mode": "OFFLINE", "magic": 20260900, "updated_at": None,
         "active_session": None, "open_positions": {}, "candidates": [],
         "trades_today": 0, "paper_pf": None, "paper_trades": None,
     })
-    closed = [t for t in _read_jsonl(PAPER_PATH) if t.get("status") == "closed"]
+    closed = [t for t in safe_read_jsonl(str(PAPER_PATH)) if t.get("status") == "closed"]
     agent["paper_closed_count"] = len(closed)
     return agent

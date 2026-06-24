@@ -1,12 +1,10 @@
-"""
-System Agents API — surfaces every agent system on the dashboard.
+"""System Agents API — surfaces every agent system on the dashboard.
 
 Reads the runtime state files written by the Dev team, EA lifecycle team,
 Supervisor, and Strategy Scout so the frontend can show their activity and
 reports in one place.
 """
 
-import json
 import threading
 import time
 from datetime import datetime, timezone
@@ -15,6 +13,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
 
 from core.config import BASE_DIR
+from core.file_utils import safe_read_json
 
 router = APIRouter()
 
@@ -41,15 +40,6 @@ _cache: dict | None = None
 _cache_at = 0.0
 
 
-def _read(path: Path) -> dict | None:
-    if not path.exists():
-        return None
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-
-
 def _age_minutes(path: Path) -> float | None:
     if not path.exists():
         return None
@@ -67,7 +57,7 @@ def _status(age_min: float | None, stale_after_min: float) -> str:
 
 def _build_overview() -> dict:
     # ── Dev team ──────────────────────────────────────────────────────────────
-    dev_monitor = _read(DEV_MONITOR) or {}
+    dev_monitor = safe_read_json(DEV_MONITOR, {})
     dev_age = _age_minutes(DEV_MONITOR)
     reviews, debugs = [], []
     if DEV_LOG_DIR.exists():
@@ -87,9 +77,9 @@ def _build_overview() -> dict:
     }
 
     # ── EA lifecycle team ─────────────────────────────────────────────────────
-    guardian = _read(EA_GUARDIAN) or {}
-    coach = _read(EA_COACH) or {}
-    validator = _read(EA_VALIDATOR) or {}
+    guardian = safe_read_json(EA_GUARDIAN, {})
+    coach = safe_read_json(EA_COACH, {})
+    validator = safe_read_json(EA_VALIDATOR, {})
     g_age = _age_minutes(EA_GUARDIAN)
 
     ea_stages, pending = {}, []
@@ -126,8 +116,8 @@ def _build_overview() -> dict:
     }
 
     # ── Supervisor ────────────────────────────────────────────────────────────
-    sup = _read(SUPERVISOR_RPT) or {}
-    sup_hist = _read(SUPERVISOR_HIST) or []
+    sup = safe_read_json(SUPERVISOR_RPT, {})
+    sup_hist = safe_read_json(SUPERVISOR_HIST, [])
     sup_age = _age_minutes(SUPERVISOR_RPT)
     supervisor = {
         "status": _status(sup_age, 720),  # runs every 10h
@@ -143,7 +133,7 @@ def _build_overview() -> dict:
     }
 
     # ── Strategy Scout ────────────────────────────────────────────────────────
-    scout_state = _read(SCOUT_STATE) or {}
+    scout_state = safe_read_json(SCOUT_STATE, {})
     scout_age = _age_minutes(SCOUT_STATE)
     ideas = scout_state.get("ideas", {}) or {}
     stage_counts: dict[str, int] = {}
@@ -206,7 +196,7 @@ def system_agents_llm():
             lines = LLM_METRICS.read_text(encoding="utf-8").splitlines()[-3000:]
             for ln in lines:
                 try:
-                    e = json.loads(ln)
+                    e = __import__("json").loads(ln)
                 except Exception:
                     continue
                 a = e.get("agent", "?")
@@ -257,7 +247,7 @@ def system_agents_pending():
     """Pending board for the dashboard: auto-detected stalled agents
     (logs/_stalled_agents.json, written by scripts/pending_tracker.py) plus the
     hand-curated 'Pending tasks' table parsed out of PENDING.md."""
-    stalled = _read(STALLED_JSON) or {}
+    stalled = safe_read_json(STALLED_JSON, {})
 
     tasks = []
     try:
@@ -291,12 +281,12 @@ def system_agents_incidents(limit: int = Query(50, ge=1, le=300)):
     """Autonomous incident pipeline: CEO-routed problems, fixes, circuit
     breakers, and the kill-switch state. Written by
     trading_agents/incident_pipeline.py."""
-    hist = _read(INCIDENTS) or []
+    hist = safe_read_json(INCIDENTS, [])
     if isinstance(hist, dict):
         hist = hist.get("incidents", [])
     hist = sorted(hist, key=lambda h: h.get("opened_at", ""), reverse=True)[:limit]
 
-    kill = _read(KILL_FLAG) or {}
+    kill = safe_read_json(KILL_FLAG, {})
     by_status: dict = {}
     for h in hist:
         by_status[h.get("status", "open")] = by_status.get(h.get("status", "open"), 0) + 1

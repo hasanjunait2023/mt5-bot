@@ -92,13 +92,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="MT5 Dashboard API", lifespan=lifespan)
 
 # CORS: if DASHBOARD_ALLOWED_ORIGINS is set (comma-separated), lock to it
-# (plus localhost dev). Unset → "*" (today's behavior, back-compat).
+# (plus localhost dev). Unset → localhost only (deny wildcard by default).
 _origins_env = os.getenv("DASHBOARD_ALLOWED_ORIGINS", "").strip()
 if _origins_env:
     _allowed = [o.strip() for o in _origins_env.split(",") if o.strip()]
     _allowed += ["http://localhost:5173", "http://127.0.0.1:5173"]
 else:
-    _allowed = ["*"]
+    _allowed = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
 app.add_middleware(
     CORSMiddleware,

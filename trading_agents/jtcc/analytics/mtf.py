@@ -35,6 +35,22 @@ TTL = {
 DEFAULT_MTF_STACK = ["D1", "H4", "H1", "M15", "M3"]
 
 _cache: dict[str, dict] = {}
+_MAX_CACHE_ENTRIES = 500  # prevent unbounded growth
+
+
+def _cache_sweep() -> None:
+    """Evict stale entries when cache exceeds max size."""
+    if len(_cache) <= _MAX_CACHE_ENTRIES:
+        return
+    now = time.time()
+    stale = [k for k, v in _cache.items() if (now - v.get("fetched_at", 0)) > 3600]
+    for k in stale:
+        del _cache[k]
+    # If still over limit, evict oldest
+    if len(_cache) > _MAX_CACHE_ENTRIES:
+        sorted_keys = sorted(_cache.keys(), key=lambda k: _cache[k].get("fetched_at", 0))
+        for k in sorted_keys[: len(_cache) - _MAX_CACHE_ENTRIES]:
+            del _cache[k]
 
 
 def _fetch_bars(symbol: str, timeframe: str, limit: int = 200) -> dict | None:
@@ -44,6 +60,9 @@ def _fetch_bars(symbol: str, timeframe: str, limit: int = 200) -> dict | None:
     ttl = TTL.get(timeframe, 60)
     if cached and (time.time() - cached["fetched_at"]) < ttl:
         return cached["data"]
+    # Periodic cache sweep (every 50 misses)
+    if len(_cache) % 50 == 0:
+        _cache_sweep()
     bridge_url = os.getenv("MT5_BRIDGE_URL", "http://localhost:8090")
     try:
         r = requests.get(f"{bridge_url}/bars/{symbol}",

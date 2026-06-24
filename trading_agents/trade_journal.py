@@ -21,11 +21,14 @@ reconciler matches a closing deal back to its open record by this id.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+log = logging.getLogger("trade_journal")
 
 _BASE = Path(__file__).parent.parent
 # Legacy single-file journal (read-only now, for records written before sharding).
@@ -72,8 +75,8 @@ def _read_file(path: Path) -> list[dict]:
             continue
         try:
             out.append(json.loads(line))
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("Journal line parse failed: %s", e)
     return out
 
 
@@ -196,15 +199,15 @@ def close_trade(
                     ot = datetime.fromisoformat(str(existing["open_time"]).replace("Z", "+00:00"))
                     cdt = datetime.fromisoformat(ct.replace("Z", "+00:00"))
                     hold_minutes = round((cdt - ot).total_seconds() / 60, 1)
-                except Exception:
-                    pass
+                except Exception as e:
+                    log.debug("Hold time calc failed: %s", e)
             if actual_rr is None and existing.get("entry_price") is not None and existing.get("sl") is not None:
                 try:
                     sl_dist = abs(existing["entry_price"] - existing["sl"])
                     exit_dist = abs(exit_price - existing["entry_price"])
                     actual_rr = round(exit_dist / sl_dist, 2) if sl_dist > 0 else None
-                except Exception:
-                    pass
+                except Exception as e:
+                    log.debug("RR calc failed: %s", e)
 
         ev: dict[str, Any] = {
             "type":         "close",
@@ -290,7 +293,8 @@ def _in_window(rec: dict, cutoff: datetime | None) -> bool:
         return False
     try:
         return datetime.fromisoformat(str(ct).replace("Z", "+00:00")) >= cutoff
-    except Exception:
+    except Exception as e:
+        log.debug("close_time parse failed: %s", e)
         return False
 
 

@@ -66,7 +66,7 @@ services:
     name: Dashboard backend (hub/signals/alpha)
     group: core
     profiles: [vps, linux]
-    cmd: [python, -m, uvicorn, "main:app", --host, "0.0.0.0", --port, "8010"]
+    cmd: [python, -m, uvicorn, "main:app", --host, "127.0.0.1", --port, "8010"]
     cwd: dashboard/backend
     health: {type: tcp, port: 8010}
     depends_on: [bridge]

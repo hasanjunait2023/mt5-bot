@@ -1,9 +1,10 @@
 """Dashboard API — JTCC signal engine status, confluence scores, and signal history."""
 
-import json
 from pathlib import Path
 
 from fastapi import APIRouter
+
+from core.file_utils import safe_read_json, safe_read_jsonl
 
 router = APIRouter()
 
@@ -17,29 +18,13 @@ JTCC_DIGEST = BASE_DIR / "logs" / "jtcc" / "_jtcc_digest.json"
 JTCC_COACH = BASE_DIR / "logs" / "jtcc" / "_jtcc_coach.json"
 
 
-def _read_json(path: Path, default=None):
-    try:
-        if path.exists():
-            return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        pass
-    return default or {}
-
-
 def _read_trades(limit: int = 50) -> list[dict]:
-    try:
-        if not JTCC_LOG.exists():
-            return []
-        lines = JTCC_LOG.read_text(encoding="utf-8").strip().splitlines()
-        trades = [json.loads(l) for l in lines[-limit:] if l.strip()]
-        return list(reversed(trades))
-    except Exception:
-        return []
+    return safe_read_jsonl(str(JTCC_LOG), limit)
 
 
 @router.get("/jtcc")
 def get_jtcc():
-    state = _read_json(JTCC_STATE, {
+    state = safe_read_json(JTCC_STATE, {
         "status": "offline",
         "dry_run": False,
         "symbols": [],
@@ -47,7 +32,7 @@ def get_jtcc():
         "last_signals": [],
         "daily_api_calls": 0,
     })
-    perf = _read_json(JTCC_PERF, {
+    perf = safe_read_json(JTCC_PERF, {
         "total_trades": 0, "wins": 0, "losses": 0,
         "total_pnl": 0.0, "win_rate_pct": 0.0,
         "strategy_stats": {},
@@ -90,7 +75,7 @@ def get_jtcc_trades(limit: int = 50):
 
 @router.get("/jtcc/confluence")
 def get_confluence():
-    state = _read_json(JTCC_STATE, {})
+    state = safe_read_json(JTCC_STATE, {})
     return {"confluence": state.get("confluence", {})}
 
 
@@ -136,19 +121,19 @@ def get_strategy_heatmap():
 
 @router.get("/jtcc/latency")
 def get_latency():
-    return _read_json(JTCC_LATENCY, {"stats": {}, "updated_at": None})
+    return safe_read_json(JTCC_LATENCY, {"stats": {}, "updated_at": None})
 
 
 @router.get("/jtcc/guardian")
 def get_guardian():
-    return _read_json(JTCC_GUARDIAN, {"issues": [], "issues_count": 0, "checked_at": None})
+    return safe_read_json(JTCC_GUARDIAN, {"issues": [], "issues_count": 0, "checked_at": None})
 
 
 @router.get("/jtcc/digest")
 def get_digest():
-    return _read_json(JTCC_DIGEST, {"date": None, "today": {}})
+    return safe_read_json(JTCC_DIGEST, {"date": None, "today": {}})
 
 
 @router.get("/jtcc/coach")
 def get_coach():
-    return _read_json(JTCC_COACH, {"last_run": None, "proposals": []})
+    return safe_read_json(JTCC_COACH, {"last_run": None, "proposals": []})

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from fastapi import APIRouter
+
+from core.file_utils import safe_read_json
 
 router = APIRouter()
 
@@ -36,19 +37,10 @@ BACKTEST = {
 }
 
 
-def _read_json(p: Path, default):
-    try:
-        if p.exists():
-            return json.loads(p.read_text(encoding="utf-8"))
-    except Exception:
-        pass
-    return default
-
-
 @router.get("/asia/state")
 def get_asia_state():
     """Live Asia Desk agent state: open positions, today's ranges, daily trades."""
-    return _read_json(STATE_PATH, {
+    return safe_read_json(STATE_PATH, {
         "agent": "asia_desk", "strategy": "Asian Range Fade (S1)",
         "running": False, "open_positions": [], "ranges": {}, "daily_trades": {},
     })

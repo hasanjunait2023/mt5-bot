@@ -106,6 +106,18 @@ def _cache_get(key: tuple) -> Optional[dict]:
 def _cache_set(key: tuple, payload: dict) -> None:
     with _cache_lock:
         _bar_cache[key] = (time.time(), payload)
+    # Periodic sweep: keep cache under 500 entries
+    if len(_bar_cache) > 500:
+        with _cache_lock:
+            if len(_bar_cache) > 500:
+                now = time.time()
+                stale = [k for k, v in _bar_cache.items() if now - v[0] > 3600]
+                for k in stale:
+                    del _bar_cache[k]
+                if len(_bar_cache) > 500:
+                    sorted_keys = sorted(_bar_cache.keys(), key=lambda k: _bar_cache[k][0])
+                    for k in sorted_keys[: len(_bar_cache) - 500]:
+                        del _bar_cache[k]
 
 
 def _ensure_mt5() -> bool:

@@ -12,15 +12,9 @@ from datetime import datetime, timezone
 from fastapi import APIRouter
 
 from core.config import CPP_DAILY_PATH, CPP_STATE_PATH, AGENT_METRICS
+from core.file_utils import safe_read_json
 
 router = APIRouter()
-
-
-def _read_json(path):
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
 
 
 def _agent_stats():
@@ -52,8 +46,8 @@ def _agent_stats():
 
 @router.get("/cpp/daily")
 def cpp_daily():
-    daily = _read_json(CPP_DAILY_PATH)
-    state = _read_json(CPP_STATE_PATH)
+    daily = safe_read_json(CPP_DAILY_PATH, {})
+    state = safe_read_json(CPP_STATE_PATH, {})
 
     runner_online = False
     ts = state.get("ts")

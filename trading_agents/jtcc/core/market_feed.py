@@ -61,12 +61,13 @@ def _fetch_bars(symbol: str, timeframe: str = "5min", limit: int = 200) -> dict 
         return None
     tf_path = FMP_TF.get(timeframe, "5min")
     fmp_sym = _fmp_symbol(symbol)
+    headers = {"apikey": api_key}
     if tf_path == "daily":
-        url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{fmp_sym}?timeseries={limit}&apikey={api_key}"
+        url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{fmp_sym}?timeseries={limit}"
     else:
-        url = f"https://financialmodelingprep.com/api/v3/historical-chart/{tf_path}/{fmp_sym}?limit={limit}&apikey={api_key}"
+        url = f"https://financialmodelingprep.com/api/v3/historical-chart/{tf_path}/{fmp_sym}?limit={limit}"
     try:
-        r = requests.get(url, timeout=10)
+        r = requests.get(url, headers=headers, timeout=10)
         r.raise_for_status()
         data = r.json()
         if isinstance(data, dict) and "historical" in data:

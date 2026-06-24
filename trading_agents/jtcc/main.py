@@ -294,8 +294,8 @@ class JTCC:
                     confluence_score=float(decision.get("confluence_score", 0)),
                     rationale=decision.get("rationale", ""),
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                log.warning("Journal open_trade failed: %s", e)
             self._notify_signal(decision, lot, dry_run=False)
             self._state["last_signals"].append({
                 **decision, "lot": lot, "ticket": result.get("ticket"),
@@ -392,8 +392,8 @@ class JTCC:
                             f"Paired with primary ticket {primary_ticket}\n"
                             f"Strategy: {strategies_agreed[0]}",
                             level="INFO", title=f"Pair Leg {partner_symbol}")
-                except Exception:
-                    pass
+                except Exception as e:
+                    log.debug("Pair leg Telegram notify failed: %s", e)
             else:
                 log.error("Pair leg placement failed: %s", partner_result.get("error"))
         except Exception as e:
@@ -428,8 +428,8 @@ class JTCC:
             STATE_FILE.write_text(
                 json.dumps(self._state, indent=2, default=str), encoding="utf-8"
             )
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning("State save failed: %s", e)
 
     async def run(self) -> None:
         self._running = True
@@ -463,8 +463,8 @@ class JTCC:
             tg_send("live_trading",
                     f"🤖 JTCC started ({mode}) | {len(self.symbols)} symbols | {self.loader.count()} strategies",
                     level="INFO", title="JTCC Online")
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("Startup Telegram notify failed: %s", e)
 
         try:
             await self.feed.start()

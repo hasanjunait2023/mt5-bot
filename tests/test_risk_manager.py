@@ -10,6 +10,7 @@ risk_manager reads live state from a JSON file via `_read_state()`. Every test
 monkeypatches that single function so no MT5 terminal or live file is touched.
 """
 from pathlib import Path
+import sys
 
 import pytest
 
@@ -32,6 +33,14 @@ def _no_kill_switch(tmp_path, monkeypatch):
         "trading_agents.risk_limits.agent_daily_loss_usd",
         lambda mt5, magics: max(0.0, -float(rm._read_state().get("daily_pnl", 0.0) or 0.0)),
     )
+    # Also stub the bridge_client import that check_daily_dd() attempts, so the
+    # try/except doesn't swallow the monkeypatched call on CI where the module
+    # may not be importable.
+    import types
+    fake_mt5 = types.ModuleType("mt5_bridge.bridge_client")
+    fake_mt5.history_deals_get = lambda *a, **kw: ()
+    fake_mt5.positions_get = lambda *a, **kw: ()
+    sys.modules["mt5_bridge.bridge_client"] = fake_mt5
 
 
 def _state(monkeypatch, **kwargs):
